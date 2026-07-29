@@ -14,7 +14,12 @@ import { languageNotes } from '../language/index'
 import { commentLedger, mediaDispositions, migrationTotals } from '../migration/index'
 import { passages, scriptureIndex } from '../passages/index'
 import { revisions } from '../revisions/index'
-import { hasScripture, scriptureReferences } from '../scripture/web-text'
+import {
+  getScripture,
+  hasScripture,
+  requireScripture,
+  scriptureReferences,
+} from '../scripture/web-text'
 import { getSource, sources } from '../sources/index'
 import { getTopic, topics } from '../topics/index'
 import { video } from '../video/index'
@@ -382,5 +387,52 @@ describe('rights metadata', () => {
       expect(source.url ?? '').not.toMatch(/^(mailto|tel):/i)
       expect(source.sourceDocumentUrl ?? '').not.toMatch(/^(mailto|tel):/i)
     }
+  })
+})
+
+/**
+ * The Scripture corpus is a plain object literal, so a bare `in` check or a
+ * bare index reaches its prototype. `hasScripture('constructor')` answered
+ * true and `getScripture('constructor')` handed back `Object` itself — which
+ * meant `requireScripture` did not throw for it either, and the component that
+ * exists to make misquotation impossible would have rendered a passage with no
+ * reference and no text.
+ */
+describe('the Scripture corpus does not answer for its prototype', () => {
+  const INHERITED = [
+    'constructor',
+    'toString',
+    'valueOf',
+    'hasOwnProperty',
+    'isPrototypeOf',
+    'propertyIsEnumerable',
+    'toLocaleString',
+    '__proto__',
+    '__defineGetter__',
+  ]
+
+  it('reports no passage for an inherited property name', () => {
+    for (const name of INHERITED) {
+      expect(hasScripture(name), name).toBe(false)
+    }
+  })
+
+  it('returns nothing for an inherited property name', () => {
+    for (const name of INHERITED) {
+      expect(getScripture(name), name).toBeUndefined()
+    }
+  })
+
+  it('throws for an inherited property name, as it does for any unknown reference', () => {
+    for (const name of INHERITED) {
+      expect(() => requireScripture(name), name).toThrow(/No verified Scripture text/)
+    }
+    expect(() => requireScripture('Nowhere 1:1')).toThrow(/No verified Scripture text/)
+  })
+
+  it('still finds a real passage', () => {
+    expect(hasScripture('Mark 9:42-48')).toBe(true)
+    expect(getScripture('Mark 9:42-48')?.reference).toBe('Mark 9:42-48')
+    expect(requireScripture('Mark 9:42-48').text.length).toBeGreaterThan(0)
   })
 })

@@ -16,35 +16,122 @@ import { visit } from 'unist-util-visit'
  *
  * Only same-document fragment links are rewritten. A link to another page,
  * with or without a fragment, is left exactly as it is.
+ *
+ * MDX leaves two different node shapes in the tree, and both have to be
+ * handled. Markdown syntax becomes a hast `element` carrying its attributes in
+ * `properties`; literal JSX written in the `.mdx` file stays an
+ * `mdxJsxFlowElement` or `mdxJsxTextElement` carrying an `attributes` array.
+ * Visiting only the first kind leaves hand-written anchors unprefixed, which
+ * is the duplicate-id problem this plugin exists to prevent — and is the same
+ * mistake `rehypeScrollableTables` documents in its own header.
  */
+
+/** A literal-JSX node, in either of the two shapes MDX produces. */
+interface JsxElement {
+  type: string
+  name?: string | null
+  attributes?: JsxAttribute[]
+}
+
+interface JsxAttribute {
+  type: string
+  name?: string | null
+  value?: unknown
+}
+
+function isJsxElement(node: unknown): node is JsxElement {
+  if (typeof node !== 'object' || node === null) return false
+  const type = (node as JsxElement).type
+  return type === 'mdxJsxFlowElement' || type === 'mdxJsxTextElement'
+}
+
+/**
+ * Is this JSX node a plain HTML element rather than a React component?
+ *
+ * The distinction matters more than it looks. `<Cite id="dear-bible-teaches-
+ * annihilationism">` appears over forty times in the corpus, and that `id` is
+ * a key into the source registry, not an HTML id — the component resolves it
+ * and renders a link to `/sources/#dear-…`. Prefixing it would break every one
+ * of those citations.
+ *
+ * JSX already draws exactly the line needed: a lower-case tag name is an
+ * intrinsic HTML element, a capitalised one is a component. So `id` on `<h2>`
+ * is an HTML id and `id` on `<Cite>` is that component's own prop.
+ */
+function isIntrinsicElement(node: JsxElement): boolean {
+  const name = node.name
+  if (typeof name !== 'string' || name.length === 0) return false
+  // A fragment (`<>`) has a null name; a member expression (`<Foo.Bar>`) is a
+  // component either way.
+  if (name.includes('.')) return false
+  return name[0] === name[0]?.toLowerCase()
+}
+
+const ARIA_ID_REFERENCES = ['ariaLabelledBy', 'ariaDescribedBy', 'ariaControls']
+/** The same attributes as authors write them in literal JSX. */
+const ARIA_ID_REFERENCES_JSX = ['aria-labelledby', 'aria-describedby', 'aria-controls']
+
 export function rehypePrefixIds(prefix: string) {
   const namespaced = (value: string) => `${prefix}-${value}`
+  const namespacedTokens = (value: string) =>
+    value
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(token => namespaced(token))
+      .join(' ')
+
+  /** A fragment link into this same document, as opposed to `#` or another page. */
+  const isInPageFragment = (href: string) => href.startsWith('#') && href.length > 1
 
   return (tree: Root) => {
-    visit(tree, 'element', (node: Element) => {
-      const properties = node.properties
+    visit(tree, (node: unknown) => {
+      if (isJsxElement(node)) {
+        if (!isIntrinsicElement(node)) return
+        for (const attribute of node.attributes ?? []) {
+          // Only literal string attributes. An expression value is code, and
+          // rewriting it would be guesswork.
+          if (attribute.type !== 'mdxJsxAttribute' || typeof attribute.value !== 'string') continue
+
+          if (attribute.name === 'id' && attribute.value.length > 0) {
+            attribute.value = namespaced(attribute.value)
+          } else if (
+            attribute.name === 'href' &&
+            node.name === 'a' &&
+            isInPageFragment(attribute.value)
+          ) {
+            attribute.value = `#${namespaced(attribute.value.slice(1))}`
+          } else if (
+            attribute.name &&
+            ARIA_ID_REFERENCES_JSX.includes(attribute.name) &&
+            attribute.value.length > 0
+          ) {
+            attribute.value = namespacedTokens(attribute.value)
+          }
+        }
+        return
+      }
+
+      const element = node as Element
+      if (element.type !== 'element') return
+      const properties = element.properties
       if (!properties) return
 
       if (typeof properties.id === 'string' && properties.id.length > 0) {
         properties.id = namespaced(properties.id)
       }
 
-      if (node.tagName === 'a' && typeof properties.href === 'string') {
-        const href = properties.href
-        if (href.startsWith('#') && href.length > 1) {
-          properties.href = `#${namespaced(href.slice(1))}`
+      if (element.tagName === 'a' && typeof properties.href === 'string') {
+        if (isInPageFragment(properties.href)) {
+          properties.href = `#${namespaced(properties.href.slice(1))}`
         }
       }
 
       // Keep ARIA relationships pointing at the ids we just renamed.
       const bag = properties as Record<string, unknown>
-      for (const attribute of ['ariaLabelledBy', 'ariaDescribedBy', 'ariaControls']) {
+      for (const attribute of ARIA_ID_REFERENCES) {
         const value = bag[attribute]
         if (typeof value === 'string' && value.length > 0) {
-          bag[attribute] = value
-            .split(/\s+/)
-            .map((token: string) => namespaced(token))
-            .join(' ')
+          bag[attribute] = namespacedTokens(value)
         }
       }
     })

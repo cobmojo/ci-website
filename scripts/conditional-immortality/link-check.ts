@@ -47,6 +47,26 @@ function collectIds(html: string): Set<string> {
   return ids
 }
 
+/**
+ * Ids used more than once in one document.
+ *
+ * A duplicate id is invalid HTML, and here it has a specific consequence: the
+ * browser scrolls to the first match, so every link into a later copy silently
+ * lands on the earlier one. The continuous edition renders all forty sections
+ * into a single page and they deliberately share heading text — nearly every
+ * section has an "In brief" — so `rehypePrefixIds` namespaces each body. This
+ * is the check that the namespacing actually reached every anchor, rather than
+ * a unit test asserting that a plugin was called.
+ */
+function duplicateIds(html: string): string[] {
+  const seen = new Map<string, number>()
+  for (const match of html.matchAll(/\sid="([^"]+)"/g)) {
+    const id = match[1]
+    if (id) seen.set(id, (seen.get(id) ?? 0) + 1)
+  }
+  return [...seen.entries()].filter(([, count]) => count > 1).map(([id]) => id)
+}
+
 function walk(dir: string, root: string) {
   if (!existsSync(dir)) return
   for (const entry of readdirSync(dir)) {
@@ -152,6 +172,19 @@ for (const page of pages.values()) {
   }
 }
 
+/* No page may use the same id twice. */
+let duplicateCount = 0
+for (const page of pages.values()) {
+  const duplicates = duplicateIds(page.html)
+  duplicateCount += duplicates.length
+  for (const id of duplicates.slice(0, 10)) {
+    errors.push(`${page.route} uses id="${id}" more than once, so links to it land on the first.`)
+  }
+  if (duplicates.length > 10) {
+    errors.push(`${page.route} has ${duplicates.length - 10} further duplicated ids.`)
+  }
+}
+
 /* Every canonical route should be reachable from somewhere. */
 const linked = new Set<string>()
 for (const page of pages.values()) {
@@ -167,6 +200,7 @@ console.log(`  pages            ${pages.size}`)
 console.log(`  internal links   ${internalChecked}`)
 console.log(`  external links   ${externalLinks.size} (not fetched)`)
 console.log(`  orphan pages     ${orphans.length}`)
+console.log(`  duplicated ids   ${duplicateCount}`)
 console.log('')
 
 if (orphans.length > 0) {
