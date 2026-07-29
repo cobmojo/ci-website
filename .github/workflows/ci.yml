@@ -1,0 +1,89 @@
+name: CI
+
+# Every gate this repository has, run on the code as pushed. Until this
+# existed, all of them — formatting, lint, types, content validation, the PII
+# scan, the link check, the bundle budget, 237 unit tests, 186 end-to-end tests
+# and 32 accessibility checks — only ever ran when someone remembered to run
+# them locally.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same branch makes the first run irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Turbo's own telemetry has nothing to tell us and adds a network call.
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    # A cold build of 121 pages plus the full browser suite. Generous, but
+    # finite: a hung run should fail rather than sit for six hours.
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          # Pinned to the version in package.json's packageManager field, so CI
+          # and a developer's machine cannot silently diverge.
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Cached against the lockfile: the browser is ~150 MB and changes only
+      # when @playwright/test does.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      # Formatting, lint, types, content validation, unit tests, the production
+      # build, the PII scan, the link check and the bundle budget. Each of
+      # these fails the job on its own; `validate` chains them in dependency
+      # order, since the last four need the build to exist.
+      - name: Validate
+        run: bun run validate
+
+      - name: End-to-end tests
+        run: bun run test:e2e
+
+      - name: Accessibility tests
+        run: bun run test:a11y
+
+      # Traces and screenshots are retained on failure, and are the only way to
+      # see what a headless browser saw.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/conditional-immortality/playwright-report/
+          retention-days: 14
+
+      - name: Upload traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: apps/conditional-immortality/test-results/
+          retention-days: 14
