@@ -19,3 +19,8 @@ private/source/*.docx
 private/source/*.doc
 .feedback-store/
 reports/
+
+# Next.js regenerates this per-command and its contents differ between
+# `next dev` and `next build`. The stable half lives in
+# apps/conditional-immortality/types/next-env.d.ts, which is committed.
+next-env.d.ts

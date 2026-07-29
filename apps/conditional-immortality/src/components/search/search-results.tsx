@@ -18,14 +18,14 @@ export function Highlighted({ text, terms }: { text: string; terms: readonly str
   const segments = highlightSegments(text, terms)
   return (
     <>
+      {/* The index is the right key here: the segments are a positional
+          partition of one string, so segment n is only ever segment n. */}
       {segments.map((segment, index) =>
         segment.matched ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional by construction
           <mark key={index} className="rounded-sm bg-ochre-soft px-0.5 text-ink">
             {segment.text}
           </mark>
         ) : (
-          // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional by construction
           <span key={index}>{segment.text}</span>
         ),
       )}
