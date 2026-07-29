@@ -14,7 +14,7 @@ import { languageNotes } from '../language/index'
 import { commentLedger, mediaDispositions, migrationTotals } from '../migration/index'
 import { passages, scriptureIndex } from '../passages/index'
 import { revisions } from '../revisions/index'
-import { hasScripture } from '../scripture/web-text'
+import { hasScripture, scriptureReferences } from '../scripture/web-text'
 import { getSource, sources } from '../sources/index'
 import { getTopic, topics } from '../topics/index'
 import { video } from '../video/index'
@@ -128,6 +128,19 @@ describe('cross-references', () => {
       for (const reference of [...section.primaryPassages, ...section.relatedPassages]) {
         expect(parseReference(reference), `${section.id}: ${reference}`).toBeDefined()
       }
+    }
+  })
+
+  it('normalises every reference in the Scripture corpus and index', () => {
+    // `parseReference` bounds a verse by the length of its own chapter. If the
+    // versification table and the corpus ever disagree, the parser starts
+    // rejecting text the site can actually render, and it fails here rather
+    // than on the page.
+    for (const reference of scriptureReferences) {
+      expect(parseReference(reference), `corpus: ${reference}`).toBeDefined()
+    }
+    for (const entry of scriptureIndex) {
+      expect(parseReference(entry.reference), `index: ${entry.reference}`).toBeDefined()
     }
   })
 
