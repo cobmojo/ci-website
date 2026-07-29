@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "conditional-immortality",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["--cwd=apps/conditional-immortality", "run", "dev"],
+      "port": 3210
+    }
+  ]
+}
