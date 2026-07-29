@@ -23,8 +23,9 @@
     "content:audit": "bun run scripts/conditional-immortality/content-audit.ts",
     "content:pii": "bun run scripts/conditional-immortality/pii-scan.ts",
     "content:links": "bun run scripts/conditional-immortality/link-check.ts",
+    "content:bundle": "bun run scripts/conditional-immortality/bundle-budget.ts",
     "source:import": "bun run scripts/conditional-immortality/import-source.ts",
-    "validate": "bun run format:check && bun run lint && bun run typecheck && bun run content:validate && bun run content:audit && bun run test && bun run build && bun run content:pii && bun run content:links",
+    "validate": "bun run format:check && bun run lint && bun run typecheck && bun run content:validate && bun run content:audit && bun run test && bun run build && bun run content:pii && bun run content:links && bun run content:bundle",
     "ci": "bun run validate && bun run test:e2e"
   },
   "devDependencies": {
