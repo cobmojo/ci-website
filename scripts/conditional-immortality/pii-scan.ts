@@ -11,6 +11,25 @@
  * repository ever containing the thing it is protecting.
  *
  * Run after `next build`. Exits non-zero on any hit.
+ *
+ * Two things this scan must get right, both of which it previously did not:
+ *
+ * 1. It has to prove it looked at the build output. The guard used to be
+ *    `if (filesScanned === 0)`, but the same list also held four directories
+ *    that are committed and therefore always present, so the counter was never
+ *    zero. With `.next/` absent — a fresh clone, a failed build, a build made
+ *    somewhere else — the scan read 149 source files, found nothing, and
+ *    printed "No source contact details found in any scanned output". A gate
+ *    that cannot fail is not a gate. Build output is now its own group and an
+ *    empty one is a failure.
+ *
+ * 2. It has to cover everything committed. The old list named four source
+ *    directories, which left out `docs/`, `scripts/`, the root files, and —
+ *    most importantly — `packages/ci-content/migration/`, which holds the
+ *    1,034 migrated comment entries from the source document. That is the
+ *    likeliest place in the repository for a personal detail to be sitting.
+ *    The repository group is now taken from `git ls-files`, so it cannot fall
+ *    behind as the repository grows.
  */
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
@@ -47,14 +66,15 @@ const CANDIDATE_PATTERNS: RegExp[] = [
   /\b\d{10}\b/g,
 ]
 
-const SCAN_DIRECTORIES = [
+/**
+ * The build output. Everything a visitor can actually reach comes from here,
+ * so this is the group the scan exists for — and the group whose absence has
+ * to be an error rather than a quiet zero.
+ */
+const BUILD_OUTPUT_ROOTS = [
   join(APP_ROOT, '.next', 'server'),
   join(APP_ROOT, '.next', 'static'),
   join(APP_ROOT, 'public'),
-  join(REPO_ROOT, 'packages', 'ci-content', 'case'),
-  join(REPO_ROOT, 'packages', 'ci-content', 'appendices'),
-  join(REPO_ROOT, 'packages', 'ci-content', 'src'),
-  join(APP_ROOT, 'src'),
 ]
 
 const TEXT_EXTENSIONS = new Set([
@@ -75,33 +95,36 @@ const TEXT_EXTENSIONS = new Set([
   '.map',
   '.svg',
   '.webmanifest',
+  '.csv',
+  '.yml',
+  '.yaml',
   '',
 ])
 
 interface Hit {
   readonly file: string
   readonly what: string
+  readonly where: string
   readonly context: string
 }
 
 const hits: Hit[] = []
-let filesScanned = 0
 
 function digest(value: string): string {
   return createHash('sha256').update(value.toLowerCase()).digest('hex')
 }
 
-function scanFile(path: string) {
+/** Scan one file. Returns whether it was actually read. */
+function scanFile(path: string, where: string): boolean {
   const ext = extname(path).toLowerCase()
-  if (!TEXT_EXTENSIONS.has(ext)) return
+  if (!TEXT_EXTENSIONS.has(ext)) return false
 
   let content: string
   try {
     content = readFileSync(path, 'utf8')
   } catch {
-    return
+    return false
   }
-  filesScanned += 1
 
   for (const pattern of CANDIDATE_PATTERNS) {
     pattern.lastIndex = 0
@@ -115,15 +138,18 @@ function scanFile(path: string) {
       hits.push({
         file: relative(REPO_ROOT, path),
         what,
+        where,
         // The value itself is never echoed, only its surroundings.
         context: `…${before}[REDACTED]…`,
       })
     }
   }
+  return true
 }
 
-function walk(dir: string) {
-  if (!existsSync(dir)) return
+function walk(dir: string, where: string): number {
+  if (!existsSync(dir)) return 0
+  let scanned = 0
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry === '.git' || entry === 'cache') continue
     const path = join(dir, entry)
@@ -133,12 +159,47 @@ function walk(dir: string) {
     } catch {
       continue
     }
-    if (stats.isDirectory()) walk(path)
-    else scanFile(path)
+    if (stats.isDirectory()) scanned += walk(path, where)
+    else if (scanFile(path, where)) scanned += 1
   }
+  return scanned
 }
 
-for (const dir of SCAN_DIRECTORIES) walk(dir)
+/* ------------------------------------------------------------------ *
+ * Group 1: build output. Must exist, must be non-empty.
+ * ------------------------------------------------------------------ */
+
+let outputFiles = 0
+const missingOutputRoots: string[] = []
+for (const root of BUILD_OUTPUT_ROOTS) {
+  if (!existsSync(root)) missingOutputRoots.push(relative(REPO_ROOT, root))
+  outputFiles += walk(root, 'build output')
+}
+
+/* ------------------------------------------------------------------ *
+ * Group 2: everything committed to the repository.
+ *
+ * Taken from git rather than from a hand-kept list of directories, so a new
+ * directory is covered the day it is added instead of the day someone
+ * remembers to add it here.
+ * ------------------------------------------------------------------ */
+
+function committedFiles(): string[] | undefined {
+  const result = Bun.spawnSync(['git', 'ls-files', '-z'], { cwd: REPO_ROOT, stdout: 'pipe' })
+  if (result.exitCode !== 0) return undefined
+  return new TextDecoder()
+    .decode(result.stdout)
+    .split('\0')
+    .filter(entry => entry.length > 0)
+}
+
+const tracked = committedFiles()
+let repositoryFiles = 0
+if (tracked) {
+  for (const entry of tracked) {
+    if (scanFile(join(REPO_ROOT, entry), 'repository')) repositoryFiles += 1
+  }
+}
 
 /* ------------------------------------------------------------------ *
  * The private archive must stay out of the published app.
@@ -155,6 +216,7 @@ if (existsSync(privateSource) && existsSync(publicDir)) {
     hits.push({
       file: relative(REPO_ROOT, join(publicDir, entry)),
       what: 'private source artefact inside public/',
+      where: 'build output',
       context: 'The raw source material must not be served publicly.',
     })
   }
@@ -162,25 +224,47 @@ if (existsSync(privateSource) && existsSync(publicDir)) {
 
 console.log('PII scan')
 console.log('========')
-console.log(`  files scanned  ${filesScanned}`)
-console.log(
-  `  directories    ${SCAN_DIRECTORIES.filter(existsSync).length} of ${SCAN_DIRECTORIES.length} present`,
-)
+console.log(`  build output   ${outputFiles} file(s)`)
+console.log(`  repository     ${repositoryFiles} file(s)${tracked ? '' : ' (git unavailable)'}`)
 console.log('')
 
-if (filesScanned === 0) {
-  console.error('No files were scanned. Run `bun run build` before the PII scan.')
+/**
+ * Fail closed. Anything that stops this scan seeing the build output means it
+ * has proved nothing, and it must say so rather than report a clean run.
+ */
+if (missingOutputRoots.length > 0) {
+  console.error('Build output is missing, so nothing published has been checked:')
+  for (const root of missingOutputRoots) console.error(`  x ${root}`)
+  console.error('Run `bun run build` before the PII scan.')
+  process.exit(1)
+}
+
+if (outputFiles === 0) {
+  console.error('Build output contains no readable files, so nothing published has been checked.')
+  console.error('Run `bun run build` before the PII scan.')
+  process.exit(1)
+}
+
+if (!tracked) {
+  console.error('`git ls-files` failed, so the committed files have not been checked.')
+  process.exit(1)
+}
+
+if (repositoryFiles === 0) {
+  console.error('No committed files were read, which cannot be right. Refusing to report success.')
   process.exit(1)
 }
 
 if (hits.length > 0) {
   console.error(`${hits.length} leak(s) of source contact details:`)
   for (const hit of hits) {
-    console.error(`  x ${hit.file}`)
+    console.error(`  x ${hit.file}  (${hit.where})`)
     console.error(`      ${hit.what}`)
     console.error(`      ${hit.context}`)
   }
   process.exit(1)
 }
 
-console.log('No source contact details found in any scanned output.')
+console.log(
+  `No source contact details in ${outputFiles} built file(s) or ${repositoryFiles} committed file(s).`,
+)
