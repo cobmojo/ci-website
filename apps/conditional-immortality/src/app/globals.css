@@ -1,0 +1,454 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * Self-hosted fonts.
+ *
+ * Both families are SIL Open Font License 1.1 and are served from this
+ * origin. No request is ever made to a third-party font host at runtime.
+ * `font-display: swap` plus a metric-similar fallback keeps CLS at zero.
+ * ------------------------------------------------------------------ */
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/SourceSerif4-latin-normal.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/SourceSerif4-latin-ext-normal.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: italic;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/SourceSerif4-latin-italic.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: italic;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/SourceSerif4-latin-ext-italic.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/Inter-latin-normal.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/Inter-latin-ext-normal.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ------------------------------------------------------------------ *
+ * Design tokens
+ *
+ * A calm, warm-paper editorial palette. Nothing in the interface conveys
+ * meaning by colour alone: every status, role and comparison also carries
+ * a text label or a shape.
+ * ------------------------------------------------------------------ */
+
+@theme {
+  --color-paper: #f7f4ed;
+  --color-paper-raised: #fffdf8;
+  --color-panel: #eee9df;
+  --color-panel-strong: #e4ddd0;
+  --color-ink: #1c242b;
+  --color-ink-muted: #4c5763;
+  /* The quietest text colour still has to clear 4.5:1 on panel and on
+     panel-strong, which are the darkest surfaces it is ever set on. */
+  --color-ink-subtle: #57606d;
+  --color-navy: #233a4d;
+  --color-navy-deep: #16283a;
+  --color-copper: #9a6431;
+  --color-copper-deep: #7d4f22;
+  --color-border: #d4ccbe;
+  --color-border-strong: #bdb3a1;
+  /* Dark enough to clear 4.5:1 against ochre-soft, which is the only surface
+     it is ever set on. The previous value measured 4.28:1. */
+  --color-ochre: #7b5e1a;
+  --color-ochre-soft: #f4ecd6;
+  --color-affirm: #2f5d50;
+  --color-affirm-soft: #e6efe9;
+  --color-deny: #7a3b3b;
+  --color-deny-soft: #f3e7e4;
+
+  --font-serif: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --text-base: 1.1875rem;
+  --text-base--line-height: 1.68;
+
+  --spacing-measure: 42rem;
+  --spacing-chapter-nav: 14rem;
+  --spacing-page-nav: 13.5rem;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --header-height: 3.75rem;
+    scroll-padding-top: calc(var(--header-height) + 1.5rem);
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    /* Long Greek transliterations and URLs must never widen the page. */
+    overflow-wrap: break-word;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-sans);
+    color: var(--color-navy);
+    font-weight: 600;
+    letter-spacing: -0.011em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: clamp(1.875rem, 1.35rem + 2.1vw, 2.6rem);
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-size: clamp(1.4rem, 1.16rem + 0.95vw, 1.8rem);
+  }
+  h3 {
+    font-size: clamp(1.16rem, 1.05rem + 0.42vw, 1.34rem);
+  }
+  h4 {
+    font-size: 1.06rem;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Underlined links in prose are a readability requirement, not a preference. */
+  a {
+    color: var(--color-copper-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.16em;
+    text-decoration-thickness: 0.06em;
+  }
+
+  a:hover {
+    text-decoration-thickness: 0.11em;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-copper);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: #e5dcc6;
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  /* Anchored headings must clear the sticky header. */
+  [id] {
+    scroll-margin-top: calc(var(--header-height) + 1.25rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Components
+ * ------------------------------------------------------------------ */
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    left: 0.5rem;
+    top: -100%;
+    z-index: 100;
+    background: var(--color-navy);
+    color: #fff;
+    padding: 0.65rem 1rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: top 0.15s ease-in-out;
+  }
+
+  .skip-link:focus {
+    top: 0.5rem;
+  }
+
+  /* Long-form article typography. Applied to rendered MDX bodies. */
+  .prose-article {
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+
+  .prose-article > * + * {
+    margin-block-start: 1.15em;
+  }
+
+  .prose-article h2 {
+    margin-block-start: 2.5rem;
+    margin-block-end: 0.85rem;
+    padding-block-end: 0.4rem;
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .prose-article h3 {
+    margin-block-start: 1.9rem;
+    margin-block-end: 0.6rem;
+  }
+
+  .prose-article h4 {
+    margin-block-start: 1.5rem;
+    margin-block-end: 0.4rem;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .prose-article ul,
+  .prose-article ol {
+    padding-inline-start: 1.5rem;
+  }
+
+  .prose-article ul {
+    list-style: disc;
+  }
+
+  .prose-article ol {
+    list-style: decimal;
+  }
+
+  .prose-article li + li {
+    margin-block-start: 0.5rem;
+  }
+
+  .prose-article li > ul,
+  .prose-article li > ol {
+    margin-block-start: 0.5rem;
+  }
+
+  .prose-article strong {
+    font-weight: 700;
+  }
+
+  .prose-article table {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+    font-family: var(--font-sans);
+    font-size: 0.94rem;
+  }
+
+  .prose-article :is(th, td) {
+    border: 1px solid var(--color-border);
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .prose-article th {
+    background: var(--color-panel);
+    font-weight: 600;
+  }
+
+  .prose-article blockquote {
+    border-inline-start: 3px solid var(--color-border-strong);
+    padding-inline-start: 1.1rem;
+    color: var(--color-ink-muted);
+    font-style: italic;
+  }
+
+  /* Original-language text. Marked up with lang attributes in the DOM. */
+  .lang-grc,
+  .lang-he {
+    font-family: var(--font-serif);
+    font-size: 1.06em;
+  }
+
+  .lang-he {
+    direction: rtl;
+    unicode-bidi: isolate;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Print
+ *
+ * Navigation, dialogs and interactive chrome are removed. Core content,
+ * footnotes and citations are preserved. Link targets are surfaced as text.
+ * ------------------------------------------------------------------ */
+
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  :root {
+    --header-height: 0rem;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11.5pt;
+    line-height: 1.45;
+  }
+
+  .print-hidden,
+  .site-header,
+  .site-footer nav,
+  .chapter-navigation,
+  .on-this-page,
+  .previous-next,
+  .feedback-cta,
+  .search-trigger,
+  .video-embed,
+  dialog,
+  [data-print="hide"] {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* Surface destinations for external links only; internal anchors would
+     produce noise on every cross-reference. */
+  .prose-article a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.82em;
+    word-break: break-all;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: #000 !important;
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  p,
+  li,
+  blockquote,
+  figure,
+  table {
+    break-inside: avoid-page;
+  }
+
+  .print-section-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  details {
+    display: block !important;
+  }
+
+  details > summary {
+    font-weight: 700;
+    list-style: none;
+  }
+
+  details[open] > *,
+  details > * {
+    display: revert !important;
+  }
+
+  .scripture-block {
+    border-inline-start: 2pt solid #000;
+    background: none !important;
+  }
+
+  th {
+    background: #eee !important;
+  }
+}

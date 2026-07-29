@@ -1,0 +1,23 @@
+{
+  "name": "@ci/search",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./build": "./src/build-index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ci/content": "workspace:*",
+    "@ci/content-schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

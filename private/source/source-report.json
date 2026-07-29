@@ -1,0 +1,358 @@
+{
+  "source": "My case for Conditional Immortality.docx",
+  "sha256": "d3e567fd5a945efb2280d058787e808c86109d5ae848744beffafd45cf09187a",
+  "bytes": 305782,
+  "importedAt": "2026-07-29",
+  "paragraphCount": 997,
+  "nonEmptyParagraphs": 904,
+  "tableCount": 3,
+  "hyperlinkInstances": 43,
+  "hyperlinkRelationships": 43,
+  "imageInstances": 8,
+  "mediaFiles": [
+    "word/media/image1.png",
+    "word/media/image2.png",
+    "word/media/image3.png",
+    "word/media/image4.png",
+    "word/media/image5.png",
+    "word/media/image6.png",
+    "word/media/image7.png",
+    "word/media/image8.jpg"
+  ],
+  "commentCount": 30,
+  "uniqueExternalTargets": [
+    "http://rethinkinghell.com",
+    "http://www.prudencetrue.com/images/Irenaeus_Against_Heresies_Book_II.pdf",
+    "https://archive.org/details/aselectlibrary03unknuoft",
+    "https://biblehub.com/greek/apo_575.htm",
+    "https://biblehub.com/hebrew/strongs_2781.htm",
+    "https://medium.com/@edelliott/did-jesus-talk-more-about-hell-than-he-did-heaven-7e6100b4df82",
+    "https://rethinkinghell.com/",
+    "https://rethinkinghell.com/2012/07/17/their-worm-does-not-die-annihilation-and-mark-948/",
+    "https://rethinkinghell.com/2012/11/20/the-fire-is-not-quenched-annihilation-and-mark-948-part-2/",
+    "https://rethinkinghell.com/2016/05/28/what-are-we-to-make-of-finite-sins-against-an-infinite-god/",
+    "https://rethinkinghell.com/2016/11/14/annihilation-in-2-thessalonians-19-part-1-destroyed-by-the-glory-of-his-manifest-presence/",
+    "https://rethinkinghell.com/2016/12/05/annihilation-in-2-thess-1-9-part-2-separation-or-obliteration/",
+    "https://rethinkinghell.com/2017/09/27/introduction-to-evangelical-conditionalism-the-doctrine-of-eternal-torment-was-not-universal-in-the-early-church/",
+    "https://rethinkinghell.com/2018/11/28/weeping-and-gnashing-of-teeth-do-not-indicate-eternal-torment/",
+    "https://rethinkinghell.com/2024/04/21/denominational-doctrine-on-damnation-the-developing-story-of-the-bible-fellowship-church/",
+    "https://tinyurl.com/ECTvsCI",
+    "https://www.3ringbinder.org/uploads/1/9/1/0/1910989/the_bible_teaches_annihilationism__1st_edition_pdf_version__final.pdf",
+    "https://www.afterlife.co.nz/articles/god-alone-is-immortal/",
+    "https://www.biblegateway.com/",
+    "https://www.gty.org/library/sermons-library/80-376/the-truth-about-hell",
+    "https://www.historyinthebible.com/supplementary_pages/NT_books.html#barnabas",
+    "https://www.historyinthebible.com/supplementary_pages/NT_books.html#clement",
+    "https://www.historyinthebible.com/supplementary_pages/NT_books.html#didache",
+    "https://www.historyinthebible.com/supplementary_pages/NT_books.html#ignatius",
+    "https://www.historyinthebible.com/supplementary_pages/NT_books.html#shepherd",
+    "https://www.historyinthebible.com/supplementary_pages/church_fathers.html",
+    "https://www.newadvent.org/summa/2087.htm",
+    "https://www.thegospelcoalition.org/themelios/article/destroyed-for-ever-an-examination-of-the-debates-concerning-annihilation-and-conditional-immortality/",
+    "https://www.truthaccordingtoscripture.com/documents/death/conditional-immortality-wenham.php",
+    "https://www.truthaccordingtoscripture.com/documents/death/immortality-early-church/apostolic-fathers.php",
+    "https://www.youtube.com/@anthemeastside/videos",
+    "https://www.youtube.com/watch?v=AAm5ji95bBM",
+    "https://youtu.be/9fevXbKUKmE",
+    "https://youtu.be/HPNY1uxXhvA",
+    "https://youtu.be/je3AW6QeXzk",
+    "https://youtu.be/nemKBJoCoKI"
+  ],
+  "relationships": {
+    "rId40": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/2016/12/05/annihilation-in-2-thess-1-9-part-2-separation-or-obliteration/",
+      "mode": "External"
+    },
+    "rId42": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/2018/11/28/weeping-and-gnashing-of-teeth-do-not-indicate-eternal-torment/",
+      "mode": "External"
+    },
+    "rId41": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/2016/11/14/annihilation-in-2-thessalonians-19-part-1-destroyed-by-the-glory-of-his-manifest-presence/",
+      "mode": "External"
+    },
+    "rId44": {
+      "type": "hyperlink",
+      "target": "https://www.biblegateway.com/",
+      "mode": "External"
+    },
+    "rId43": {
+      "type": "hyperlink",
+      "target": "https://www.3ringbinder.org/uploads/1/9/1/0/1910989/the_bible_teaches_annihilationism__1st_edition_pdf_version__final.pdf",
+      "mode": "External"
+    },
+    "rId46": {
+      "type": "hyperlink",
+      "target": "https://www.3ringbinder.org/uploads/1/9/1/0/1910989/the_bible_teaches_annihilationism__1st_edition_pdf_version__final.pdf",
+      "mode": "External"
+    },
+    "rId45": {
+      "type": "hyperlink",
+      "target": "http://rethinkinghell.com",
+      "mode": "External"
+    },
+    "rId1": {
+      "type": "theme",
+      "target": "theme/theme1.xml",
+      "mode": "Internal"
+    },
+    "rId2": {
+      "type": "comments",
+      "target": "comments.xml",
+      "mode": "Internal"
+    },
+    "rId3": {
+      "type": "settings",
+      "target": "settings.xml",
+      "mode": "Internal"
+    },
+    "rId4": {
+      "type": "fontTable",
+      "target": "fontTable.xml",
+      "mode": "Internal"
+    },
+    "rId9": {
+      "type": "image",
+      "target": "media/image8.jpg",
+      "mode": "Internal"
+    },
+    "rId48": {
+      "type": "hyperlink",
+      "target": "https://medium.com/@edelliott/did-jesus-talk-more-about-hell-than-he-did-heaven-7e6100b4df82",
+      "mode": "External"
+    },
+    "rId47": {
+      "type": "hyperlink",
+      "target": "https://www.3ringbinder.org/uploads/1/9/1/0/1910989/the_bible_teaches_annihilationism__1st_edition_pdf_version__final.pdf",
+      "mode": "External"
+    },
+    "rId49": {
+      "type": "hyperlink",
+      "target": "https://www.3ringbinder.org/uploads/1/9/1/0/1910989/the_bible_teaches_annihilationism__1st_edition_pdf_version__final.pdf",
+      "mode": "External"
+    },
+    "rId5": {
+      "type": "numbering",
+      "target": "numbering.xml",
+      "mode": "Internal"
+    },
+    "rId6": {
+      "type": "styles",
+      "target": "styles.xml",
+      "mode": "Internal"
+    },
+    "rId7": {
+      "type": "hyperlink",
+      "target": "mailto:[redacted] redacted]",
+      "mode": "External"
+    },
+    "rId8": {
+      "type": "hyperlink",
+      "target": "https://youtu.be/9fevXbKUKmE",
+      "mode": "External"
+    },
+    "rId31": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/2016/05/28/what-are-we-to-make-of-finite-sins-against-an-infinite-god/",
+      "mode": "External"
+    },
+    "rId30": {
+      "type": "hyperlink",
+      "target": "https://www.gty.org/library/sermons-library/80-376/the-truth-about-hell",
+      "mode": "External"
+    },
+    "rId33": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/2012/11/20/the-fire-is-not-quenched-annihilation-and-mark-948-part-2/",
+      "mode": "External"
+    },
+    "rId32": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/2012/07/17/their-worm-does-not-die-annihilation-and-mark-948/",
+      "mode": "External"
+    },
+    "rId35": {
+      "type": "hyperlink",
+      "target": "https://www.3ringbinder.org/uploads/1/9/1/0/1910989/the_bible_teaches_annihilationism__1st_edition_pdf_version__final.pdf",
+      "mode": "External"
+    },
+    "rId34": {
+      "type": "hyperlink",
+      "target": "https://biblehub.com/hebrew/strongs_2781.htm",
+      "mode": "External"
+    },
+    "rId37": {
+      "type": "image",
+      "target": "media/image2.png",
+      "mode": "Internal"
+    },
+    "rId36": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/2024/04/21/denominational-doctrine-on-damnation-the-developing-story-of-the-bible-fellowship-church/",
+      "mode": "External"
+    },
+    "rId39": {
+      "type": "hyperlink",
+      "target": "https://biblehub.com/greek/apo_575.htm",
+      "mode": "External"
+    },
+    "rId38": {
+      "type": "image",
+      "target": "media/image3.png",
+      "mode": "Internal"
+    },
+    "rId20": {
+      "type": "hyperlink",
+      "target": "https://youtu.be/je3AW6QeXzk",
+      "mode": "External"
+    },
+    "rId22": {
+      "type": "hyperlink",
+      "target": "https://www.historyinthebible.com/supplementary_pages/church_fathers.html",
+      "mode": "External"
+    },
+    "rId21": {
+      "type": "hyperlink",
+      "target": "http://www.prudencetrue.com/images/Irenaeus_Against_Heresies_Book_II.pdf",
+      "mode": "External"
+    },
+    "rId24": {
+      "type": "hyperlink",
+      "target": "https://www.historyinthebible.com/supplementary_pages/NT_books.html#didache",
+      "mode": "External"
+    },
+    "rId23": {
+      "type": "hyperlink",
+      "target": "https://www.historyinthebible.com/supplementary_pages/NT_books.html#clement",
+      "mode": "External"
+    },
+    "rId26": {
+      "type": "hyperlink",
+      "target": "https://www.historyinthebible.com/supplementary_pages/NT_books.html#shepherd",
+      "mode": "External"
+    },
+    "rId25": {
+      "type": "hyperlink",
+      "target": "https://www.historyinthebible.com/supplementary_pages/NT_books.html#ignatius",
+      "mode": "External"
+    },
+    "rId28": {
+      "type": "hyperlink",
+      "target": "https://www.afterlife.co.nz/articles/god-alone-is-immortal/",
+      "mode": "External"
+    },
+    "rId27": {
+      "type": "hyperlink",
+      "target": "https://www.historyinthebible.com/supplementary_pages/NT_books.html#barnabas",
+      "mode": "External"
+    },
+    "rId29": {
+      "type": "hyperlink",
+      "target": "https://www.newadvent.org/summa/2087.htm",
+      "mode": "External"
+    },
+    "rId51": {
+      "type": "hyperlink",
+      "target": "https://www.truthaccordingtoscripture.com/documents/death/conditional-immortality-wenham.php",
+      "mode": "External"
+    },
+    "rId50": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/",
+      "mode": "External"
+    },
+    "rId53": {
+      "type": "hyperlink",
+      "target": "https://www.youtube.com/watch?v=AAm5ji95bBM",
+      "mode": "External"
+    },
+    "rId52": {
+      "type": "hyperlink",
+      "target": "https://www.thegospelcoalition.org/themelios/article/destroyed-for-ever-an-examination-of-the-debates-concerning-annihilation-and-conditional-immortality/",
+      "mode": "External"
+    },
+    "rId11": {
+      "type": "hyperlink",
+      "target": "https://youtu.be/9fevXbKUKmE",
+      "mode": "External"
+    },
+    "rId55": {
+      "type": "hyperlink",
+      "target": "https://youtu.be/HPNY1uxXhvA",
+      "mode": "External"
+    },
+    "rId10": {
+      "type": "hyperlink",
+      "target": "https://youtu.be/9fevXbKUKmE",
+      "mode": "External"
+    },
+    "rId54": {
+      "type": "hyperlink",
+      "target": "https://www.youtube.com/@anthemeastside/videos",
+      "mode": "External"
+    },
+    "rId13": {
+      "type": "hyperlink",
+      "target": "https://youtu.be/nemKBJoCoKI",
+      "mode": "External"
+    },
+    "rId57": {
+      "type": "image",
+      "target": "media/image6.png",
+      "mode": "Internal"
+    },
+    "rId12": {
+      "type": "image",
+      "target": "media/image4.png",
+      "mode": "Internal"
+    },
+    "rId56": {
+      "type": "image",
+      "target": "media/image1.png",
+      "mode": "Internal"
+    },
+    "rId15": {
+      "type": "image",
+      "target": "media/image5.png",
+      "mode": "Internal"
+    },
+    "rId59": {
+      "type": "footer",
+      "target": "footer1.xml",
+      "mode": "Internal"
+    },
+    "rId14": {
+      "type": "image",
+      "target": "media/image7.png",
+      "mode": "Internal"
+    },
+    "rId58": {
+      "type": "footer",
+      "target": "footer2.xml",
+      "mode": "Internal"
+    },
+    "rId17": {
+      "type": "hyperlink",
+      "target": "https://archive.org/details/aselectlibrary03unknuoft",
+      "mode": "External"
+    },
+    "rId16": {
+      "type": "hyperlink",
+      "target": "https://tinyurl.com/ECTvsCI",
+      "mode": "External"
+    },
+    "rId19": {
+      "type": "hyperlink",
+      "target": "https://rethinkinghell.com/2017/09/27/introduction-to-evangelical-conditionalism-the-doctrine-of-eternal-torment-was-not-universal-in-the-early-church/",
+      "mode": "External"
+    },
+    "rId18": {
+      "type": "hyperlink",
+      "target": "https://www.truthaccordingtoscripture.com/documents/death/immortality-early-church/apostolic-fathers.php",
+      "mode": "External"
+    }
+  }
+}

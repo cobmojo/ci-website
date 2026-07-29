@@ -1,0 +1,225 @@
+# Maintenance guide
+
+Everything routine you might need to do, and the command that does it.
+
+## Prerequisites
+
+Bun 1.3 or later. `bun install` at the repository root.
+
+```bash
+bun install
+```
+
+## The validation gate
+
+One command runs everything CI runs:
+
+```bash
+bun run validate
+```
+
+That is formatting, lint, typecheck, content validation, the content audit,
+unit tests, the production build, the PII scan and the link check, in that
+order. `bun run ci` adds the end-to-end suite.
+
+Run the pieces individually while working:
+
+```bash
+bun run content:validate   # registry integrity, cross-references, MDX rules
+bun run content:audit      # migration completeness, regenerates ledger exports
+bun run content:pii        # scans built output for source contact details
+bun run content:links      # internal links and fragments in built HTML
+```
+
+`content:pii` and `content:links` read the build output, so run `bun run build`
+first.
+
+---
+
+## Add or edit a case section
+
+Sections are identified by a permanent id that never changes. Titles, slugs and
+routes may be revised; the id may not.
+
+1. Add or edit the entry in `packages/ci-content/src/case/sections.ts`. Every
+   field is validated: a thesis under 40 characters, a missing evidence role or
+   an unknown related section all fail the build with a message naming the
+   section.
+2. Write the body at
+   `packages/ci-content/case/<id-lowercase>-<slug>.mdx`, or
+   `packages/ci-content/appendices/…` for an appendix.
+   The body contains no frontmatter and no `<h1>`. It starts at `## In brief`.
+3. Read `docs/authoring-brief.md` before writing prose. The rules there are
+   enforced: placeholder text, an em dash or an `<h1>` will fail the build.
+4. Record the change in `packages/ci-content/src/revisions/revisions.ts` if it
+   is substantive, and update `lastSubstantiveRevision`.
+
+```bash
+bun run content:validate
+```
+
+### Never type Scripture
+
+Write `<Scripture reference="Mark 9:42-48" />`. The component renders verified
+public-domain text. If the reference is not in the corpus the build fails and
+tells you to add it. Do not work around this by typing the verse.
+
+---
+
+## Add a Scripture passage to the corpus
+
+1. Add the reference to the list in
+   `scripts/conditional-immortality/fetch-scripture.ts`.
+2. Run it. Chapters already retrieved are cached, so only new ones are fetched.
+3. Commit the regenerated `packages/ci-content/src/scripture/web-text.ts`.
+
+---
+
+## Add a key passage page
+
+Only passages with substantial treatment get a page. A passing citation belongs
+in the Scripture index, which is generated from the registry automatically.
+
+Add a record to `packages/ci-content/src/passages/passages.ts`. Required prose:
+`ectReading` and `conditionalistReading` (both substantial), `agreements` (what
+both sides actually accept), and `disagreement` (the single precise point of
+divergence). The route appears automatically.
+
+---
+
+## Add a source
+
+Add a record to `packages/ci-content/src/sources/sources.ts` with an
+`accessedAt` date and a `rightsStatus`. Then add its id to the `sourceIds` of
+every section that cites it. The build checks both directions: a source that
+claims to be cited by S04 must appear in S04's list, and vice versa.
+
+Cite it in prose with `<Cite id="…" locator="page 121" />`. Never leave a bare
+URL in prose.
+
+---
+
+## Add a topic or glossary term
+
+`packages/ci-content/src/topics/topics.ts` and `…/glossary/glossary.ts`.
+
+Topics carry `distinctions`, which is where Hades, Sheol, Gehenna and the lake
+of fire are kept apart from each other and from the English word "hell". Keep
+glossary entries to two or three sentences and link to the topic for depth.
+
+---
+
+## Record a revision
+
+Add to `packages/ci-content/src/revisions/revisions.ts`. Entries appear on the
+section page, on `/corrections/` and at `/changelog/<id>/`.
+
+Never publish a submitter's identity unless the record carries `creditedTo`,
+which requires their explicit consent.
+
+---
+
+## Re-run the source import
+
+Needed when the source document itself changes.
+
+```bash
+bun run source:import                    # uses SOURCE_DOCX_PATH or the default
+bun run source:import path/to/file.docx  # or pass it explicitly
+```
+
+This reads the DOCX package directly, not a converted rendering, and writes the
+inventory, the comment extract, the redacted plain-text rendering and the media
+into `private/source/`. Personal contact details are redacted from every derived
+artefact, and the script verifies the redaction before reporting success. The
+raw DOCX is never copied into the repository.
+
+The reported SHA-256 will differ from the one in `siteConfig.sourceDocument`.
+Update it, then re-run `bun run content:audit` and reconcile any element that
+has lost its destination.
+
+---
+
+## Update the video transcript
+
+The transcript is the author's published caption track, not a reconstruction.
+
+```bash
+bun run scripts/conditional-immortality/import-transcript.ts
+```
+
+Then adjust chapter boundaries in `packages/ci-content/src/video/index.ts` if
+the video changed. Chapters must not overlap, must stay inside the duration and
+may only claim a `sectionIds` mapping where the correspondence is exact. The
+content validation checks all three.
+
+---
+
+## Rebuild search
+
+Nothing to do. The index is built from the content registries during
+`next build` and served as a static asset at `/search-index.json`.
+
+To change ranking, edit the field weights in `packages/ci-search/src/query.ts`.
+To add a synonym group, edit `packages/ci-search/src/synonyms.ts`. Both have
+tests; run `bun run test` in `packages/ci-search`.
+
+---
+
+## Review feedback
+
+Submissions are appended as JSON lines under `FEEDBACK_STORE_DIR`, defaulting to
+`.feedback-store/`, which is git-ignored.
+
+The message body, name and email are never written to logs. Rate limiting is
+per-IP and in-memory; if the site is ever deployed across multiple instances,
+replace `src/lib/rate-limit.ts` with a shared store.
+
+To publish an accepted correction, add a revision record and reference the
+submission id in `sourceSubmissionId`.
+
+---
+
+## Publish a correction
+
+1. Fix the content.
+2. Add a revision record with `issue`, `decision` and a `summary`.
+3. Update `lastSubstantiveRevision` on the section.
+4. `bun run validate`.
+
+The correction appears on the section page, on `/corrections/` and in the
+per-section changelog automatically.
+
+---
+
+## Configuration
+
+Everything works with no environment variables set.
+
+| Variable | Effect if unset |
+|---|---|
+| `NEXT_PUBLIC_SITE_URL` | Canonical URLs fall back to the Vercel URL, then to `http://localhost:3210`. |
+| `FEEDBACK_STORE_DIR` | Submissions are written to `.feedback-store/`. |
+| `FEEDBACK_NOTIFY_EMAIL` | No notification is attempted. Submissions are still persisted. |
+
+Set `NEXT_PUBLIC_SITE_URL` before a production build so canonical URLs, the
+sitemap, Open Graph images and the printed handout's QR code all point at the
+real domain.
+
+---
+
+## Things that will fail the build, by design
+
+- A missing or duplicated permanent section id
+- A duplicated slug or route, or a broken canonical order
+- A related section, source, topic or revision pointing at something that does not exist
+- A Scripture reference that cannot be normalised, or is absent from the corpus
+- A quotation without translation or rights metadata
+- A page without a thesis or a short summary
+- An MDX body with frontmatter, an `<h1>`, an em dash or placeholder text
+- A substantive source element with no destination in the migration ledger
+- The source email address or phone number anywhere in built output
+- A broken internal link or a fragment that does not exist on its target page
+- S17 and S18 reverting to the source document's table-of-contents order
+
+None of these should be suppressed. If one fires, the content is wrong.

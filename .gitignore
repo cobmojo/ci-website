@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.local
+.env*.local
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+
+# Private source material: the original DOCX and any derived private artefacts.
+# See docs/rights-audit.md and /original-document for the rationale.
+private/source/*.docx
+private/source/*.doc
+.feedback-store/
+reports/

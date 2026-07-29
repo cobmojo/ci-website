@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@ci/content-schema": ["../ci-content-schema/src/index.ts"],
+      "@ci/content-schema/bible": ["../ci-content-schema/src/bible.ts"],
+      "@ci/content": ["../ci-content/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

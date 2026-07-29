@@ -1,0 +1,34 @@
+{
+  "name": "@ci/content",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./case": "./src/case/index.ts",
+    "./passages": "./src/passages/index.ts",
+    "./topics": "./src/topics/index.ts",
+    "./sources": "./src/sources/index.ts",
+    "./glossary": "./src/glossary/index.ts",
+    "./revisions": "./src/revisions/index.ts",
+    "./video": "./src/video/index.ts",
+    "./language": "./src/language/index.ts",
+    "./migration": "./src/migration/index.ts",
+    "./mdx": "./src/mdx.ts",
+    "./scripture": "./src/scripture/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ci/content-schema": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "github-slugger": "^2.0.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/.next",
+      "!**/dist",
+      "!**/.turbo",
+      "!**/playwright-report",
+      "!**/test-results",
+      "!**/coverage",
+      "!**/*.mdx",
+      "!packages/ci-content/migration/*.csv",
+      "!apps/conditional-immortality/public"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "error",
+        "useExhaustiveDependencies": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noArrayIndexKey": "off",
+        "noUndeclaredEnvVars": "off"
+      },
+      "style": {
+        "useConst": "error",
+        "noNonNullAssertion": "error",
+        "useTemplate": "error",
+        "noDescendingSpecificity": "off"
+      },
+      "a11y": {
+        "recommended": true,
+        "useKeyWithClickEvents": "off"
+      },
+      "complexity": {
+        "noImportantStyles": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "trailingCommas": "all",
+      "arrowParentheses": "asNeeded"
+    }
+  },
+  "json": {
+    "formatter": {
+      "enabled": true,
+      "indentWidth": 2
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    },
+    "formatter": {
+      "enabled": true
+    }
+  }
+}
