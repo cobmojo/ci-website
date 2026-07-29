@@ -58,7 +58,7 @@ export default function ObjectionsIndexPage() {
               <li
                 key={section.id}
                 id={section.id}
-                className="scroll-mt-24 rounded-md border border-border bg-paper-raised p-5"
+                className="rounded-md border border-border bg-paper-raised p-5"
               >
                 <h3 className="mt-0 mb-2 text-[1.14rem] leading-snug">
                   <Link href={section.route} className="font-sans">

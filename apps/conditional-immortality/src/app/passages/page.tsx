@@ -95,7 +95,7 @@ export default function PassagesIndexPage() {
             key={group.key}
             id={group.key}
             aria-labelledby={`${group.key}-title`}
-            className="mt-10 scroll-mt-24"
+            className="mt-10"
           >
             <h2 id={`${group.key}-title`} className="mt-0 mb-4 text-[1.3rem]">
               {group.label}
@@ -109,7 +109,7 @@ export default function PassagesIndexPage() {
                 <li
                   key={passage.id}
                   id={passage.slug}
-                  className="scroll-mt-24 rounded-md border border-border bg-paper-raised p-5"
+                  className="rounded-md border border-border bg-paper-raised p-5"
                 >
                   <h3 className="mt-0 mb-2 text-[1.1rem]">
                     <Link href={passageRoute(passage)} className="font-sans">

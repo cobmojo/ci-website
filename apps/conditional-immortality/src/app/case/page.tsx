@@ -260,7 +260,7 @@ export default function CaseHubPage() {
               key={bucket.group}
               id={bucket.group}
               aria-labelledby={`${bucket.group}-title`}
-              className="mt-10 scroll-mt-24 first:mt-0"
+              className="mt-10 first:mt-0"
             >
               <h3 id={`${bucket.group}-title`} className="mt-0 mb-1 text-[1.15rem]">
                 {bucket.label}

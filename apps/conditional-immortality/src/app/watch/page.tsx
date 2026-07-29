@@ -171,7 +171,7 @@ export default function WatchPage() {
             </p>
 
             {segments.map(segment => (
-              <section key={segment.id} id={segment.id} className="mt-8 scroll-mt-28">
+              <section key={segment.id} id={segment.id} className="mt-8">
                 <h3 className="mt-0 mb-2 text-[1.08rem]">
                   <Link href={`?t=${segment.start}`} className="no-underline hover:underline">
                     <time

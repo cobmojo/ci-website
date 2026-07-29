@@ -51,6 +51,7 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
 
           <OnThisPage
             headings={headings}
+            titleId="on-this-page-inline"
             className="mb-8 rounded-md border border-border bg-paper-raised p-4 xl:hidden print:hidden"
           />
 
@@ -94,10 +95,10 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
 
           {sources.length > 0 ? (
             <section
-              aria-labelledby="sources-and-notes"
+              aria-labelledby="page-sources-cited"
               className="mt-10 border-t border-border pt-6"
             >
-              <h2 id="sources-and-notes" className="mt-0 mb-3 text-[1.18rem]">
+              <h2 id="page-sources-cited" className="mt-0 mb-3 text-[1.18rem]">
                 Sources cited on this page
               </h2>
               <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">
@@ -173,6 +174,7 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
 
         <OnThisPage
           headings={headings}
+          titleId="on-this-page-sidebar"
           className="hidden xl:block xl:sticky xl:top-[calc(var(--header-height)+1.5rem)] xl:max-h-[calc(100dvh-var(--header-height)-3rem)] xl:overflow-y-auto print:hidden"
         />
       </div>

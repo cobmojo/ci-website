@@ -184,7 +184,7 @@ function languageDocs(): SearchDoc[] {
   return languageNotes.map(note => ({
     id: `language:${note.id}`,
     type: 'language-note',
-    route: `/glossary/#${note.id}`,
+    route: `/glossary/#note-${note.id}`,
     title: `${note.transliteration} (${note.lemma})`,
     breadcrumb: 'Language note',
     summary: note.gloss,

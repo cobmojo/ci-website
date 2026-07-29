@@ -88,7 +88,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
           </header>
 
           <section aria-labelledby="the-text">
-            <h2 id="the-text" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+            <h2 id="the-text" className="mt-0 mb-3 text-[1.25rem]">
               The text
             </h2>
             {passage.quotations.map(quotation => (
@@ -97,7 +97,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
           </section>
 
           <section aria-labelledby="immediate-context" className="mt-10">
-            <h2 id="immediate-context" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+            <h2 id="immediate-context" className="mt-0 mb-3 text-[1.25rem]">
               The immediate context
             </h2>
             <p className="m-0 text-[1.05rem] leading-[1.65]">{passage.immediateContext}</p>
@@ -105,7 +105,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
 
           {passage.canonicalContext ? (
             <section aria-labelledby="canonical-context" className="mt-10">
-              <h2 id="canonical-context" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+              <h2 id="canonical-context" className="mt-0 mb-3 text-[1.25rem]">
                 Where it sits in the canon
               </h2>
               <p className="m-0 text-[1.05rem] leading-[1.65]">{passage.canonicalContext}</p>
@@ -113,7 +113,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
           ) : null}
 
           <section aria-labelledby="why-it-matters" className="mt-10">
-            <h2 id="why-it-matters" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+            <h2 id="why-it-matters" className="mt-0 mb-3 text-[1.25rem]">
               Why it matters
             </h2>
             <p className="m-0 text-[1.05rem] leading-[1.65]">{passage.whyItMatters}</p>
@@ -122,14 +122,14 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
           {/* -------------------------------------------------------------- */}
 
           <section aria-labelledby="how-it-is-interpreted" className="mt-12">
-            <h2 id="how-it-is-interpreted" className="mt-0 mb-4 scroll-mt-24 text-[1.25rem]">
+            <h2 id="how-it-is-interpreted" className="mt-0 mb-4 text-[1.25rem]">
               How the passage is interpreted
             </h2>
 
             <div className="rounded-md border border-border-strong bg-panel p-4 sm:p-5">
               <h3
                 id="ect-reading"
-                className="mt-0 mb-2 scroll-mt-24 font-sans text-[0.95rem] font-semibold tracking-wide text-navy uppercase"
+                className="mt-0 mb-2 font-sans text-[0.95rem] font-semibold tracking-wide text-navy uppercase"
               >
                 <span aria-hidden="true">▣ </span>
                 The eternal conscious torment reading
@@ -140,7 +140,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
             <div className="mt-4 rounded-md border border-copper/35 bg-paper-raised p-4 sm:p-5">
               <h3
                 id="conditionalist-reading"
-                className="mt-0 mb-2 scroll-mt-24 font-sans text-[0.95rem] font-semibold tracking-wide text-copper-deep uppercase"
+                className="mt-0 mb-2 font-sans text-[0.95rem] font-semibold tracking-wide text-copper-deep uppercase"
               >
                 <span aria-hidden="true">◈ </span>
                 The conditionalist reading
@@ -151,7 +151,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
             <div className="mt-4 rounded-md border border-border bg-affirm-soft p-4 sm:p-5">
               <h3
                 id="where-the-readings-agree"
-                className="mt-0 mb-2 scroll-mt-24 font-sans text-[0.95rem] font-semibold tracking-wide text-affirm uppercase"
+                className="mt-0 mb-2 font-sans text-[0.95rem] font-semibold tracking-wide text-affirm uppercase"
               >
                 <span aria-hidden="true">✓ </span>
                 Where the readings agree
@@ -166,7 +166,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
             <div className="mt-4 rounded-md border border-border bg-ochre-soft p-4 sm:p-5">
               <h3
                 id="where-the-disagreement-lies"
-                className="mt-0 mb-2 scroll-mt-24 font-sans text-[0.95rem] font-semibold tracking-wide text-ochre uppercase"
+                className="mt-0 mb-2 font-sans text-[0.95rem] font-semibold tracking-wide text-ochre uppercase"
               >
                 <span aria-hidden="true">! </span>
                 Where the disagreement lies
@@ -179,7 +179,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
 
           {passage.languageNotes.length > 0 ? (
             <section aria-labelledby="language-notes" className="mt-12">
-              <h2 id="language-notes" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+              <h2 id="language-notes" className="mt-0 mb-3 text-[1.25rem]">
                 Notes on the wording
               </h2>
               <ul className="m-0 space-y-2 pl-5 text-[1.02rem] leading-[1.6]">
@@ -196,7 +196,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
 
           {passage.notes.length > 0 ? (
             <section aria-labelledby="editorial-notes" className="mt-10">
-              <h2 id="editorial-notes" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+              <h2 id="editorial-notes" className="mt-0 mb-3 text-[1.25rem]">
                 Editorial notes
               </h2>
               <ul className="m-0 space-y-2 pl-5 text-[1.02rem] leading-[1.6]">
@@ -210,7 +210,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
           {/* -------------------------------------------------------------- */}
 
           <section aria-labelledby="used-in-the-case" className="mt-12 border-t border-border pt-6">
-            <h2 id="used-in-the-case" className="mt-0 mb-3 scroll-mt-24 text-[1.2rem]">
+            <h2 id="used-in-the-case" className="mt-0 mb-3 text-[1.2rem]">
               Where this passage appears in the case
             </h2>
             {usedIn.length > 0 ? (
@@ -237,7 +237,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
 
           {related.length > 0 ? (
             <section aria-labelledby="related-passages" className="mt-10">
-              <h2 id="related-passages" className="mt-0 mb-3 scroll-mt-24 text-[1.2rem]">
+              <h2 id="related-passages" className="mt-0 mb-3 text-[1.2rem]">
                 Related passages
               </h2>
               <ul className="m-0 list-none space-y-2 p-0 font-sans text-[0.95rem]">
@@ -255,7 +255,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
 
           {sources.length > 0 ? (
             <section aria-labelledby="passage-sources" className="mt-10">
-              <h2 id="passage-sources" className="mt-0 mb-3 scroll-mt-24 text-[1.2rem]">
+              <h2 id="passage-sources" className="mt-0 mb-3 text-[1.2rem]">
                 Sources consulted for this passage
               </h2>
               <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">

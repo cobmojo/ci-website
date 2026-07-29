@@ -160,7 +160,7 @@ export default function SourcesPage() {
                   data-source-entry
                   data-source-type={source.type}
                   data-source-perspective={perspectiveValue(source.perspective)}
-                  className="scroll-mt-24 rounded-md border border-border bg-paper-raised p-5"
+                  className="rounded-md border border-border bg-paper-raised p-5"
                 >
                   <h3 className="mt-0 mb-1 text-[1.08rem] leading-snug">
                     {source.author ? (

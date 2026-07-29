@@ -125,7 +125,7 @@ export default function GlossaryPage() {
         {/* ---------------------------------------------------------------- */}
 
         <section aria-labelledby="terms-title" className="mt-12">
-          <h2 id="terms-title" className="mt-0 mb-4 scroll-mt-24 text-[1.3rem]">
+          <h2 id="terms-title" className="mt-0 mb-4 text-[1.3rem]">
             Terms
           </h2>
 
@@ -134,7 +134,7 @@ export default function GlossaryPage() {
               key={group.letter}
               id={`letter-${group.letter.toLowerCase()}`}
               aria-labelledby={`letter-${group.letter.toLowerCase()}-title`}
-              className="mt-8 scroll-mt-24 first:mt-0"
+              className="mt-8 first:mt-0"
             >
               <h3
                 id={`letter-${group.letter.toLowerCase()}-title`}
@@ -150,7 +150,7 @@ export default function GlossaryPage() {
                     <li
                       key={term.id}
                       id={term.id}
-                      className="scroll-mt-24 rounded-md border border-border bg-paper-raised p-5"
+                      className="rounded-md border border-border bg-paper-raised p-5"
                     >
                       <h4 className="mt-0 mb-1 text-[1.05rem]">
                         {term.term}
@@ -189,7 +189,7 @@ export default function GlossaryPage() {
         <section
           aria-labelledby="language-notes-title"
           id="language-notes"
-          className="mt-16 scroll-mt-24 border-t border-border pt-8"
+          className="mt-16 border-t border-border pt-8"
         >
           <h2 id="language-notes-title" className="mt-0 mb-3 text-[1.3rem]">
             Original-language notes
@@ -206,8 +206,8 @@ export default function GlossaryPage() {
             {languageNotes.map(note => (
               <li
                 key={note.id}
-                id={note.id}
-                className="scroll-mt-24 rounded-md border border-border bg-paper-raised p-5"
+                id={`note-${note.id}`}
+                className="rounded-md border border-border bg-paper-raised p-5"
               >
                 <h3 className="mt-0 mb-2 text-[1.12rem]">
                   <OriginalText text={note.lemma} lang={note.lang} />

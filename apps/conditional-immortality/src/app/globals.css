@@ -213,10 +213,12 @@
     border-collapse: collapse;
   }
 
-  /* Anchored headings must clear the sticky header. */
-  [id] {
-    scroll-margin-top: calc(var(--header-height) + 1.25rem);
-  }
+  /*
+   * Anchored headings clear the sticky header via `scroll-padding-top` on the
+   * scroll container alone. Adding `scroll-margin-top` here as well would
+   * stack the two offsets, which pushed the target 119px down the page and ate
+   * a third of a landscape phone viewport.
+   */
 
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -311,12 +313,38 @@
     font-weight: 700;
   }
 
-  .prose-article table {
-    display: block;
+  /*
+   * Tables stay tables.
+   *
+   * `display: block` would make a wide table scroll, but it also strips the
+   * element's implicit ARIA table role, and a screen reader then loses every
+   * row and column relationship. The scrolling belongs to the wrapper that
+   * `rehypeScrollableTables` puts around each table, never to the table itself.
+   */
+  .table-scroll {
     overflow-x: auto;
+    margin-block: 1.5rem;
+    /* Momentum scrolling on touch, without hijacking the page scroll. */
+    overscroll-behavior-x: contain;
+  }
+
+  /* The wrapper is focusable so it can be scrolled from the keyboard. Only
+     show the focus ring when it is reached by keyboard, not by pointer. */
+  .table-scroll:focus-visible {
+    outline: 3px solid var(--color-copper);
+    outline-offset: 2px;
+  }
+
+  .prose-article table {
     width: 100%;
     font-family: var(--font-sans);
     font-size: 0.94rem;
+  }
+
+  /* Cells should not collapse to one character per line on a narrow screen.
+     Below this the wrapper scrolls instead, which is the readable trade. */
+  .table-scroll :is(th, td) {
+    min-width: 7rem;
   }
 
   .prose-article :is(th, td) {

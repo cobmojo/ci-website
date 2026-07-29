@@ -141,7 +141,7 @@ export default function ScriptureIndexPage() {
             key={testament.key}
             id={testament.key}
             aria-labelledby={`${testament.key}-title`}
-            className="mt-12 scroll-mt-24"
+            className="mt-12"
           >
             <h2 id={`${testament.key}-title`} className="mt-0 mb-4 text-[1.3rem]">
               {testament.label}
@@ -156,7 +156,7 @@ export default function ScriptureIndexPage() {
                 id={group.anchor}
                 data-book-group
                 aria-labelledby={`${group.anchor}-title`}
-                className="mt-8 scroll-mt-24 first:mt-0"
+                className="mt-8 first:mt-0"
               >
                 <h3 id={`${group.anchor}-title`} className="mt-0 mb-2 text-[1.08rem]">
                   {group.book}

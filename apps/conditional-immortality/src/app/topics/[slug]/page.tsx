@@ -118,7 +118,7 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
 
           {topic.distinctions.length > 0 ? (
             <section aria-labelledby="what-it-is-not" className="mt-10">
-              <h2 id="what-it-is-not" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+              <h2 id="what-it-is-not" className="mt-0 mb-3 text-[1.25rem]">
                 What this is not
               </h2>
               <p className="m-0 mb-3 text-[1rem] text-ink-muted">
@@ -135,7 +135,7 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
 
           {topic.principalPassages.length > 0 ? (
             <section aria-labelledby="principal-passages" className="mt-10">
-              <h2 id="principal-passages" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+              <h2 id="principal-passages" className="mt-0 mb-3 text-[1.25rem]">
                 Principal passages
               </h2>
               <ul className="m-0 list-none space-y-1 p-0 font-sans text-[0.95rem]">
@@ -162,7 +162,7 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
 
           {relatedSections.length > 0 ? (
             <section aria-labelledby="where-it-is-argued" className="mt-10">
-              <h2 id="where-it-is-argued" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+              <h2 id="where-it-is-argued" className="mt-0 mb-3 text-[1.25rem]">
                 Where this is argued in the case
               </h2>
               <SectionList sections={relatedSections} />
@@ -171,7 +171,7 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
 
           {relatedObjections.length > 0 ? (
             <section aria-labelledby="related-objections" className="mt-10">
-              <h2 id="related-objections" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+              <h2 id="related-objections" className="mt-0 mb-3 text-[1.25rem]">
                 Objections that turn on this
               </h2>
               <SectionList sections={relatedObjections} />
@@ -180,7 +180,7 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
 
           {relatedTopics.length > 0 ? (
             <section aria-labelledby="related-topics" className="mt-10">
-              <h2 id="related-topics" className="mt-0 mb-3 scroll-mt-24 text-[1.25rem]">
+              <h2 id="related-topics" className="mt-0 mb-3 text-[1.25rem]">
                 Related topics
               </h2>
               <ul className="m-0 list-none space-y-1 p-0 font-sans text-[0.95rem]">
@@ -209,7 +209,7 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
 
           {sources.length > 0 ? (
             <section aria-labelledby="topic-sources" className="mt-10 border-t border-border pt-6">
-              <h2 id="topic-sources" className="mt-0 mb-3 scroll-mt-24 text-[1.2rem]">
+              <h2 id="topic-sources" className="mt-0 mb-3 text-[1.2rem]">
                 Sources for this topic
               </h2>
               <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">

@@ -14,6 +14,8 @@ import {
   Hebrew,
 } from '@/components/content/language'
 import { Scripture, TranslationNote } from '@/components/content/scripture'
+import { rehypePrefixIds } from '@/lib/rehype-prefix-ids'
+import { rehypeScrollableTables } from '@/lib/rehype-scrollable-tables'
 
 /**
  * Anchor-linked headings.
@@ -58,23 +60,18 @@ function InternalOrExternalLink({ href, children, ...rest }: ComponentPropsWitho
 
 const components = {
   h2: ({ children, id, ...rest }: ComponentPropsWithoutRef<'h2'>) => (
-    <h2 id={id} className="group scroll-mt-24" {...rest}>
+    <h2 id={id} className="group" {...rest}>
       {children}
       <HeadingAnchor id={id} />
     </h2>
   ),
   h3: ({ children, id, ...rest }: ComponentPropsWithoutRef<'h3'>) => (
-    <h3 id={id} className="group scroll-mt-24" {...rest}>
+    <h3 id={id} className="group" {...rest}>
       {children}
       <HeadingAnchor id={id} />
     </h3>
   ),
   a: InternalOrExternalLink,
-  table: (props: ComponentPropsWithoutRef<'table'>) => (
-    <div className="my-6 overflow-x-auto">
-      <table {...props} />
-    </div>
-  ),
   Scripture,
   TranslationNote,
   Callout,
@@ -94,7 +91,18 @@ const components = {
  * a handful of server components, so an article page ships no client JavaScript
  * for its prose and remains fully readable with scripting disabled.
  */
-export function MdxContent({ source }: { source: string }) {
+export function MdxContent({
+  source,
+  idPrefix,
+}: {
+  source: string
+  /**
+   * Namespace every id and fragment link in this body. Needed only where more
+   * than one body shares a document, as on the continuous edition, since the
+   * sections deliberately reuse heading text.
+   */
+  idPrefix?: string
+}) {
   return (
     <MDXRemote
       source={source}
@@ -103,7 +111,13 @@ export function MdxContent({ source }: { source: string }) {
         parseFrontmatter: false,
         mdxOptions: {
           remarkPlugins: [remarkGfm],
-          rehypePlugins: [rehypeSlug],
+          // Unified calls a plugin with its options and uses the return value
+          // as the transformer, so options go in a tuple. Passing an
+          // already-applied factory hands it the transformer instead, which it
+          // then calls with no tree.
+          rehypePlugins: idPrefix
+            ? [rehypeSlug, rehypeScrollableTables, [rehypePrefixIds, idPrefix]]
+            : [rehypeSlug, rehypeScrollableTables],
         },
       }}
     />

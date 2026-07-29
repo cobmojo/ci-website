@@ -136,7 +136,7 @@ export default function FullCasePage() {
               </p>
               <h2
                 id={item.section.id}
-                className="mt-0 mb-3 scroll-mt-28 text-[1.7rem] leading-tight sm:text-[2.05rem]"
+                className="mt-0 mb-3 text-[1.7rem] leading-tight sm:text-[2.05rem]"
               >
                 {item.section.title}
               </h2>
@@ -148,7 +148,7 @@ export default function FullCasePage() {
                 className="prose-article article-body max-w-[var(--spacing-measure)]"
                 data-section-id={item.section.id}
               >
-                <MdxContent source={item.body} />
+                <MdxContent source={item.body} idPrefix={item.section.id.toLowerCase()} />
               </article>
 
               <p className="mt-5 mb-0 font-sans text-[0.85rem] text-ink-subtle">
@@ -162,10 +162,7 @@ export default function FullCasePage() {
             aria-labelledby="bibliography"
             className="print-section-break mt-12 border-t border-border pt-8"
           >
-            <h2
-              id="bibliography"
-              className="mt-0 mb-3 scroll-mt-28 text-[1.7rem] sm:text-[2.05rem]"
-            >
+            <h2 id="bibliography" className="mt-0 mb-3 text-[1.7rem] sm:text-[2.05rem]">
               Bibliography
             </h2>
             <p className="m-0 mb-5 max-w-[var(--spacing-measure)] text-[1.06rem] text-ink-muted">

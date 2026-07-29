@@ -145,15 +145,23 @@ export function ArticleHeader({
 export function OnThisPage({
   headings,
   className,
+  titleId = 'on-this-page-title',
 }: {
   headings: readonly ExtractedHeading[]
   className?: string
+  /**
+   * This component is rendered twice on wide screens, once for the sidebar
+   * and once inline, so the heading id has to differ between them. A repeated
+   * id makes `aria-labelledby` resolve against the hidden copy and leaves the
+   * anchor unreachable.
+   */
+  titleId?: string
 }) {
   if (headings.length < 2) return null
   return (
-    <nav aria-labelledby="on-this-page-title" className={`on-this-page ${className ?? ''}`}>
+    <nav aria-labelledby={titleId} className={`on-this-page ${className ?? ''}`}>
       <h2
-        id="on-this-page-title"
+        id={titleId}
         className="mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
       >
         On this page
