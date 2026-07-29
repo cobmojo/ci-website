@@ -365,3 +365,345 @@ test.describe('data tables keep their semantics while still scrolling', () => {
     })
   }
 })
+
+/* ------------------------------------------------------------------ *
+ * Keyboard-reachable scroll regions
+ *
+ * WCAG 2.1.1 requires that anything a pointer can scroll, a keyboard can
+ * scroll too. A `div` with `overflow-x: auto` is not focusable by default, so
+ * a keyboard-only reader can never see the columns past the right edge.
+ * ------------------------------------------------------------------ */
+
+test.describe('every horizontally scrolling region can be reached by keyboard', () => {
+  const CASES = [
+    { route: '/start/compare-the-views/', width: 768, height: 1024 },
+    { route: '/scripture/', width: 320, height: 568 },
+    { route: '/original-document/', width: 320, height: 568 },
+    { route: '/case/biblical-language/body-and-soul/', width: 375, height: 812 },
+    { route: '/appendix/afterlife-odds/', width: 375, height: 812 },
+    { route: '/full-case/', width: 375, height: 812 },
+  ]
+
+  for (const testCase of CASES) {
+    test(`${testCase.route} at ${testCase.width}px`, async ({ page }) => {
+      await page.setViewportSize({ width: testCase.width, height: testCase.height })
+      await page.goto(testCase.route)
+      await settle(page)
+
+      const unreachable = await page.evaluate(() => {
+        const offenders: string[] = []
+
+        for (const element of Array.from(document.querySelectorAll<HTMLElement>('*'))) {
+          // Only regions that genuinely scroll sideways right now.
+          if (element.scrollWidth <= element.clientWidth + 1) continue
+          const overflowX = getComputedStyle(element).overflowX
+          if (overflowX !== 'auto' && overflowX !== 'scroll') continue
+          // The page scroller itself is handled by the browser.
+          if (element === document.body || element === document.documentElement) continue
+
+          const tabIndex = element.getAttribute('tabindex')
+          const focusable = tabIndex !== null && Number(tabIndex) >= 0
+          if (focusable) continue
+
+          const classes = element.className
+            ? `.${String(element.className).trim().split(/\s+/).slice(0, 2).join('.')}`
+            : ''
+          offenders.push(
+            `${element.tagName.toLowerCase()}${classes} scrolls ${element.scrollWidth - element.clientWidth}px but has no tabindex`,
+          )
+        }
+
+        return [...new Set(offenders)]
+      })
+
+      expect(unreachable, `unreachable scroll regions on ${testCase.route}`).toEqual([])
+    })
+  }
+})
+
+/* ------------------------------------------------------------------ *
+ * Line length
+ *
+ * Long measures are hard to read: the eye loses its place returning to the
+ * start of the next line. Body prose on this site is capped near 70
+ * characters. Supporting text is allowed to run wider, but not without limit.
+ * ------------------------------------------------------------------ */
+
+const MAX_CHARACTERS_PER_LINE = 90
+
+test.describe('no prose runs to an unreadable measure', () => {
+  const WIDE_VIEWPORTS = [
+    { width: 1280, height: 800 },
+    { width: 1440, height: 900 },
+    { width: 1920, height: 1080 },
+  ]
+
+  for (const viewport of WIDE_VIEWPORTS) {
+    test(`at ${viewport.width}px`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+
+      const failures: string[] = []
+      for (const route of ROUTES) {
+        await page.goto(route)
+        await settle(page)
+
+        const wide = await page.evaluate(maxChars => {
+          const canvas = document.createElement('canvas')
+          const context = canvas.getContext('2d')
+          if (!context) return []
+
+          const offenders: { selector: string; chars: number; snippet: string }[] = []
+          const candidates = document.querySelectorAll<HTMLElement>('p, li, dd, blockquote')
+
+          for (const element of Array.from(candidates)) {
+            const text = (element.textContent ?? '').trim()
+            // Short strings never form a long line however wide the box is.
+            if (text.length < 200) continue
+            // Only leaf-ish prose, not wrappers that happen to contain text.
+            if (element.querySelector('p, li, dd, blockquote, table')) continue
+
+            // The element's box is only the line length if the text actually
+            // flows across it. A flex or grid row concatenates the text of
+            // several narrower children, so measuring its width would blame
+            // the container for a line that is never that long.
+            const hasBlockChild = Array.from(element.children).some(child => {
+              const display = getComputedStyle(child).display
+              return !display.startsWith('inline') && display !== 'contents'
+            })
+            if (hasBlockChild) continue
+
+            const rect = element.getBoundingClientRect()
+            if (rect.width === 0) continue
+
+            const style = getComputedStyle(element)
+            context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+            // Average advance over a representative sample of English text.
+            const sample = 'abcdefghijklmnopqrstuvwxyz ETAOIN SHRDLU ,.'
+            const averageAdvance = context.measureText(sample).width / sample.length
+            if (!averageAdvance) continue
+
+            const chars = rect.width / averageAdvance
+            if (chars <= maxChars) continue
+
+            const classes = element.className
+              ? `.${String(element.className).trim().split(/\s+/).slice(0, 2).join('.')}`
+              : ''
+            offenders.push({
+              selector: `${element.tagName.toLowerCase()}${classes}`,
+              chars: Math.round(chars),
+              snippet: text.slice(0, 55),
+            })
+          }
+
+          return offenders
+        }, MAX_CHARACTERS_PER_LINE)
+
+        for (const offender of wide) {
+          failures.push(
+            `  ${route}: ${offender.selector} runs ${offender.chars}ch "${offender.snippet}"`,
+          )
+        }
+      }
+
+      expect([...new Set(failures)].join('\n'), `over ${MAX_CHARACTERS_PER_LINE}ch`).toBe('')
+    })
+  }
+})
+
+/* ------------------------------------------------------------------ *
+ * The comparison of the three views
+ *
+ * This page renders its comparison twice, as a table for wide screens and as
+ * stacked groups for narrow ones. Exactly one must be visible, and whichever
+ * is showing must fit the space it is given: a table forced to scroll takes
+ * its caption with it, and the caption is what tells a screen reader what the
+ * table is.
+ * ------------------------------------------------------------------ */
+
+test.describe('the comparison of the three views fits its container', () => {
+  for (const width of [320, 375, 640, 767, 768, 800, 819, 820, 1024, 1280, 1440]) {
+    test(`at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto('/start/compare-the-views/')
+      await settle(page)
+
+      const state = await page.evaluate(() => {
+        const isVisible = (element: Element) => {
+          const rect = element.getBoundingClientRect()
+          return rect.width > 0 && rect.height > 0
+        }
+
+        const tables = Array.from(document.querySelectorAll('table')).filter(isVisible)
+        const stacked = Array.from(document.querySelectorAll('dl')).filter(isVisible)
+
+        const table = tables[0]
+        if (!table) return { tables: tables.length, stacked: stacked.length, clipped: 0 }
+
+        const wrapper = table.parentElement
+        const forced = wrapper ? wrapper.scrollWidth - wrapper.clientWidth : 0
+        return {
+          tables: tables.length,
+          stacked: stacked.length,
+          clipped: forced > 1 ? forced : 0,
+        }
+      })
+
+      // Exactly one presentation, never both and never neither.
+      const showing = (state.tables > 0 ? 1 : 0) + (state.stacked > 0 ? 1 : 0)
+      expect(showing, `table:${state.tables} stacked:${state.stacked} at ${width}px`).toBe(1)
+
+      // And whichever is showing must fit.
+      expect(
+        state.clipped,
+        `the comparison table is forced to scroll ${state.clipped}px at ${width}px, which clips its caption`,
+      ).toBe(0)
+    })
+  }
+})
+
+/* ------------------------------------------------------------------ *
+ * Case map legibility
+ *
+ * Text inside an SVG is sized in user units, so it shrinks with the diagram.
+ * Below a certain width the labels become unreadable, and because they are
+ * presentation attributes they also ignore the reader's own text-size
+ * setting. Where the diagram cannot be read it should not be shown: the
+ * nested list beneath it carries exactly the same information.
+ * ------------------------------------------------------------------ */
+
+const MIN_LEGIBLE_PX = 12
+
+test.describe('the case map is legible wherever it is shown', () => {
+  for (const width of [320, 375, 430, 768, 820, 1024, 1280, 1440, 1920]) {
+    test(`at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto('/start/case-map/')
+      await settle(page)
+
+      const state = await page.evaluate(() => {
+        const svg = document.querySelector('svg[role="img"]')
+        const visible = svg ? svg.getBoundingClientRect().width > 0 : false
+
+        let smallest = Number.POSITIVE_INFINITY
+        if (svg && visible) {
+          const matrix = (svg as SVGGraphicsElement).getScreenCTM()
+          const scale = matrix ? matrix.a : 1
+          for (const text of Array.from(svg.querySelectorAll('text'))) {
+            const declared = Number.parseFloat(
+              text.getAttribute('font-size') ?? getComputedStyle(text).fontSize,
+            )
+            if (Number.isFinite(declared)) smallest = Math.min(smallest, declared * scale)
+          }
+        }
+
+        // The list equivalent must always be present, diagram or not.
+        const listItems = document.querySelectorAll('[data-case-map-list] a').length
+
+        return {
+          diagramVisible: visible,
+          smallestTextPx: Number.isFinite(smallest) ? smallest : null,
+          listItems,
+        }
+      })
+
+      // The accessible equivalent is never optional.
+      expect(state.listItems, 'the case map list equivalent must always render').toBeGreaterThan(20)
+
+      if (state.diagramVisible && state.smallestTextPx !== null) {
+        expect(
+          state.smallestTextPx,
+          `smallest diagram label renders at ${state.smallestTextPx.toFixed(2)}px at ${width}px`,
+        ).toBeGreaterThanOrEqual(MIN_LEGIBLE_PX)
+      }
+    })
+  }
+})
+
+/* ------------------------------------------------------------------ *
+ * Touch target spacing
+ *
+ * WCAG 2.2 SC 2.5.8 asks for 24 by 24 CSS pixels, or enough spacing that a
+ * 24 pixel circle centred on each target does not overlap its neighbour.
+ * There is an exception for targets inline in a sentence, but "arguably
+ * exempt" is not a standard worth relying on, so the site clears the spacing
+ * requirement outright.
+ * ------------------------------------------------------------------ */
+
+test.describe('adjacent links keep 24px of spacing', () => {
+  for (const viewport of [
+    { width: 375, height: 812 },
+    { width: 430, height: 932 },
+  ]) {
+    test(`at ${viewport.width}px`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+
+      const failures: string[] = []
+      for (const route of ['/', '/start/', '/objections/satan-and-angels/', '/watch/', '/case/']) {
+        await page.goto(route)
+        await settle(page)
+
+        const tight = await page.evaluate(() => {
+          /**
+           * SC 2.5.8 exempts a target that is "in a sentence or its size is
+           * otherwise constrained by the line-height of non-target text".
+           * A link rendered inline inside a paragraph is exactly that, and
+           * measuring it is misleading anyway: `getBoundingClientRect` on an
+           * inline element that wraps returns the union of its line boxes, so
+           * two wrapped links report centres far closer than either is
+           * clickable. Anything laid out as a block, a flex or a grid item is
+           * not covered by the exception and is still measured.
+           */
+          const isInlineInText = (element: HTMLElement) => {
+            if (!getComputedStyle(element).display.startsWith('inline')) return false
+            const parent = element.parentElement
+            if (!parent) return false
+            const parentDisplay = getComputedStyle(parent).display
+            if (parentDisplay === 'flex' || parentDisplay === 'grid') return false
+            // Sits in a run of text rather than being the whole of its parent.
+            return (
+              (parent.textContent ?? '').trim().length > (element.textContent ?? '').trim().length
+            )
+          }
+
+          const targets = Array.from(document.querySelectorAll<HTMLElement>('a[href], button'))
+            .map(element => ({ element, rect: element.getBoundingClientRect() }))
+            .filter(({ element, rect }) => {
+              if (rect.width === 0 || rect.height === 0) return false
+              // Ignore anything inside a closed disclosure: laid out, never hit-tested.
+              const details = element.closest('details')
+              if (details && !details.open) return false
+              if (isInlineInText(element)) return false
+              return true
+            })
+
+          const problems: string[] = []
+          for (let i = 0; i < targets.length; i += 1) {
+            const a = targets[i]
+            if (!a) continue
+            // Already large enough on its own.
+            if (a.rect.width >= 24 && a.rect.height >= 24) continue
+
+            const centreA = { x: a.rect.x + a.rect.width / 2, y: a.rect.y + a.rect.height / 2 }
+            for (let j = 0; j < targets.length; j += 1) {
+              if (i === j) continue
+              const b = targets[j]
+              if (!b) continue
+              const centreB = { x: b.rect.x + b.rect.width / 2, y: b.rect.y + b.rect.height / 2 }
+              const distance = Math.hypot(centreA.x - centreB.x, centreA.y - centreB.y)
+              if (distance >= 24) continue
+              problems.push(
+                `${(a.element.textContent ?? '').trim().slice(0, 32)} is ${distance.toFixed(1)}px from ${(b.element.textContent ?? '').trim().slice(0, 32)}`,
+              )
+              break
+            }
+          }
+          return [...new Set(problems)]
+        })
+
+        for (const problem of tight) failures.push(`  ${route}: ${problem}`)
+      }
+
+      expect([...new Set(failures)].join('\n'), 'targets closer than 24px').toBe('')
+    })
+  }
+})

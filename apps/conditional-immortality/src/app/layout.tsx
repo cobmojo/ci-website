@@ -57,7 +57,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* `tabIndex={-1}` is what makes the skip link actually move focus.
             Without it the browser only moves the scroll position, so the next
             Tab press returns to the header the reader was trying to skip. */}
-        <main id="main-content" tabIndex={-1} className="flex-1">
+        {/* `measure-prose` caps paragraphs and definitions at a readable
+            measure wherever they sit inside a full-width container. It only
+            ever narrows a box that would otherwise run too wide, so layouts
+            that are already capped are unaffected. */}
+        <main id="main-content" tabIndex={-1} className="measure-prose flex-1">
           {children}
         </main>
         <SiteFooter />

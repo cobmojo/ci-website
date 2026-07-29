@@ -7,6 +7,7 @@ import {
 } from '@ci/content/passages'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { scrollRegionProps } from '@/components/content/scroll-region'
 import { ScriptureFilter } from '@/components/scripture/scripture-filter'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
@@ -165,7 +166,10 @@ export default function ScriptureIndexPage() {
                   </span>
                 </h3>
 
-                <div className="overflow-x-auto">
+                <div
+                  {...scrollRegionProps(`References in ${group.book}`)}
+                  className="overflow-x-auto"
+                >
                   <table className="w-full border-collapse font-sans text-[0.92rem]">
                     <caption className="sr-only">
                       References in {group.book} and the parts of the case that use them
@@ -174,19 +178,19 @@ export default function ScriptureIndexPage() {
                       <tr>
                         <th
                           scope="col"
-                          className="border border-border bg-panel px-3 py-2 text-left font-semibold"
+                          className="border border-border bg-panel px-2 py-2 sm:px-3 text-left font-semibold"
                         >
                           Reference
                         </th>
                         <th
                           scope="col"
-                          className="border border-border bg-panel px-3 py-2 text-left font-semibold"
+                          className="border border-border bg-panel px-2 py-2 sm:px-3 text-left font-semibold"
                         >
                           Appearances
                         </th>
                         <th
                           scope="col"
-                          className="border border-border bg-panel px-3 py-2 text-left font-semibold"
+                          className="border border-border bg-panel px-2 py-2 sm:px-3 text-left font-semibold"
                         >
                           Where it is used
                         </th>
@@ -202,7 +206,7 @@ export default function ScriptureIndexPage() {
                         >
                           <th
                             scope="row"
-                            className="border border-border px-3 py-2 text-left align-top font-medium"
+                            className="border border-border px-2 py-2 sm:px-3 text-left align-top font-medium"
                           >
                             {entry.passageSlug ? (
                               <>
@@ -217,10 +221,10 @@ export default function ScriptureIndexPage() {
                               <span className="text-ink">{entry.reference}</span>
                             )}
                           </th>
-                          <td className="border border-border px-3 py-2 align-top text-ink-muted">
+                          <td className="border border-border px-2 py-2 sm:px-3 align-top text-ink-muted">
                             {entry.useCount}
                           </td>
-                          <td className="border border-border px-3 py-2 align-top">
+                          <td className="border border-border px-2 py-2 sm:px-3 align-top">
                             <ul className="m-0 list-none space-y-1 p-0">
                               {entry.uses.map(use => {
                                 const section = getSection(use.sectionId)

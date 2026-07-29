@@ -2,6 +2,7 @@ import { caseSections, getSection, PRINCIPAL_CLAIMS } from '@ci/content/case'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { scrollRegionProps } from '@/components/content/scroll-region'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**
@@ -209,8 +210,8 @@ export default function CaseMapPage() {
         </p>
       </div>
 
-      <figure className="mt-8 mb-0 max-w-[62rem]">
-        <div className="overflow-x-auto">
+      <figure className="mt-8 mb-0 hidden max-w-[62rem] lg:block">
+        <div {...scrollRegionProps('Case map diagram')} className="overflow-x-auto">
           <svg
             viewBox="0 0 960 700"
             role="img"
@@ -249,7 +250,7 @@ export default function CaseMapPage() {
               x={CLUSTER_CENTRE_X}
               y={26}
               textAnchor="middle"
-              fontSize="13"
+              fontSize="15.0"
               fill="var(--color-ink-subtle)"
             >
               Sections, grouped by what they show
@@ -258,12 +259,12 @@ export default function CaseMapPage() {
               x={CLAIM_CENTRE_X}
               y={26}
               textAnchor="middle"
-              fontSize="13"
+              fontSize="15.0"
               fill="var(--color-ink-subtle)"
             >
               The six principal claims
             </text>
-            <text x={836} y={26} textAnchor="middle" fontSize="13" fill="var(--color-ink-subtle)">
+            <text x={836} y={26} textAnchor="middle" fontSize="15.0" fill="var(--color-ink-subtle)">
               Taken together
             </text>
 
@@ -311,7 +312,7 @@ export default function CaseMapPage() {
               strokeDasharray="5 4"
               markerEnd="url(#case-map-arrow)"
             />
-            <text x={470} y={644} textAnchor="middle" fontSize="12.5" fill="var(--color-ink-muted)">
+            <text x={470} y={644} textAnchor="middle" fontSize="15" fill="var(--color-ink-muted)">
               Tests and defends all six claims
             </text>
 
@@ -338,7 +339,7 @@ export default function CaseMapPage() {
                       x={CLUSTER_CENTRE_X}
                       y={labelStart + index * 18}
                       textAnchor="middle"
-                      fontSize="14.5"
+                      fontSize="15"
                       fontWeight="600"
                       fill="var(--color-ink)"
                     >
@@ -349,7 +350,7 @@ export default function CaseMapPage() {
                     x={CLUSTER_CENTRE_X}
                     y={idsY}
                     textAnchor="middle"
-                    fontSize="11.5"
+                    fontSize="15"
                     fill="var(--color-ink-muted)"
                   >
                     {sectionIdSummary(cluster)}
@@ -378,7 +379,7 @@ export default function CaseMapPage() {
                     x={CLAIM_CENTRE_X}
                     y={cy - 17}
                     textAnchor="middle"
-                    fontSize="11"
+                    fontSize="15.0"
                     fontWeight="600"
                     letterSpacing="0.08em"
                     fill="var(--color-copper-deep)"
@@ -391,7 +392,7 @@ export default function CaseMapPage() {
                       x={CLAIM_CENTRE_X}
                       y={cy + 2 + lineIndex * 18}
                       textAnchor="middle"
-                      fontSize="14"
+                      fontSize="17.0"
                       fill="var(--color-ink)"
                     >
                       {line}
@@ -412,17 +413,17 @@ export default function CaseMapPage() {
               x={836}
               y={306}
               textAnchor="middle"
-              fontSize="11"
+              fontSize="15.0"
               fontWeight="600"
               letterSpacing="0.08em"
               fill="var(--color-copper-deep)"
             >
               CONCLUSION
             </text>
-            <text x={836} y={328} textAnchor="middle" fontSize="13.5" fill="var(--color-ink)">
+            <text x={836} y={328} textAnchor="middle" fontSize="15" fill="var(--color-ink)">
               The cumulative case for
             </text>
-            <text x={836} y={348} textAnchor="middle" fontSize="13.5" fill="var(--color-ink)">
+            <text x={836} y={348} textAnchor="middle" fontSize="15" fill="var(--color-ink)">
               conditional immortality
             </text>
           </svg>
@@ -434,7 +435,7 @@ export default function CaseMapPage() {
         </figcaption>
       </figure>
 
-      <section aria-labelledby="map-as-list" className="mt-12">
+      <section aria-labelledby="map-as-list" data-case-map-list className="mt-12">
         <h2 id="map-as-list" className="mt-0 mb-3 border-b border-border pb-2">
           The same map as a list
         </h2>

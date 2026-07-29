@@ -335,6 +335,28 @@
     outline-offset: 2px;
   }
 
+  /*
+   * Cap the measure of supporting prose inside a full-width container.
+   *
+   * Cards, definition lists and index rows are deliberately as wide as their
+   * column, but the prose inside them should not be: at 1440 an uncapped
+   * paragraph in a card ran to 140 characters, roughly twice a comfortable
+   * measure. Applied to the container so anything added later inherits it.
+   */
+  .measure-prose :is(p, dd, li, blockquote) {
+    /*
+     * Two caps, whichever bites first. The rem cap holds the column width for
+     * body text; the ch cap is font-relative, so small supporting text does
+     * not quietly reach ninety characters inside the same 42rem box.
+     */
+    max-width: min(var(--spacing-measure), 74ch);
+  }
+
+  /* A list item that is a layout row, not a line of prose, keeps its width. */
+  .measure-prose :is(li:has(> .grid), li.grid, li.flex) {
+    max-width: none;
+  }
+
   .prose-article table {
     width: 100%;
     font-family: var(--font-sans);

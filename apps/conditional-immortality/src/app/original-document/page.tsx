@@ -12,6 +12,7 @@ import {
 } from '@ci/content-schema'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { scrollRegionProps } from '@/components/content/scroll-region'
 import { formatLongDate, pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { siteConfig } from '@/lib/site-config'
@@ -159,7 +160,7 @@ export default function OriginalDocumentPage() {
                 </code>
               </p>
 
-              <div className="overflow-x-auto">
+              <div {...scrollRegionProps('Source document statistics')} className="overflow-x-auto">
                 <table className="w-full font-sans text-[0.92rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
                     What the source file contained, and what the migration ledger records. Counts
@@ -323,7 +324,10 @@ export default function OriginalDocumentPage() {
                 no comment is reproduced. What is published is the disposition: what was done about
                 each thread, and why.
               </p>
-              <div className="overflow-x-auto">
+              <div
+                {...scrollRegionProps('Editorial comment dispositions')}
+                className="overflow-x-auto"
+              >
                 <table className="w-full font-sans text-[0.92rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
                     Comment threads by disposition. Names are held only in the private source
@@ -388,7 +392,10 @@ export default function OriginalDocumentPage() {
                 as text, as a semantic table or as an accessible graphic, because a screenshot
                 cannot be read by assistive technology, searched, translated or checked.
               </p>
-              <div className="overflow-x-auto">
+              <div
+                {...scrollRegionProps('Embedded media dispositions')}
+                className="overflow-x-auto"
+              >
                 <table className="w-full font-sans text-[0.9rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
                     Every embedded image in the source file, what it showed, and what replaced it.

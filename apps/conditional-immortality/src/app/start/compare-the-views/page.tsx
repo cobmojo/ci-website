@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { scrollRegionProps } from '@/components/content/scroll-region'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**
@@ -170,7 +171,10 @@ export default function CompareTheViewsPage() {
         </h2>
 
         {/* Wide screens: a real table, so row and column relationships are explicit. */}
-        <div className="hidden overflow-x-auto md:block">
+        <div
+          {...scrollRegionProps('Comparison of the three views')}
+          className="hidden overflow-x-auto lg:block"
+        >
           <table className="w-full min-w-[48rem] border border-border text-left font-sans text-[0.94rem]">
             <caption className="mb-3 text-left font-sans text-[0.88rem] text-ink-muted">
               {TABLE_CAPTION}
@@ -216,7 +220,7 @@ export default function CompareTheViewsPage() {
 
         {/* Narrow screens: the same data grouped by question, with each view named in a
             definition list so no row or column relationship is lost. */}
-        <div className="md:hidden">
+        <div className="lg:hidden">
           <p className="m-0 mb-5 font-sans text-[0.88rem] text-ink-muted">{TABLE_CAPTION}</p>
           <div className="space-y-6">
             {COMPARISON_ROWS.map(row => (
