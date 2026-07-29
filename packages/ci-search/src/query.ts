@@ -299,19 +299,51 @@ interface FieldSource {
   readonly text: string
 }
 
-function fieldsOf(doc: SearchDoc): readonly FieldSource[] {
-  return [
-    { field: 'title', text: normalise(doc.title) },
-    { field: 'id', text: normalise([doc.sectionId ?? '', ...doc.aliases].join(' ')) },
-    { field: 'summary', text: normalise(doc.summary) },
-    { field: 'heading', text: normalise(doc.headings.join(' · ')) },
-    { field: 'scripture', text: normalise(doc.scriptureRefs.join(' · ')) },
-    {
-      field: doc.type === 'transcript' ? 'transcript' : 'body',
-      text: normalise(doc.body),
-    },
-    { field: 'notes', text: normalise(doc.notes) },
-  ]
+interface DocFields {
+  readonly sources: readonly FieldSource[]
+  readonly title: string
+  readonly sectionId: string
+}
+
+/**
+ * Normalised fields for one document.
+ *
+ * The index is static for the life of the page, so normalising it once and
+ * keeping the result is safe. Doing it per query was not cheap: the ranker
+ * walked every field of every document on each keystroke, which is around half
+ * a megabyte of text through a lowercase, an NFKD and five regexes — and the
+ * search dialog runs a query per keystroke, so typing a short phrase paid for
+ * it seventeen times over.
+ *
+ * A `WeakMap` rather than a `Map` so that replacing the index — or navigating
+ * away from it — does not pin the old documents in memory.
+ */
+const FIELD_CACHE = new WeakMap<SearchDoc, DocFields>()
+
+function fieldsOf(doc: SearchDoc): DocFields {
+  const cached = FIELD_CACHE.get(doc)
+  if (cached) return cached
+
+  const title = normalise(doc.title)
+  const fields: DocFields = {
+    title,
+    sectionId: doc.sectionId ? normalise(doc.sectionId) : '',
+    sources: [
+      { field: 'title', text: title },
+      { field: 'id', text: normalise([doc.sectionId ?? '', ...doc.aliases].join(' ')) },
+      { field: 'summary', text: normalise(doc.summary) },
+      { field: 'heading', text: normalise(doc.headings.join(' · ')) },
+      { field: 'scripture', text: normalise(doc.scriptureRefs.join(' · ')) },
+      {
+        field: doc.type === 'transcript' ? 'transcript' : 'body',
+        text: normalise(doc.body),
+      },
+      { field: 'notes', text: normalise(doc.notes) },
+    ],
+  }
+
+  FIELD_CACHE.set(doc, fields)
+  return fields
 }
 
 function matchesFilters(doc: SearchDoc, filters: SearchFilters): boolean {
@@ -335,8 +367,25 @@ function matchesFilters(doc: SearchDoc, filters: SearchFilters): boolean {
 
 const EXCERPT_RADIUS = 110
 
-function buildExcerpt(body: string, terms: readonly string[]): string {
+/**
+ * Cached offset maps for excerpting.
+ *
+ * `normaliseWithMap` walks cluster by cluster and is an order of magnitude
+ * slower than `normalise`. Excerpts are only built for the page of results
+ * actually returned, and the same documents come back on every keystroke, so
+ * the map is worth keeping.
+ */
+const EXCERPT_MAP_CACHE = new WeakMap<SearchDoc, NormalisedText>()
+
+function excerptMap(doc: SearchDoc, body: string): NormalisedText {
+  const cached = EXCERPT_MAP_CACHE.get(doc)
+  if (cached) return cached
   const map = normaliseWithMap(body)
+  EXCERPT_MAP_CACHE.set(doc, map)
+  return map
+}
+
+function buildExcerpt(map: NormalisedText, body: string, terms: readonly string[]): string {
   let bestIndex = -1
   let bestTerm = ''
   for (const term of terms) {
@@ -408,7 +457,8 @@ export function search(
   const primary: string[] = [phrase, ...words, ...scriptureVariants]
   const usedTerms = [...new Set([...primary, ...synonyms])].filter(Boolean)
 
-  const scored: SearchResult[] = []
+  /** A result before its excerpt is built — see the note by the slice below. */
+  const scored: Omit<SearchResult, 'excerpt'>[] = []
 
   for (const doc of candidates) {
     const fields = fieldsOf(doc)
@@ -427,7 +477,7 @@ export function search(
       matchedTerms.add(term)
     }
 
-    for (const { field, text } of fields) {
+    for (const { field, text } of fields.sources) {
       if (!text) continue
       for (const term of new Set(primary)) {
         applyHit(field, term, countOccurrences(text, term), 1)
@@ -440,29 +490,31 @@ export function search(
     if (score === 0) continue
 
     // Exact whole-title match should always float to the top.
-    if (normalise(doc.title) === phrase) score += 400
-    if (doc.sectionId && normalise(doc.sectionId) === phrase) score += 400
+    if (fields.title === phrase) score += 400
+    if (fields.sectionId && fields.sectionId === phrase) score += 400
 
     const matchedFields = [...matchedByField.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([field]) => field)
 
-    scored.push({
-      doc,
-      score,
-      matchedFields,
-      matchedTerms: [...matchedTerms],
-      excerpt: buildExcerpt(doc.body || doc.summary, [...matchedTerms]),
-    })
+    scored.push({ doc, score, matchedFields, matchedTerms: [...matchedTerms] })
   }
 
   scored.sort((a, b) => b.score - a.score || a.doc.title.localeCompare(b.doc.title))
 
-  return {
-    results: scored.slice(offset, offset + limit),
-    total: scored.length,
-    usedTerms,
-  }
+  // Excerpts are built last, for the page being returned rather than for every
+  // document that matched. A one-letter query matches nearly the whole index
+  // and shows twenty-five of them, so building all of them threw away most of
+  // the work — and excerpting is the most expensive step per document.
+  const results = scored.slice(offset, offset + limit).map(result => {
+    const body = result.doc.body || result.doc.summary
+    return {
+      ...result,
+      excerpt: buildExcerpt(excerptMap(result.doc, body), body, result.matchedTerms),
+    }
+  })
+
+  return { results, total: scored.length, usedTerms }
 }
 
 /**

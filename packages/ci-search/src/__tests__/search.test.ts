@@ -450,3 +450,43 @@ describe('the two normalisers agree under fuzzing', () => {
     }
   })
 })
+
+/**
+ * The ranker keeps normalised fields and excerpt offset maps in a WeakMap
+ * keyed by document, so the second query over the same index does far less
+ * work than the first. Anything cached has to be independent of the query.
+ */
+describe('caching does not change what search returns', () => {
+  it('returns identical results when the same query is run again', () => {
+    const first = search(CORPUS, 'destroy soul and body')
+    const second = search(CORPUS, 'destroy soul and body')
+    expect(second.total).toBe(first.total)
+    expect(second.usedTerms).toEqual(first.usedTerms)
+    expect(second.results.map(r => [r.doc.id, r.score, r.excerpt])).toEqual(
+      first.results.map(r => [r.doc.id, r.score, r.excerpt]),
+    )
+  })
+
+  it('gives each query its own excerpt, not the one cached for the last', () => {
+    const body =
+      'The worm that does not die is one image. The fire that is not quenched is another, ' +
+      'and the two belong together in Isaiah 66 exactly as they do in Mark 9. ' +
+      'Destruction is the outcome in both.'
+    const corpus = [doc({ id: 'both', title: 'Both images', body })]
+
+    const worm = search(corpus, 'worm').results[0]?.excerpt ?? ''
+    const destruction = search(corpus, 'destruction').results[0]?.excerpt ?? ''
+    const wormAgain = search(corpus, 'worm').results[0]?.excerpt ?? ''
+
+    expect(worm.toLowerCase()).toContain('worm')
+    expect(destruction.toLowerCase()).toContain('destruction')
+    expect(worm).not.toBe(destruction)
+    expect(wormAgain).toBe(worm)
+  })
+
+  it('builds an excerpt for every result on the requested page', () => {
+    const { results } = search(CORPUS, 'destroy', { limit: 2, offset: 1 })
+    expect(results.length).toBeGreaterThan(0)
+    for (const result of results) expect(result.excerpt.length).toBeGreaterThan(0)
+  })
+})
