@@ -407,6 +407,12 @@ commit:
   the one the first pass missed), shared `DialogCloseButton` (both
   overlays), one `.summary-hit-area` class (three disclosures), and
   `ScrollRegion` used on the original-document tables.
+- **A latent outline flaw surfaced and fixed at its root.** Both appendix
+  bodies opened with a caution `Callout as="h3"` before any `##` heading, a
+  pre-existing h1-to-h3 skip on their own pages that no tested route covered;
+  demotion turned it into an h2-to-h4 skip on the continuous edition and the
+  structure gate caught it. The authored level is now `h2`, which is sound on
+  both surfaces, and the callout's rendered title is identical at any level.
 - **Guards made real.** The numbered-arguments count is counted rather than
   derived; the objections and Watch-CTA numbers are pinned to their
   registries; the transient `scheduled_tasks.lock` session file is untracked
