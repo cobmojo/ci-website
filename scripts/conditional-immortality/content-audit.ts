@@ -194,6 +194,33 @@ writeFileSync(
   `${JSON.stringify({ summary: LEDGER_SUMMARY, media: mediaDispositions, comments: commentLedger }, null, 2)}\n`,
 )
 
+/*
+ * Hand the two committed JSON exports to the formatter.
+ *
+ * They are generated here but checked in, and `JSON.stringify` does not
+ * produce what biome considers formatted — `migration-ledger.json` is written
+ * with one-space indent, which biome rewrites to two. Since `content:audit`
+ * runs *after* `lint` in the validate chain, the effect was that a clean run of
+ * `bun run validate` left the working tree dirty and the next `bun run lint`
+ * red, with no indication of why.
+ *
+ * The CSV is not formatted: biome does not handle CSV, and it is excluded in
+ * biome.json for that reason.
+ */
+const formatted = [
+  join(migrationDir, 'migration-ledger.json'),
+  join(migrationDir, 'source-inventory.json'),
+]
+const format = Bun.spawnSync(['bunx', 'biome', 'check', '--write', ...formatted], {
+  cwd: REPO_ROOT,
+  stdout: 'pipe',
+  stderr: 'pipe',
+})
+if (format.exitCode !== 0) {
+  console.error(`biome could not format the ledger exports:\n${format.stderr}`)
+  process.exit(1)
+}
+
 /* ------------------------------------------------------------------ *
  * Console summary
  * ------------------------------------------------------------------ */
