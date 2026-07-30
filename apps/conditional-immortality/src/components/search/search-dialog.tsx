@@ -2,9 +2,11 @@
 
 import { type SearchIndex, search } from '@ci/search'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
+import { pluralise } from '@/lib/format'
 import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
 
 /**
@@ -27,21 +29,31 @@ export function SearchDialogTrigger() {
   const inputRef = useRef<HTMLInputElement>(null)
   const dialogId = useId()
   const statusId = useId()
+  const backdropPressRef = useRef(false)
 
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [index, setIndex] = useState<SearchIndex | null>(null)
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
   const [query, setQuery] = useState('')
+  const pathname = usePathname()
 
   useEffect(() => setMounted(true), [])
 
   const loadIndex = useCallback(async () => {
     if (index || loading) return
     setLoading(true)
+    setFailed(false)
     try {
       const response = await fetch('/search-index.json')
-      if (response.ok) setIndex((await response.json()) as SearchIndex)
+      if (!response.ok) throw new Error(`search index ${response.status}`)
+      setIndex((await response.json()) as SearchIndex)
+    } catch {
+      // A dropped connection must not surface as an unhandled rejection and a
+      // silently blank pane. The failure line below names the recovery path,
+      // and the next open or keystroke of search intent retries.
+      setFailed(true)
     } finally {
       setLoading(false)
     }
@@ -74,12 +86,25 @@ export function SearchDialogTrigger() {
     triggerRef.current?.focus()
   }, [])
 
+  // Close on route change, exactly as the navigation sheet does: without this
+  // the dialog survives browser Back and Forward and stays modally open over
+  // the page the reader just navigated to.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reacting to pathname is the point
+  useEffect(() => {
+    if (dialogRef.current?.open) {
+      dialogRef.current.close()
+      setOpen(false)
+    }
+  }, [pathname])
+
   /**
    * Keyboard shortcut. Deliberately requires a modifier, so it cannot swallow
    * a plain keystroke a screen reader or voice control user is typing. While
    * the dialog is open it always toggles closed, because the dialog focuses
    * its own text field on open and the field must not eat the shortcut; while
-   * it is closed, focus in any other text field suppresses it.
+   * it is closed, focus in any other text field suppresses it, and so does
+   * any other open modal: opening search over the navigation sheet would
+   * stack two modals and strand focus between them.
    */
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -89,6 +114,7 @@ export function SearchDialogTrigger() {
         closeDialog()
         return
       }
+      if (document.querySelector('dialog[open]')) return
       const target = event.target as HTMLElement | null
       if (target?.closest('input, textarea, select, [contenteditable="true"]')) return
       event.preventDefault()
@@ -148,8 +174,16 @@ export function SearchDialogTrigger() {
             setOpen(false)
             triggerRef.current?.focus()
           }}
+          onPointerDown={event => {
+            // A click whose press and release land on different elements is
+            // retargeted to their common ancestor, so a text-selection drag
+            // that starts inside the panel and ends on the backdrop would
+            // read as a backdrop click. Only a press that begins on the
+            // backdrop itself may dismiss.
+            backdropPressRef.current = event.target === dialogRef.current
+          }}
           onClick={event => {
-            if (event.target === dialogRef.current) closeDialog()
+            if (event.target === dialogRef.current && backdropPressRef.current) closeDialog()
           }}
           // `overlay-panel` carries the enter and exit, and the backdrop wash
           // that used to be a utility class here: the panel and its backdrop
@@ -189,12 +223,23 @@ export function SearchDialogTrigger() {
               {loading
                 ? 'Loading the search index.'
                 : outcome
-                  ? `${outcome.total} results for ${query}.`
+                  ? `${outcome.total} ${pluralise(outcome.total, 'result')} for ${query}.`
                   : ''}
             </p>
 
             {!index && loading ? (
               <p className="py-4 font-sans text-[0.92rem] text-ink-subtle">Loading search…</p>
+            ) : null}
+
+            {!index && !loading && failed ? (
+              <p className="py-4 font-sans text-[0.92rem] text-ink-muted">
+                Search could not load, which usually means the connection dropped. Reopen search to
+                try again, or use the{' '}
+                <Link href="/search/" onClick={closeDialog}>
+                  full search page
+                </Link>
+                .
+              </p>
             ) : null}
 
             {outcome && outcome.results.length > 0 ? (

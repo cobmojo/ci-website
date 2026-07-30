@@ -441,13 +441,13 @@ against a production build.
 | `bun run content:validate` | Pass |
 | `bun run content:audit` | Pass, ledger exports unchanged |
 | `bun run content:docs` | Pass |
-| `bun run test` | **300 unit tests pass** (281 at base; +19: button contract ×3, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×5) |
+| `bun run test` | **808 unit tests pass** on the merged tree (281 at the audit base; this branch added 21: button contract ×3, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×7; the balance arrived with PR #5's merge) |
 | `bun run build` | Pass, 129 static pages |
 | `bun run content:pii` | Pass: no source contact details in 1,745 built or 248 committed files |
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
 | `bun run content:bundle` | Pass: every route within budget; `/corrections` 644.0 kB against its 664.1 kB allowance (+1.3 kB for the new error handling) |
-| `bun run test:e2e` | **226 passed, 2 flaky passes on retry, 0 failures** (228 total = 224 at base + 4 new assertions), Chromium desktop 1440×900 and mobile 375×812 |
-| `bun run test:a11y` | **64 passed** (32 at base, desktop only; now 32 × desktop + 32 × mobile via the new `accessibility-mobile` project) |
+| `bun run test:e2e` | **308 tests, 0 failures** on the merged tree (224 at the audit base + 4 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
+| `bun run test:a11y` | **64 tests, 0 failures** (32 at base, desktop only; now 32 × desktop + 32 × mobile via the new `accessibility-mobile` project) |
 
 **Rendered sweep** (production build, before and after): 360 loads over all
 120 sitemap routes at 1280/375/320 px — zero console errors, zero page
@@ -476,3 +476,77 @@ still require a real deployment; the no-JS corrections submission cannot
 carry `?section` context without abandoning static generation (recorded as a
 rejected candidate); video visual descriptions remain outstanding as the
 accessibility statement says.
+
+### Gap sweep 1 (merged tree)
+
+A six-angle adversarial sweep of the merged tree (merge seams, search
+contracts, motion/routing contracts, ledger accuracy, fix regressions,
+repository hygiene) confirmed sixteen residual findings, none refuted, all
+corrected:
+
+- **Search dialog robustness and interaction** (five): a failed index fetch
+  now renders a recovery message instead of an unhandled rejection and a
+  blank pane; the dialog closes on route change exactly as the sheet does,
+  so it cannot survive browser Back; backdrop dismissal on both overlays now
+  requires the press to begin on the backdrop, so a text-selection drag that
+  ends outside the panel no longer closes it; the live region pluralises
+  "1 result"; and Ctrl/Cmd+K is suppressed while another modal is open
+  rather than stacking two.
+- **Token discipline** (three): the OG image's `inkSubtle` mirror caught up
+  with the contrast-fixed token; the quick-search excerpt's serif stack goes
+  through `var(--font-serif)` (which resolves to the exact stack Pretext
+  measures); its mark radius joins the radius scale.
+- **Documentation accuracy** (eight): README and the implementation report
+  carry measured merged-tree counts; the motion brief's Tier 3 prose matches
+  the shipped shared tokens (200ms in / 150ms out for both overlays); two
+  Playwright config comments count the actual seven projects and two
+  accessibility projects; this ledger's own unit-count note is corrected
+  (orientation copy is seven tests) and section 11 is committed rather than
+  left as a working-tree edit.
+
+One finder (fix regressions) died on a transient network error; its angle is
+re-run in gap sweep 2.
+
+## 11. PR #5 compatibility
+
+PR #5 (Pretext quick-search excerpts) merged into `main` after this branch
+was cut, and the two touch the same search surfaces. `origin/main` was merged
+into this branch rather than copied from, so PR #5's behaviour arrives
+exactly as it shipped.
+
+**Conflicts and resolutions** (three files, both intents kept whole):
+
+- `search-dialog.tsx`: only the import block conflicted; the bodies
+  interleave. Main's prewarm-on-intent, `QuickSearchResults` rows and excerpt
+  candidates compose with this branch's `aria-expanded` wiring, the
+  deterministic Ctrl/Cmd+K toggle, the shared `DialogCloseButton`, the token
+  radius, the described-by status region and the tabular footer count. The
+  `Highlighted` import was dropped because main moved row rendering into
+  `QuickSearchResults`.
+- `playwright.config.ts`: this branch's `accessibility-mobile` project sits
+  alongside main's three `geometry-*` projects; the project-inventory
+  comment lists all seven.
+- `package.json`: `test:a11y` runs both accessibility projects; main's
+  `test:browser` aggregate gains `accessibility-mobile`.
+
+**Contracts verified on the merged tree**: Pretext stays behind its
+intent-gated lazy load and never blocks results; the excerpt fitter's
+fallback path and the server-rendered `/search/` page are untouched by this
+branch; ranking behaviour is held by PR #5's own `ranking-baseline` and
+invariants suites, which pass unchanged; the geometry suite runs in all
+three engines (Playwright WebKit is reported as Playwright WebKit, not
+Safari, per `docs/pretext-text-geometry.md`). No merge order remains: this
+branch now contains `main`, so PR #6 merges cleanly on top of PR #5.
+
+**Merged-tree verification** (after the merge commit): `CI=1 bun run
+validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
+`test:a11y` 64 tests (63 + 1 axe timing flake retried green), 0 failures;
+`test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
+(67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
+Total automated coverage on the merged tree: 1,249 tests.
+
+**Review threads**: the automated review on the first commit raised two P2
+findings (permalink loss on demoted headings; component-rendered headings
+not demoted). Both had already been found by this branch's own adversarial
+review and fixed in `3fa2727`/`d1a9adc`; each thread carries a reply naming
+the resolving commit and is resolved.

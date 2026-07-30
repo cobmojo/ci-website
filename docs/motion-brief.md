@@ -71,14 +71,14 @@ Never on a prose link — a word that shrinks inside a sentence is grotesque —
 and never on a card. A 300px card scaling by three per cent reads as a glitch,
 so cards get Tier 1 only.
 
-### Tier 3 — Overlay and disclosure · 160–220ms · `--ease-out-quad`
+### Tier 3 — Overlay and disclosure · 150–200ms · `--ease-out-quad`
 
 Enter and exit for things that appear over or inside the page:
 
 - **Search dialog.** Fades and drops 8px from the top with a 0.98 → 1 scale,
   origin at the top. 200ms in, 150ms out.
-- **Mobile navigation sheet.** Slides in from the right edge it is anchored to.
-  220ms in, 160ms out.
+- **Mobile navigation sheet.** Slides in from the right edge it is anchored to,
+  on the same shared tokens: 200ms in, 150ms out.
 - **Backdrops.** Same duration and easing as the panel they belong to. Paired
   elements move as a unit or they do not look like a unit.
 - **Status messages.** The correction form's success, error and sending states.

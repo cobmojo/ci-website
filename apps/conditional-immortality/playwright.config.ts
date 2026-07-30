@@ -30,7 +30,7 @@ const BASE_URL = `http://localhost:${PORT}`
  */
 const FEEDBACK_STORE_DIR = path.join(os.tmpdir(), 'ci-playwright-feedback-store')
 
-/** The accessibility spec belongs to exactly one project. */
+/** The accessibility spec belongs to the two accessibility projects. */
 const A11Y_SPEC = /a11y\.spec\.ts$/
 /** The geometry spec belongs to the three focused browser projects. */
 const GEOMETRY_SPEC = /text-geometry\.spec\.ts$/
@@ -51,7 +51,7 @@ export default defineConfig({
   /*
    * Some tests here are navigation-heavy rather than slow: the horizontal
    * overflow check walks all thirty-one routes inside a single test, at each
-   * viewport. With six projects sharing a machine that comfortably exceeds a
+   * viewport. With seven projects sharing a machine that comfortably exceeds a
    * ninety-second budget, and a timeout is a resource limit, not a finding.
    * The assertions themselves are unchanged and still fail fast.
    */

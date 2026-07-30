@@ -21,6 +21,7 @@ import { FOOTER_NAV, isActiveRoute, PRIMARY_NAV, WATCH_CTA } from '@/lib/navigat
 export function MobileNavigation() {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const backdropPressRef = useRef(false)
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
@@ -83,9 +84,16 @@ export function MobileNavigation() {
           setOpen(false)
           triggerRef.current?.focus()
         }}
+        onPointerDown={event => {
+          // A click whose press and release land on different elements is
+          // retargeted to their common ancestor, so a drag that starts inside
+          // the sheet and ends on the backdrop would read as a backdrop click.
+          // Only a press that begins on the backdrop itself may dismiss.
+          backdropPressRef.current = event.target === dialogRef.current
+        }}
         onClick={event => {
           // Clicking the backdrop (the dialog element itself) closes the sheet.
-          if (event.target === dialogRef.current) close()
+          if (event.target === dialogRef.current && backdropPressRef.current) close()
         }}
         // `overlay-sheet` slides in from the right edge the sheet is anchored
         // to, and carries the backdrop wash on the panel's own clock. Under
