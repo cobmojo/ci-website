@@ -67,6 +67,22 @@ decorative animation, no dashboard chrome.
   close. See `src/components/navigation/mobile-navigation.tsx`.
 - Anything JavaScript-only must degrade to a working link or a `<details>` disclosure.
 
+## Motion
+
+Read [the motion brief](motion-brief.md) before adding a transition or an animation.
+In short:
+
+- Hover, focus and colour feedback is supplied globally in the base layer. Add nothing.
+- A button or a button-shaped link takes the `pressable` class and nothing else.
+- A dialog takes `overlay-panel` (a centred panel) or `overlay-sheet` (an edge sheet),
+  which carry the enter, the exit and the backdrop.
+- Anything that only exists once scripting has run takes `mount-reveal`.
+- Never a raw duration or curve: use the `--motion-*` and `--ease-*` tokens.
+- Anything that moves goes inside `@media (prefers-reduced-motion: no-preference)`.
+- Page content is never animated. No scroll-triggered reveals, no staggering.
+
+`bun run test` fails on a violation.
+
 ## Print
 
 Add `print:hidden` to navigation and interactive chrome. Core content and citations stay

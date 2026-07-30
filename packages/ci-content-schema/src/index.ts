@@ -6,8 +6,10 @@
  * a missing thesis, an unknown source id or an unnormalisable Scripture reference.
  */
 import { z } from 'zod'
+import { feedbackStatuses, feedbackTypes, publicationConsents } from './feedback-vocabulary'
 
 export * from './bible'
+export * from './feedback-vocabulary'
 
 /* ------------------------------------------------------------------ *
  * Editorial vocabularies
@@ -528,45 +530,9 @@ export const RevisionRecordSchema = z
 
 export type RevisionRecord = z.infer<typeof RevisionRecordSchema>
 
-export const feedbackTypes = [
-  'factual-correction',
-  'theological-counterargument',
-  'better-source',
-  'translation-correction',
-  'historical-correction',
-  'broken-link',
-  'accessibility',
-  'typo',
-  'general',
-] as const
+/** The vocabularies live in `./feedback-vocabulary`, which imports nothing. */
 export const FeedbackTypeSchema = z.enum(feedbackTypes)
-export type FeedbackType = z.infer<typeof FeedbackTypeSchema>
-
-export const FEEDBACK_TYPE_LABELS: Record<FeedbackType, string> = {
-  'factual-correction': 'Factual correction',
-  'theological-counterargument': 'Biblical or theological counterargument',
-  'better-source': 'Better source',
-  'translation-correction': 'Translation or language correction',
-  'historical-correction': 'Historical correction',
-  'broken-link': 'Broken link',
-  accessibility: 'Accessibility issue',
-  typo: 'Typographical error',
-  general: 'General feedback',
-}
-
-export const publicationConsents = ['do-not-publish', 'anonymous', 'publish-name'] as const
 export const PublicationConsentSchema = z.enum(publicationConsents)
-export type PublicationConsent = z.infer<typeof PublicationConsentSchema>
-
-export const feedbackStatuses = [
-  'new',
-  'reviewing',
-  'accepted',
-  'partially-accepted',
-  'declined',
-  'duplicate',
-  'spam',
-] as const
 export const FeedbackStatusSchema = z.enum(feedbackStatuses)
 export type FeedbackStatus = z.infer<typeof FeedbackStatusSchema>
 

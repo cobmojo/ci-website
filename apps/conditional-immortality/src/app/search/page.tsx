@@ -7,6 +7,7 @@ import {
   type SearchFilters,
   search,
 } from '@ci/search'
+import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/article/article-chrome'
@@ -110,7 +111,7 @@ export default async function SearchPage({
         />
 
         <h1 className="mt-0 mb-2">Search</h1>
-        <p className="mt-0 mb-6 max-w-[var(--spacing-measure)] text-ink-muted">
+        <p className="mt-0 mb-6 text-ink-muted">
           Search case sections, key passages, objections, topics, the glossary, the source library
           and the video transcript. Scripture references work in any common form, including Matthew
           10:28, Matt 10 28 and Mt. 10:28.
@@ -135,10 +136,7 @@ export default async function SearchPage({
                 className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
               />
             </div>
-            <button
-              type="submit"
-              className="inline-flex min-h-11 items-center rounded-md bg-navy px-5 font-sans text-[0.95rem] font-medium text-white"
-            >
+            <button type="submit" className={buttonVariants({ variant: 'primary' })}>
               Search
             </button>
           </div>
@@ -249,7 +247,7 @@ export default async function SearchPage({
               <Link
                 href={buildHref({ page: String(page - 1) })}
                 rel="prev"
-                className="inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline"
+                className="pressable inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline hover:bg-panel"
               >
                 <span aria-hidden="true">←</span> Previous
               </Link>
@@ -261,7 +259,7 @@ export default async function SearchPage({
               <Link
                 href={buildHref({ page: String(page + 1) })}
                 rel="next"
-                className="inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline"
+                className="pressable inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline hover:bg-panel"
               >
                 Next <span aria-hidden="true">→</span>
               </Link>
@@ -269,7 +267,7 @@ export default async function SearchPage({
           </nav>
         ) : null}
 
-        <p className="mt-10 max-w-[var(--spacing-measure)] font-sans text-[0.88rem] text-ink-subtle">
+        <p className="mt-10 font-sans text-[0.88rem] text-ink-subtle">
           Search runs entirely in your browser against an index built when the site was published.
           Nothing you type is sent to a server, and no search history is kept.
         </p>

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 import { SiteFooter } from '@/components/navigation/site-footer'
 import { SiteHeader } from '@/components/navigation/site-header'
+import { SmoothAnchorScroll } from '@/components/navigation/smooth-anchor-scroll'
 import { siteConfig } from '@/lib/site-config'
 import './globals.css'
 
@@ -50,6 +51,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang={siteConfig.language}>
       <body className="flex min-h-dvh flex-col">
+        {/* Renders nothing. Applies smooth scrolling to in-page anchor
+            navigation only, which cannot be expressed in CSS without also
+            capturing the router's scroll-to-top. See the component. */}
+        <SmoothAnchorScroll />
         <a className="skip-link" href="#main-content">
           Skip to main content
         </a>

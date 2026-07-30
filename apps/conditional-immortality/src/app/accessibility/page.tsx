@@ -1,3 +1,4 @@
+import { buttonVariants } from '@ci/ui'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
 import { formatLongDate } from '@/lib/format'
@@ -63,7 +64,7 @@ const TESTED: readonly TestedItem[] = [
     id: 'motion',
     title: 'Reduced motion',
     detail:
-      'There is almost no motion here to begin with: no carousels, no parallax, no animated illustrations, no auto-playing video. What little transition exists is reduced to effectively nothing when the operating system reports a preference for reduced motion, and that rule was verified with the preference switched on.',
+      'There is very little motion here: no carousels, no parallax, no animated illustrations, no auto-playing video, and nothing that appears or moves as you scroll. What motion exists is confined to things you operate, such as a panel opening or a button responding to a press, and to scrolling smoothly when you follow a link to a heading further down the same page. When the operating system reports a preference for reduced motion, every one of those movements is removed, replaced by a plain fade or by nothing at all. The colour changes that show you where the pointer is are kept, because taking those away would make the interface harder to follow rather than gentler. Both versions are checked automatically on every build, and the still version was also reviewed with the preference switched on.',
   },
   {
     id: 'languages',
@@ -249,7 +250,7 @@ export default function AccessibilityPage() {
               <p className="m-0 mb-4">
                 <Link
                   href="/corrections/?type=accessibility#form"
-                  className="inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
+                  className={buttonVariants({ variant: 'primary' })}
                 >
                   Report an accessibility problem
                 </Link>

@@ -194,6 +194,26 @@ writeFileSync(
   `${JSON.stringify({ summary: LEDGER_SUMMARY, media: mediaDispositions, comments: commentLedger }, null, 2)}\n`,
 )
 
+/*
+ * Hand the two committed JSON exports to the formatter. `JSON.stringify` does
+ * not produce what biome considers formatted, and this step runs after `lint`,
+ * so without it a clean `validate` left the tree dirty and the next `lint` red.
+ * The CSV is skipped: biome does not handle CSV and excludes it.
+ */
+const formatted = [
+  join(migrationDir, 'migration-ledger.json'),
+  join(migrationDir, 'source-inventory.json'),
+]
+const format = Bun.spawnSync(['bunx', 'biome', 'check', '--write', ...formatted], {
+  cwd: REPO_ROOT,
+  stdout: 'pipe',
+  stderr: 'pipe',
+})
+if (format.exitCode !== 0) {
+  console.error(`biome could not format the ledger exports:\n${format.stderr}`)
+  process.exit(1)
+}
+
 /* ------------------------------------------------------------------ *
  * Console summary
  * ------------------------------------------------------------------ */

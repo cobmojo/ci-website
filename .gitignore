@@ -19,3 +19,16 @@ private/source/*.docx
 private/source/*.doc
 .feedback-store/
 reports/
+
+# Regenerated per-command with different contents each time. The stable half is
+# committed as apps/conditional-immortality/types/next-env.d.ts, so this is
+# anchored: written bare it would match that file too.
+/apps/conditional-immortality/next-env.d.ts
+
+# The animations.dev installer writes the same skills into a directory for every
+# agent on the machine. Only Claude Code's copy is committed, in .claude/skills/;
+# the rest work the same from disk.
+/.cursor/
+/.codex/
+/.opencode/
+/.gemini/

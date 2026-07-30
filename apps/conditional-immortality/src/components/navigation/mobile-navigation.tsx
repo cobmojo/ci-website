@@ -55,7 +55,7 @@ export function MobileNavigation() {
           dialogRef.current?.showModal()
           setOpen(true)
         }}
-        className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border border-border-strong bg-paper-raised px-2 font-sans text-[0.88rem] font-medium text-navy sm:px-3 xl:hidden"
+        className="pressable inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border border-border-strong bg-paper-raised px-2 font-sans text-[0.88rem] font-medium text-navy sm:px-3 xl:hidden"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
           <path
@@ -82,7 +82,10 @@ export function MobileNavigation() {
           // Clicking the backdrop (the dialog element itself) closes the sheet.
           if (event.target === dialogRef.current) close()
         }}
-        className="m-0 ml-auto h-dvh max-h-none w-full max-w-[24rem] border-l border-border bg-paper p-0 backdrop:bg-ink/40"
+        // `overlay-sheet` slides in from the right edge the sheet is anchored
+        // to, and carries the backdrop wash on the panel's own clock. Under
+        // reduced motion it crossfades in place instead.
+        className="overlay-sheet m-0 ml-auto h-dvh max-h-none w-full max-w-[24rem] border-l border-border bg-paper p-0"
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -90,7 +93,7 @@ export function MobileNavigation() {
             <button
               type="button"
               onClick={close}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-[0.88rem] text-ink-muted hover:bg-panel"
+              className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-[0.88rem] text-ink-muted hover:bg-panel"
             >
               <span className="sr-only">Close navigation</span>
               <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">

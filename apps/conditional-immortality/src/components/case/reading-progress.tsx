@@ -94,7 +94,11 @@ export function ReadingProgress({ total }: { total: number }) {
   return (
     <section
       aria-labelledby="reading-progress-title"
-      className="mt-10 rounded-md border border-border bg-paper-raised p-5 print:hidden"
+      // This panel cannot exist until scripting has run, so it necessarily
+      // arrives after first paint. `mount-reveal` fades it in over 180ms, which
+      // turns a flash of new interface into an arrival. Opacity only, so it is
+      // also the reduced-motion variant.
+      className="mount-reveal mt-10 rounded-md border border-border bg-paper-raised p-5 print:hidden"
     >
       {markerCss ? <style>{markerCss}</style> : null}
 

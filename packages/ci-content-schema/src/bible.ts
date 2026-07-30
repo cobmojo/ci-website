@@ -5,6 +5,7 @@
  * Chapter counts follow the 66-book Protestant canon, which is the canon the
  * source document works from.
  */
+import { LONGEST_CHAPTER, VERSE_COUNTS } from './versification'
 
 export type Testament = 'OT' | 'NT'
 
@@ -280,13 +281,39 @@ export function findBook(token: string): BibleBook | undefined {
   return BOOK_LOOKUP.get(normaliseBookToken(token))
 }
 
-export interface ParsedReference {
+/**
+ * The parts of a reference, independent of how it is rendered.
+ *
+ * `chapterEnd` and the verse fields are mutually exclusive: a reference spans
+ * either whole chapters or verses within one chapter. An object rather than
+ * positional arguments, because both ranges are "a second number".
+ */
+/**
+ * Is `verse` a verse that exists in this chapter?
+ *
+ * `VERSE_COUNTS` comes from the same World English Bible edition the Scripture
+ * corpus quotes, so the parser and the text agree about where a chapter ends. A
+ * book missing from the table falls back to the longest chapter rather than
+ * rejecting everything; its completeness is asserted by its own test.
+ */
+function isVerseInChapter(book: BibleBook, chapter: number, verse: number): boolean {
+  if (verse < 1) return false
+  const lastVerse = VERSE_COUNTS[book.name]?.[chapter - 1]
+  return verse <= (lastVerse ?? LONGEST_CHAPTER)
+}
+
+export interface ReferenceParts {
   readonly book: string
-  readonly bookOrder: number
-  readonly testament: Testament
   readonly chapter: number
+  /** Last chapter of a whole-chapter range, e.g. the 22 in `Revelation 20-22`. */
+  readonly chapterEnd?: number
   readonly verseStart?: number
   readonly verseEnd?: number
+}
+
+export interface ParsedReference extends ReferenceParts {
+  readonly bookOrder: number
+  readonly testament: Testament
   /** Canonical display form, e.g. `Matthew 10:28` or `Isaiah 66:15-24`. */
   readonly normalized: string
   /** Sortable, URL-safe identity, e.g. `matthew-10-28`. */
@@ -322,56 +349,81 @@ export function parseReference(input: string): ParsedReference | undefined {
 
   let chapter = Number(numbers[1])
   let verseStart = numbers[2] ? Number(numbers[2]) : undefined
-  let verseEnd = numbers[3] ? Number(numbers[3]) : undefined
+  const trailing = numbers[3] ? Number(numbers[3]) : undefined
+  let verseEnd = verseStart === undefined ? undefined : trailing
 
-  /**
-   * Single-chapter books are cited without a chapter: `Jude 7` means Jude 1:7,
-   * and `Jude 12-13` means Jude 1:12-13. Without this, the leading number is
-   * read as a chapter and rejected as out of range.
+  /*
+   * The trailing number after a hyphen closes a verse range when a verse was
+   * given (`Isaiah 66:15-24`) and a chapter range when one was not
+   * (`Revelation 20-22`).
+   */
+  let chapterEnd = verseStart === undefined ? trailing : undefined
+
+  /*
+   * Single-chapter books are cited without a chapter: `Jude 7` means Jude 1:7.
+   * There is no chapter range to be had in one chapter, so a trailing number is
+   * a verse after all.
    */
   if (book.chapters === 1 && verseStart === undefined) {
     verseStart = chapter
-    verseEnd = numbers[3] ? Number(numbers[3]) : undefined
+    verseEnd = trailing
+    chapterEnd = undefined
     chapter = 1
   }
 
   if (!Number.isInteger(chapter) || chapter < 1 || chapter > book.chapters) return undefined
-  if (verseStart !== undefined && (verseStart < 1 || verseStart > 176)) return undefined
-  if (verseEnd !== undefined && verseStart !== undefined && verseEnd < verseStart) return undefined
+  if (chapterEnd !== undefined && (chapterEnd <= chapter || chapterEnd > book.chapters)) {
+    return undefined
+  }
+  if (verseStart !== undefined && !isVerseInChapter(book, chapter, verseStart)) return undefined
+  if (verseEnd !== undefined && verseStart !== undefined) {
+    if (verseEnd < verseStart) return undefined
+    if (!isVerseInChapter(book, chapter, verseEnd)) return undefined
+  }
+
+  const parts: ReferenceParts = { book: book.name, chapter, chapterEnd, verseStart, verseEnd }
 
   return {
-    book: book.name,
+    ...parts,
     bookOrder: book.order,
     testament: book.testament,
-    chapter,
-    verseStart,
-    verseEnd,
-    normalized: formatReference(book.name, chapter, verseStart, verseEnd),
-    slug: referenceSlug(book.name, chapter, verseStart, verseEnd),
+    normalized: formatReference(parts),
+    slug: referenceSlug(parts),
   }
 }
 
-export function formatReference(
-  book: string,
-  chapter: number,
-  verseStart?: number,
-  verseEnd?: number,
-): string {
+export function formatReference({
+  book,
+  chapter,
+  chapterEnd,
+  verseStart,
+  verseEnd,
+}: ReferenceParts): string {
+  if (chapterEnd !== undefined) return `${book} ${chapter}-${chapterEnd}`
   if (verseStart === undefined) return `${book} ${chapter}`
   if (verseEnd === undefined) return `${book} ${chapter}:${verseStart}`
   return `${book} ${chapter}:${verseStart}-${verseEnd}`
 }
 
-export function referenceSlug(
-  book: string,
-  chapter: number,
-  verseStart?: number,
-  verseEnd?: number,
-): string {
+/**
+ * URL-safe identity for a reference.
+ *
+ * The verse forms are positional (`mark-9`, `mark-9-48`, `mark-9-42-48`), so a
+ * chapter range written the same way would be indistinguishable from a verse.
+ * Chapter ranges spell the join out instead, leaving existing slugs unchanged.
+ */
+export function referenceSlug({
+  book,
+  chapter,
+  chapterEnd,
+  verseStart,
+  verseEnd,
+}: ReferenceParts): string {
   const base = book
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+  if (chapterEnd !== undefined) return `${base}-${chapter}-to-${chapterEnd}`
   const parts = [base, String(chapter)]
   if (verseStart !== undefined) parts.push(String(verseStart))
   if (verseEnd !== undefined) parts.push(String(verseEnd))

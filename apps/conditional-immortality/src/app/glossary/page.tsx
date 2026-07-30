@@ -105,7 +105,7 @@ export default function GlossaryPage() {
               <li key={group.letter}>
                 <a
                   href={`#letter-${group.letter.toLowerCase()}`}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-border px-2 no-underline hover:bg-panel hover:underline"
+                  className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-border px-2 no-underline hover:bg-panel hover:underline"
                 >
                   {group.letter}
                 </a>
@@ -114,7 +114,7 @@ export default function GlossaryPage() {
             <li>
               <a
                 href="#language-notes"
-                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-3 no-underline hover:bg-panel hover:underline"
+                className="pressable inline-flex min-h-11 items-center justify-center rounded-md border border-border px-3 no-underline hover:bg-panel hover:underline"
               >
                 Language notes
               </a>
@@ -194,7 +194,7 @@ export default function GlossaryPage() {
           <h2 id="language-notes-title" className="mt-0 mb-3 text-[1.3rem]">
             Original-language notes
           </h2>
-          <p className="m-0 mb-6 max-w-[var(--spacing-measure)] text-[1.05rem] text-ink-muted">
+          <p className="m-0 mb-6 text-[1.05rem] text-ink-muted">
             A note exists here only where the case makes an argument from a Greek or Hebrew word.
             Each gives the standard range of meaning first, then the argument made from the word in
             its context, then how other interpreters read the same word. None of them treats a root

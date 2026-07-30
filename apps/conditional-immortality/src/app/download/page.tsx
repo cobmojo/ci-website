@@ -1,4 +1,5 @@
 import { video } from '@ci/content/video'
+import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
@@ -34,7 +35,7 @@ export default function DownloadPage() {
               Take it with you
             </p>
             <h1 className="mt-0 mb-4">Downloads</h1>
-            <p className="m-0 max-w-[var(--spacing-measure)] text-[1.13rem] leading-[1.6] text-ink-muted">
+            <p className="m-0 text-[1.13rem] leading-[1.6] text-ink-muted">
               Everything here is generated from the same content as the site itself, so a printed or
               downloaded copy says exactly what the pages say. Nothing needs an account, an email
               address or a third-party service.
@@ -50,7 +51,7 @@ export default function DownloadPage() {
                 <h2 id="download-full-case" className="mt-0 mb-2 text-[1.18rem]">
                   The complete case, printer friendly
                 </h2>
-                <p className="m-0 mb-3 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+                <p className="m-0 mb-3 text-[1rem] text-ink-muted">
                   Every section in canonical order on one page, followed by the full bibliography.
                   To keep a copy, open it and use the print command in your browser, Ctrl and P on
                   Windows or Command and P on a Mac, then choose Save as PDF. Navigation and
@@ -58,10 +59,7 @@ export default function DownloadPage() {
                   a new page.
                 </p>
                 <p className="m-0 font-sans text-[0.95rem]">
-                  <Link
-                    href="/full-case/"
-                    className="inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-medium text-white no-underline hover:bg-navy-deep"
-                  >
+                  <Link href="/full-case/" className={buttonVariants({ variant: 'primary' })}>
                     Open the full case
                   </Link>
                 </p>
@@ -76,7 +74,7 @@ export default function DownloadPage() {
                 <h2 id="download-transcript" className="mt-0 mb-2 text-[1.18rem]">
                   Video transcript, plain text
                 </h2>
-                <p className="m-0 mb-3 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+                <p className="m-0 mb-3 text-[1rem] text-ink-muted">
                   The complete transcript of the {formatTimestamp(video.durationSeconds)} overview,
                   with chapter headings and timestamps. This is the caption track published by the
                   author with the video, not a machine transcription.
@@ -85,7 +83,7 @@ export default function DownloadPage() {
                   <a
                     href="/download/transcript.txt"
                     download
-                    className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className={buttonVariants({ variant: 'secondary' })}
                   >
                     Download transcript.txt
                   </a>
@@ -105,7 +103,7 @@ export default function DownloadPage() {
                 <h2 id="download-bibliography" className="mt-0 mb-2 text-[1.18rem]">
                   Bibliography, plain text
                 </h2>
-                <p className="m-0 mb-3 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+                <p className="m-0 mb-3 text-[1rem] text-ink-muted">
                   Every source in the library, grouped by kind, with its citation, its link, the
                   date it was last checked and the rights position taken on it. Useful if you want
                   to follow the argument back to its sources or to check one of them yourself.
@@ -114,7 +112,7 @@ export default function DownloadPage() {
                   <a
                     href="/download/bibliography.txt"
                     download
-                    className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className={buttonVariants({ variant: 'secondary' })}
                   >
                     Download bibliography.txt
                   </a>
@@ -134,7 +132,7 @@ export default function DownloadPage() {
                 <h2 id="download-handout" className="mt-0 mb-2 text-[1.18rem]">
                   One-page handout
                 </h2>
-                <p className="m-0 mb-3 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+                <p className="m-0 mb-3 text-[1rem] text-ink-muted">
                   A single printable page: what this case claims in six sentences, the shortest
                   reading path through it, the address of this site in plain text and a QR code that
                   points at it. Meant for a study group, a class or a conversation where a link is
@@ -143,7 +141,7 @@ export default function DownloadPage() {
                 <p className="m-0 font-sans text-[0.95rem]">
                   <a
                     href="/download/handout.html"
-                    className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className={buttonVariants({ variant: 'secondary' })}
                   >
                     Open the printable handout
                   </a>
@@ -160,7 +158,7 @@ export default function DownloadPage() {
                 <h2 id="download-original" className="mt-0 mb-2 text-[1.18rem]">
                   The original document
                 </h2>
-                <p className="m-0 mb-3 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+                <p className="m-0 mb-3 text-[1rem] text-ink-muted">
                   This site is a web edition of a working document by {siteConfig.author.name}. The
                   original file is not published, because it carries private contact details and
                   editorial comments from named readers. What it contained, how every part of it was
@@ -169,7 +167,7 @@ export default function DownloadPage() {
                 <p className="m-0 font-sans text-[0.95rem]">
                   <Link
                     href="/original-document/"
-                    className="inline-flex min-h-11 items-center rounded-md border border-navy px-4 font-medium text-navy no-underline hover:bg-panel"
+                    className={buttonVariants({ variant: 'outline' })}
                   >
                     Read about the original document
                   </Link>
@@ -182,7 +180,7 @@ export default function DownloadPage() {
             <h2 id="download-notes" className="mt-0 mb-3 text-[1.12rem]">
               Reusing any of this
             </h2>
-            <p className="m-0 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+            <p className="m-0 text-[1rem] text-ink-muted">
               Quote it, print it, hand it round. If you find an error in a downloaded copy, please
               check it against the site first, since the site is always the current version, and
               then tell us through <Link href="/corrections/">corrections</Link>.

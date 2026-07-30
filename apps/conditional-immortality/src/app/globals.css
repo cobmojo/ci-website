@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Source detection stops at this workspace and skips anything reached through
+   node_modules, which is how @ci/ui resolves. Without this the utilities used
+   only by `buttonVariants` are never generated. */
+@source "../../../../packages/ui/src";
+
 /* ------------------------------------------------------------------ *
  * Self-hosted fonts.
  *
@@ -120,6 +125,16 @@
 
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
+
+  /*
+   * Easing. Two curves, both ease-out, because every animation on this site is
+   * something entering or leaving the screen and ease-out is what makes that
+   * feel like a response rather than a delay. Values are the standard quad and
+   * cubic curves rather than invented ones, so a reader who meets this site
+   * after any other well-behaved one meets the same feel.
+   */
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 
 /* ------------------------------------------------------------------ *
@@ -131,6 +146,26 @@
     color-scheme: light;
     --header-height: 3.75rem;
     scroll-padding-top: calc(var(--header-height) + 1.5rem);
+
+    /*
+     * Motion durations. The tiers they belong to are set out in
+     * docs/motion-brief.md and enforced by
+     * src/lib/__tests__/motion-contract.test.ts.
+     *
+     * Nothing here reaches 300ms. Interface animation above that reads as the
+     * page thinking rather than as the page responding, and this is a site
+     * people come to in order to read.
+     */
+
+    /* Tier 1. A pointer or a key landing on something interactive. */
+    --motion-feedback: 130ms;
+    /* Tier 2. Press confirmation. */
+    --motion-press: 100ms;
+    /* Tier 3. Overlays and disclosures. Exits are quicker than entrances. */
+    --motion-overlay: 200ms;
+    --motion-overlay-exit: 150ms;
+    /* Tier 3. Controls that cannot exist until scripting has run. */
+    --motion-reveal: 180ms;
   }
 
   * {
@@ -199,6 +234,36 @@
     text-decoration-thickness: 0.11em;
   }
 
+  /*
+   * Tier 1. The response to a pointer or a key landing on something.
+   *
+   * Declared once, on element selectors, so all 129 pages inherit it and a page
+   * added later cannot forget it. Before this rule the shared Button had a
+   * colour transition and the fifteen hand-written links styled to look exactly
+   * like it did not, which is the kind of inconsistency a reader feels without
+   * being able to name.
+   *
+   * Every property here is paint-only. Nothing moves, which is why this tier is
+   * kept rather than removed when a reader asks for reduced motion: the colour
+   * change is how the state is legible, and taking it away would make the
+   * interface harder to follow, not gentler.
+   */
+  a,
+  button,
+  summary,
+  select,
+  input,
+  textarea,
+  [role="button"] {
+    transition-property:
+      color, background-color, border-color, text-decoration-color, text-decoration-thickness,
+      opacity;
+    transition-duration: var(--motion-feedback);
+    /* `ease` spelled out: it is the default, but many readers of this file will
+       assume the default is linear. Gentle asymmetric curves suit hover. */
+    transition-timing-function: ease;
+  }
+
   :focus-visible {
     outline: 3px solid var(--color-copper);
     outline-offset: 2px;
@@ -220,16 +285,29 @@
    * a third of a landscape phone viewport.
    */
 
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
+  /*
+   * Tier 4 is deliberately not here.
+   *
+   * Smooth scrolling for in-page anchors is the one animation on this site that
+   * earns its place by aiding comprehension rather than by softening an edge:
+   * every article page carries an "On this page" list, and following one of
+   * those links can move a reader four thousand words down a document.
+   *
+   * But `scroll-behavior: smooth` on `html` also captures the App Router's
+   * scroll-to-top on client navigation, and measured in Chromium 148 the effect
+   * is that the scroll position survives a route change untouched. Following
+   * "Next section" from two thousand pixels down an article landed two thousand
+   * pixels down the next one. So the behaviour is applied for the duration of
+   * one fragment navigation by `components/navigation/smooth-anchor-scroll.tsx`,
+   * which also reads the reduced-motion preference at the moment of the click.
+   *
+   * There is deliberately no blanket `prefers-reduced-motion` override on `*`
+   * anywhere in this file. It used to collapse every duration to 0.001ms with
+   * `!important`, which removed the meaning along with the movement and could
+   * not be overridden by a component that needed to keep a fade. Each animation
+   * now carries its own reduced variant instead, and the contract test fails the
+   * build if one does not.
+   */
 }
 
 /* ------------------------------------------------------------------ *
@@ -237,10 +315,20 @@
  * ------------------------------------------------------------------ */
 
 @layer components {
+  /*
+   * The skip link travels, which makes it the one piece of chrome whose
+   * animation is the whole affordance: a reader watching it arrive understands
+   * that it came from above the page and will go back there.
+   *
+   * `translate` rather than `top`. Moving `top` recalculates layout on every
+   * frame; a translation is composited and costs nothing. The offset is the
+   * element's own height plus the inset, so it cannot fall out of step with the
+   * padding or the font size.
+   */
   .skip-link {
     position: absolute;
     left: 0.5rem;
-    top: -100%;
+    top: 0.5rem;
     z-index: 100;
     background: var(--color-navy);
     color: #fff;
@@ -249,11 +337,146 @@
     font-family: var(--font-sans);
     font-size: 0.95rem;
     text-decoration: none;
-    transition: top 0.15s ease-in-out;
+    translate: 0 calc(-100% - 1rem);
   }
 
   .skip-link:focus {
-    top: 0.5rem;
+    translate: 0 0;
+  }
+
+  /*
+   * Tier 2. Press confirmation.
+   *
+   * Buttons and button-shaped calls to action only. Never a prose link, because
+   * a word that shrinks inside a sentence is grotesque, and never a card: three
+   * per cent off a 300px card reads as a glitch rather than as a press.
+   *
+   * The scale itself lives in the reduced-motion opt-in below, so under `reduce`
+   * nothing happens at all rather than the element jumping to a smaller size
+   * with the transition removed.
+   */
+  .pressable {
+    transform-origin: center;
+  }
+
+  /*
+   * Tier 3. Overlay enter and exit, for the two native dialogs: site search and
+   * the narrow-screen navigation sheet.
+   *
+   * The opacity and the two discrete steps are unconditional, so a reader who
+   * has asked for reduced motion still gets a crossfade. The panel arriving is
+   * information; only the travel is decoration.
+   *
+   * `@starting-style` gives the transition a value to start from, which a
+   * dialog otherwise lacks: it goes from `display: none` to open in one step.
+   * `overlay` has to be in the property list or the browser drops the panel out
+   * of the top layer the moment it closes and the exit never renders at all.
+   */
+  .overlay-panel,
+  .overlay-sheet {
+    opacity: 0;
+    transition-property: opacity, display, overlay;
+    transition-duration: var(--motion-overlay-exit);
+    transition-timing-function: var(--ease-out-quad);
+    transition-behavior: allow-discrete;
+  }
+
+  .overlay-panel[open],
+  .overlay-sheet[open] {
+    opacity: 1;
+    transition-duration: var(--motion-overlay);
+  }
+
+  @starting-style {
+    .overlay-panel[open],
+    .overlay-sheet[open] {
+      opacity: 0;
+    }
+  }
+
+  /*
+   * The backdrop is a paired element, so it takes the panel's duration and
+   * curve exactly. A backdrop that fades on a different clock from the panel it
+   * belongs to stops reading as one object. The wash is the same 40% ink the two
+   * dialogs previously carried as a utility class, moved here so the pairing has
+   * one place to live.
+   */
+  .overlay-panel::backdrop,
+  .overlay-sheet::backdrop {
+    background-color: transparent;
+    transition-property: background-color, display, overlay;
+    transition-duration: var(--motion-overlay-exit);
+    transition-timing-function: var(--ease-out-quad);
+    transition-behavior: allow-discrete;
+  }
+
+  .overlay-panel[open]::backdrop,
+  .overlay-sheet[open]::backdrop {
+    background-color: color-mix(in srgb, var(--color-ink) 40%, transparent);
+    transition-duration: var(--motion-overlay);
+  }
+
+  @starting-style {
+    .overlay-panel[open]::backdrop,
+    .overlay-sheet[open]::backdrop {
+      background-color: transparent;
+    }
+  }
+
+  /*
+   * Tier 3. Anything that appears in place: the correction form's status
+   * messages, and the controls that cannot exist until scripting has run.
+   *
+   * `reveal-fade` is opacity and nothing else, which is why it is also the
+   * reduced-motion variant. A control popping into existence after hydration is
+   * a flash; the same control fading in over 180ms is not.
+   */
+  @keyframes reveal-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes status-in {
+    from {
+      opacity: 0;
+      translate: 0 -0.25rem;
+    }
+  }
+
+  .status-message,
+  .mount-reveal,
+  .video-frame {
+    animation: reveal-fade var(--motion-reveal) ease;
+  }
+
+  /*
+   * Anchor beside a heading.
+   *
+   * Visible by default and hidden only where hovering is possible. The reverse,
+   * which is what a bare `group-hover` gives you, leaves the anchor permanently
+   * invisible on a phone: there is no hover to reveal it with, so the affordance
+   * simply does not exist for touch readers.
+   *
+   * Where it rests visible it is opaque `ink-subtle`, the quietest text colour
+   * that still clears 4.5:1 on every surface it sits on. The first version
+   * showed it at 0.4 opacity in the heading's `border-strong`, which composited
+   * to roughly 1.27:1 against paper: technically rendered, practically
+   * invisible, which is the exact defect the class exists to fix.
+   */
+  .heading-anchor {
+    color: var(--color-ink-subtle);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .heading-anchor {
+      opacity: 0;
+    }
+
+    :is(h2, h3):hover > .heading-anchor,
+    .heading-anchor:focus-visible {
+      opacity: 1;
+    }
   }
 
   /* Long-form article typography. Applied to rendered MDX bodies. */
@@ -346,10 +569,17 @@
   .measure-prose :is(p, dd, li, blockquote) {
     /*
      * Two caps, whichever bites first. The rem cap holds the column width for
-     * body text; the ch cap is font-relative, so small supporting text does
-     * not quietly reach ninety characters inside the same 42rem box.
+     * body text; the em cap keeps small supporting text from running long
+     * inside the same box.
+     *
+     * Deliberately em, not ch. `ch` is the advance of the digit zero, 18% wider
+     * than the average character in Inter, so 74ch held 87 characters — and
+     * being a font metric it rounds differently per platform, which put the
+     * same paragraph at 87 characters on one and 91 on another. Average advance
+     * is 0.485em–0.535em across all four faces here, so an em cap holds a
+     * stable measure: 39em lands every prose size at 70–80 characters.
      */
-    max-width: min(var(--spacing-measure), 74ch);
+    max-width: min(var(--spacing-measure), 39em);
   }
 
   /* A list item that is a layout row, not a line of prose, keeps its width. */
@@ -495,6 +725,130 @@
     direction: rtl;
     unicode-bidi: isolate;
   }
+
+  /* ---------------------------------------------------------------- *
+   * Movement
+   *
+   * Everything on the site that actually moves is in this one block, and the
+   * block is opt-in. That is the whole reduced-motion strategy: a reader who
+   * has asked for less motion is not served a weakened version of these rules,
+   * they are served the stylesheet without them, and what is left is a set of
+   * crossfades and colour changes that still say everything the movement said.
+   *
+   * Grouping it also means the answer to "what moves on this site?" is one
+   * screenful of CSS rather than an audit.
+   * ---------------------------------------------------------------- */
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* Tier 2. */
+    .pressable {
+      transition-property: color, background-color, border-color, opacity, scale;
+      transition-duration:
+        var(--motion-feedback), var(--motion-feedback), var(--motion-feedback),
+        var(--motion-feedback), var(--motion-press);
+      transition-timing-function: ease, ease, ease, ease, var(--ease-out-quad);
+    }
+
+    .pressable:active {
+      scale: 0.97;
+    }
+
+    /* Tier 3. The search panel hangs from the top of the viewport, so it
+       arrives from just above it and scales up from close to full size.
+       Starting a scale at 0 has no counterpart in the physical world. */
+    .overlay-panel {
+      translate: 0 -0.5rem;
+      scale: 0.98;
+      transform-origin: top center;
+      transition-property: opacity, translate, scale, display, overlay;
+    }
+
+    .overlay-panel[open] {
+      translate: 0 0;
+      scale: 1;
+    }
+
+    @starting-style {
+      .overlay-panel[open] {
+        translate: 0 -0.5rem;
+        scale: 0.98;
+      }
+    }
+
+    /* The sheet is anchored to the right edge, so it arrives from the right
+       edge. A percentage rather than a distance, so it hides itself exactly
+       whatever width the viewport gives it. */
+    .overlay-sheet {
+      translate: 100% 0;
+      transition-property: opacity, translate, display, overlay;
+    }
+
+    .overlay-sheet[open] {
+      translate: 0 0;
+    }
+
+    @starting-style {
+      .overlay-sheet[open] {
+        translate: 100% 0;
+      }
+    }
+
+    /*
+     * Disclosures are deliberately not animated. See docs/motion-brief.md.
+     *
+     * The `::details-content` height transition was built, measured and then
+     * removed. On Chromium 148 the canonical recipe — `block-size: 0` plus
+     * `overflow: hidden` on the pseudo-element, with `interpolate-size:
+     * allow-keywords` and a discrete `content-visibility` step — leaves the
+     * content permanently collapsed: opening the disclosure lays the content out
+     * but the pseudo-element stays at zero height and clips all of it. The same
+     * failure reproduces with the recipe in complete isolation, so it is not a
+     * conflict with anything else in this file, and it reproduces with
+     * `content-visibility` dropped from the transition and with an
+     * ID-specificity `block-size: auto` on the open state.
+     *
+     * The failure mode is hiding argument behind a disclosure that looks open,
+     * which is not a risk worth 200ms of polish. Disclosures snap open, as they
+     * did before, and print needs no workaround because nothing collapses them.
+     */
+
+    /* Tier 3. Status messages rise very slightly as they fade in, which is
+       enough to draw the eye to a form result without the message travelling
+       far enough to be read on the way. */
+    .status-message {
+      animation-name: status-in;
+      animation-duration: var(--motion-overlay);
+      animation-timing-function: var(--ease-out-quad);
+    }
+
+    /* Tier 2, on the largest interactive target on the site. The glyph moves,
+       not the poster: scaling a 16:9 panel would drag its border across the
+       page and shift everything below it. */
+    .video-play__glyph {
+      transition-property: scale;
+      transition-duration: var(--motion-feedback);
+      transition-timing-function: ease;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .video-play:hover .video-play__glyph {
+        scale: 1.04;
+      }
+    }
+
+    .video-play:active .video-play__glyph {
+      scale: 0.97;
+    }
+
+    /* The skip link's travel is its affordance. Under `reduce` it simply
+       appears where it belongs, instantly, which is the correct still variant
+       of an element whose entire animation is movement. */
+    .skip-link {
+      transition-property: translate;
+      transition-duration: var(--motion-overlay-exit);
+      transition-timing-function: var(--ease-out-quad);
+    }
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -588,6 +942,14 @@
   details > * {
     display: revert !important;
   }
+
+  /*
+   * Nothing collapses `::details-content`, so no pseudo-element override is
+   * needed here. If a disclosure animation is ever reinstated, it will need one:
+   * `display: revert` on the children above cannot reach a pseudo-element, so a
+   * collapsed `::details-content` would silently delete the content of every
+   * disclosure from the printed page.
+   */
 
   .scripture-block {
     border-inline-start: 2pt solid #000;

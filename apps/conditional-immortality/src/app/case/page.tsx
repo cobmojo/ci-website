@@ -6,6 +6,7 @@ import {
   PRINCIPAL_CLAIMS,
 } from '@ci/content/case'
 import type { CaseGroup, CaseSection } from '@ci/content-schema'
+import { buttonVariants } from '@ci/ui'
 import Link from 'next/link'
 import {
   Breadcrumbs,
@@ -153,7 +154,7 @@ export default function CaseHubPage() {
           <h2 id="principal-claims" className="mt-0 mb-3 text-[1.35rem]">
             The six principal claims
           </h2>
-          <p className="m-0 mb-6 max-w-[var(--spacing-measure)] text-[1.05rem] text-ink-muted">
+          <p className="m-0 mb-6 text-[1.05rem] text-ink-muted">
             Everything in the forty parts is in service of these six claims. If they hold, the
             conclusion follows. If they do not, the case fails, and the parts that would have to be
             answered are named beside each one.
@@ -199,7 +200,7 @@ export default function CaseHubPage() {
           <h2 id="essential-path" className="mt-0 mb-3 text-[1.35rem]">
             The essential reading path
           </h2>
-          <p className="m-0 mb-6 max-w-[var(--spacing-measure)] text-[1.05rem] text-ink-muted">
+          <p className="m-0 mb-6 text-[1.05rem] text-ink-muted">
             Twelve pages, in this order, meet every load-bearing pillar of the case without reading
             all forty. It is the honest short version rather than a summary, because each page is
             the argument itself rather than a description of it.
@@ -250,7 +251,7 @@ export default function CaseHubPage() {
           <h2 id="all-parts" className="mt-0 mb-3 text-[1.35rem]">
             All {caseSections.length} parts
           </h2>
-          <p className="m-0 mb-8 max-w-[var(--spacing-measure)] text-[1.05rem] text-ink-muted">
+          <p className="m-0 mb-8 text-[1.05rem] text-ink-muted">
             Grouped by the work each part does. The permanent id beside every title never changes,
             even if a title or a route is revised later, so it is safe to cite.
           </p>
@@ -268,9 +269,7 @@ export default function CaseHubPage() {
                   {bucket.sections.length} {bucket.sections.length === 1 ? 'part' : 'parts'}
                 </span>
               </h3>
-              <p className="m-0 mb-4 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
-                {GROUP_PURPOSE[bucket.group]}
-              </p>
+              <p className="m-0 mb-4 text-[1rem] text-ink-muted">{GROUP_PURPOSE[bucket.group]}</p>
 
               <ul className="m-0 grid list-none gap-3 p-0 lg:grid-cols-2">
                 {bucket.sections.map(section => (
@@ -314,21 +313,15 @@ export default function CaseHubPage() {
           <h2 id="read-it-all" className="mt-0 mb-2 text-[1.18rem]">
             Read or keep the whole case
           </h2>
-          <p className="m-0 mb-4 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+          <p className="m-0 mb-4 text-[1rem] text-ink-muted">
             Every part is also available as one continuous page for reading offline or on paper, and
             as files you can keep. Printing from here gives you this map rather than the argument.
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/full-case/"
-              className="inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
-            >
+            <Link href="/full-case/" className={buttonVariants({ variant: 'primary' })}>
               Read the full case on one page
             </Link>
-            <Link
-              href="/download/"
-              className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.95rem] font-medium text-navy no-underline hover:bg-panel-strong"
-            >
+            <Link href="/download/" className={buttonVariants({ variant: 'secondary' })}>
               Download a copy
             </Link>
             <PrintButton label="Print this map" />
