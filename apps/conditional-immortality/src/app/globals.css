@@ -346,10 +346,37 @@
   .measure-prose :is(p, dd, li, blockquote) {
     /*
      * Two caps, whichever bites first. The rem cap holds the column width for
-     * body text; the ch cap is font-relative, so small supporting text does
-     * not quietly reach ninety characters inside the same 42rem box.
+     * body text; the em cap is font-relative, so small supporting text does not
+     * quietly reach ninety characters inside the same 42rem box.
+     *
+     * The em cap was written as `74ch` first, on the reasonable assumption that
+     * a cap in ch units yields that many characters. It does not, and measuring
+     * the two fonts this site actually loads shows why:
+     *
+     *                          1ch     average advance   ch / average
+     *   Inter 13.76px          8.672   7.360             1.178
+     *   Source Serif 4 16px    8.297   8.502             0.976
+     *
+     * `ch` is the advance of the digit zero, and in Inter a digit is 18% wider
+     * than the average character of running English text. So `74ch` of Inter
+     * held 87 characters, not 74 — and the video privacy note, set in Inter at
+     * 0.86rem, ran to 87 characters at every desktop width.
+     *
+     * Worse, it did not do so consistently. `ch` is a font metric, so it
+     * resolves differently per platform once glyph advances are rounded, and it
+     * changes again if a fallback font is used: the same 74ch is 641.7px in
+     * Inter and 565.4px in Inter's fallback. On Linux the ch term rounded up
+     * past the 42rem term, min() switched to 42rem = 672px, and the same
+     * paragraph measured 91 characters instead of 87. Identical CSS, two
+     * different layouts, and the responsive suite failed on one platform only.
+     *
+     * The average advance is a near-constant fraction of the font size across
+     * all four faces here — 0.485em to 0.535em — so an em cap gives a stable
+     * character count whatever the font and whatever the platform. 39em lands
+     * every prose size on this site between 70 and 80 characters, which is what
+     * `74ch` was reaching for.
      */
-    max-width: min(var(--spacing-measure), 74ch);
+    max-width: min(var(--spacing-measure), 39em);
   }
 
   /* A list item that is a layout row, not a line of prose, keeps its width. */

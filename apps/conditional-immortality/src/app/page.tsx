@@ -227,7 +227,7 @@ export default function HomePage() {
           <h2 id="video-title" className="mt-0 mb-2">
             Watch the 28-minute overview
           </h2>
-          <p className="mt-0 mb-6 max-w-[var(--spacing-measure)] text-ink-muted">
+          <p className="mt-0 mb-6 text-ink-muted">
             The whole cumulative case in one sitting, with chapters and a complete transcript on the
             watch page.
           </p>
@@ -241,7 +241,7 @@ export default function HomePage() {
           <h2 id="means-title" className="mt-0 mb-2">
             What this view means
           </h2>
-          <p className="mt-0 mb-6 max-w-[var(--spacing-measure)] text-ink-muted">
+          <p className="mt-0 mb-6 text-ink-muted">
             The disagreement is about the nature of eternal punishment, not about whether judgment
             is serious, conscious, just, irreversible or eternally consequential.
           </p>
@@ -280,7 +280,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <p className="mt-6 mb-0 max-w-[var(--spacing-measure)] text-[1.02rem]">
+          <p className="mt-6 mb-0 text-[1.02rem]">
             Stated precisely: human beings are not inherently immortal. The unrighteous are
             resurrected, consciously judged, and receive the full and proportionate punishment God
             determines. That punishment culminates in their complete and irreversible death. Eternal
@@ -312,7 +312,7 @@ export default function HomePage() {
           <h2 id="claims-title" className="mt-0 mb-2">
             The case in six points
           </h2>
-          <p className="mt-0 mb-6 max-w-[var(--spacing-measure)] text-ink-muted">
+          <p className="mt-0 mb-6 text-ink-muted">
             No single point is meant to carry the argument alone. The case is cumulative: each claim
             is set out in full, with the strongest opposing reading stated first.
           </p>
@@ -359,7 +359,7 @@ export default function HomePage() {
           <h2 id="difficult-title" className="mt-0 mb-2">
             Start with the difficult passages
           </h2>
-          <p className="mt-0 mb-6 max-w-[var(--spacing-measure)] text-ink-muted">
+          <p className="mt-0 mb-6 text-ink-muted">
             If one text is the reason you find this position hard to accept, start there. Each page
             states the traditional reading in the form its own defenders would recognise before
             offering any response.
@@ -392,7 +392,7 @@ export default function HomePage() {
           <h2 id="subjects-title" className="mt-0 mb-2">
             Browse by subject
           </h2>
-          <p className="mt-0 mb-5 max-w-[var(--spacing-measure)] text-ink-muted">
+          <p className="mt-0 mb-5 text-ink-muted">
             Each topic explains a term in its own right and says what it is not. Hades, Sheol,
             Gehenna and the lake of fire are kept distinct throughout.
           </p>
