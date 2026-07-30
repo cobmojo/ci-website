@@ -16,9 +16,7 @@
       "!**/test-results",
       "!**/coverage",
       "!**/*.mdx",
-      "!**/next-env.d.ts",
       "!packages/ci-content/migration/*.csv",
-      "!packages/ci-content/migration/*.json",
       "!apps/conditional-immortality/public"
     ]
   },

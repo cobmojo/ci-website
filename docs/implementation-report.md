@@ -118,10 +118,10 @@ notification is attempted and submissions are still recorded.
 | Accessibility, axe plus structural | 32 |
 | Text geometry, Chromium, Firefox and WebKit | 69 |
 
-Plus six gates that fail the build: content validation, the content audit, the
-PII scan, the link check, the first-load JavaScript budget and the production
-build itself. All of them, and both browser suites, run on every push through
-`.github/workflows/ci.yml`.
+Plus seven gates that fail the build: content validation, the content audit,
+the documentation path check, the PII scan, the link check, the first-load
+JavaScript budget and the production build itself. All of them, and all three
+browser suites, run on every push through `.github/workflows/ci.yml`.
 
 `bun run validate` is the non-browser gate. `bun run ci` runs it and then every
 browser suite, accessibility and text geometry included.

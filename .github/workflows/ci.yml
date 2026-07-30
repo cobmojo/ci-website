@@ -47,8 +47,11 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
-      - name: Install Playwright browser
-        run: bunx playwright install --with-deps chromium
+      # Three engines, because the text-geometry contract compares Pretext's
+      # predicted line breaking against each of them: they shape and break text
+      # with their own code, and agreement in one says nothing about the others.
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium firefox webkit
 
       # `validate` chains every gate in dependency order; the last few read the
       # build output, so they run after it.
@@ -69,6 +72,11 @@ jobs:
 
       - name: Accessibility tests
         run: bun run test:a11y
+
+      # The gate for this integration and for any future Pretext upgrade. The
+      # build is already cached by `validate`, so this costs a server start.
+      - name: Text geometry tests
+        run: bun run test:text-geometry
 
       # The only way to see what a headless browser saw.
       - name: Upload Playwright report
