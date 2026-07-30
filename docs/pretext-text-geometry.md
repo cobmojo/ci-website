@@ -276,6 +276,32 @@ budget, in a block whose height does not move — in Chromium, which is where th
 asserted by the geometry suite, which checks that the live dialog stays on
 fallback excerpts there.
 
+### What the unfitted excerpt still owes the reader
+
+The reserved block clips, so an excerpt nobody measured can run past it. That is
+tolerable for trailing context and not tolerable for the highlight: a row whose
+`<mark>` lands below the clip is a result with no visible reason to be there.
+
+Two things keep that from happening. The dialog asks `@ci/search` for a compact
+excerpt, which allows about 24 characters of lead-in before the first match
+instead of centring the window on it, so the highlight is on the first line at
+every width the site supports. And the block clamps rather than clips, ending
+the visible text with an ellipsis instead of amputating it mid-word.
+
+The two states are therefore held to two different standards, and each is the
+strongest one true of it:
+
+| State | Invariant | Why that one |
+|---|---|---|
+| fitted | *no* mark falls outside the block | the text was measured in this font at this width and trimmed until it fitted |
+| fallback | *some* mark is inside the block | built on the server, which knows neither the width nor where the lines will break |
+
+Both are asserted in the end-to-end suite at 320, 375, 768 and 1280 pixels,
+across five queries, by comparing each `<mark>`'s client rect against the rect
+of the box that clips it. The fallback half runs with the runtime chunk blocked,
+so the rows really are unmeasured. Before the compact lead-in, that assertion
+failed on 17 rows at 320 pixels.
+
 ### The harness is not shipped
 
 The browser harness lives under `tests/fixtures/`, is bundled for the browser by

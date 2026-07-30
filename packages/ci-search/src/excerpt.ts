@@ -23,6 +23,17 @@ import type { MatchField, SearchDoc, SearchExcerptCandidate } from './types'
 
 /** Context kept either side of the match in the fallback excerpt. */
 const FALLBACK_RADIUS = 110
+/**
+ * Lead-in for a fallback that will be shown in a fixed two- or three-line box.
+ *
+ * The quick dialog reserves an exact block so a fitted excerpt can replace a
+ * fallback without moving the rows below it. A fallback carrying the usual
+ * hundred and ten characters of lead-in puts its match on the fourth line at a
+ * phone width, where the box has two — so the one thing the row exists to show
+ * is the one thing clipped away. Keeping the lead-in under a line means the
+ * match is visible whether or not fitting ever arrives.
+ */
+const COMPACT_LEAD_IN = 24
 /** Context kept either side of the match in the fitting candidate. */
 const CANDIDATE_RADIUS = 250
 
@@ -52,47 +63,73 @@ export interface SearchExcerpt {
 }
 
 /**
- * Anything `white-space: normal` would render differently from the source.
+ * The whitespace `white-space: normal` actually collapses.
  *
- * Two whitespace characters in a row, whitespace at either end, or any
- * whitespace that is not a plain space. Text matching none of these is already
- * in its rendered form and can skip the segmenter entirely.
+ * Space, tab, and the segment breaks. Deliberately *not* U+00A0: CSS leaves a
+ * no-break space alone, and it stays unbreakable. JavaScript's `\s` includes
+ * it, so collapsing with `\s` would rewrite a reference written with a
+ * no-break space into one a browser is free to split across two lines —
+ * changing both the quoted text and the way it lays out. The other fixed-width
+ * spaces in U+2000–U+200A are left alone for the same reason.
+ *
+ * Written as code points rather than a character class so the set is legible
+ * and cannot be misread as `\s`.
  */
-const COLLAPSIBLE = /\s\s|^\s|\s$|[^\S ]/
+const COLLAPSIBLE_CODES = new Set([
+  0x20, // space
+  0x09, // tab
+  0x0a, // line feed
+  0x0b, // line tabulation
+  0x0c, // form feed
+  0x0d, // carriage return
+  0x2028, // line separator
+  0x2029, // paragraph separator
+])
+
+function isCollapsible(character: string): boolean {
+  const code = character.codePointAt(0)
+  return code !== undefined && COLLAPSIBLE_CODES.has(code)
+}
+
+/** True when the whole cluster is collapsible whitespace. */
+function isCollapsibleCluster(cluster: string): boolean {
+  for (const character of cluster) {
+    if (!isCollapsible(character)) return false
+  }
+  return cluster.length > 0
+}
+
+/**
+ * A collapsible space immediately followed by a combining mark: the only shape
+ * for which collapsing by cluster differs from collapsing by character.
+ */
+const SPACE_THEN_MARK = /\p{M}/u
 
 /**
  * Collapse whitespace the way `white-space: normal` renders it.
  *
- * Done over grapheme clusters rather than with a plain whitespace replace, so a
- * combining mark that follows a space keeps its base: a cluster is collapsible
- * only when the whole cluster is whitespace.
+ * A run of collapsible whitespace becomes one space, and a run at either end
+ * disappears. Anything CSS would have left alone is left alone.
  */
-/**
- * A space immediately followed by a combining mark: the only shape for which
- * collapsing whitespace by cluster differs from collapsing it by character.
- */
-const SPACE_THEN_MARK = /\s\p{M}/u
-
 export function collapseWhitespace(text: string): string {
   if (!text) return ''
-  if (!COLLAPSIBLE.test(text)) return text
 
   // The cluster walk exists only to protect a combining mark that follows a
-  // space from being orphaned. When there is no such mark — which is every
-  // document in this corpus — the plain replace is identical and far cheaper
-  // than segmenting fifteen thousand characters.
-  if (!SPACE_THEN_MARK.test(text)) return text.replace(/\s+/g, ' ').trim()
+  // space from being orphaned. When there is no mark anywhere — which is
+  // almost every document in this corpus — the character walk is identical and
+  // far cheaper than segmenting fifteen thousand characters.
+  const units = SPACE_THEN_MARK.test(text) ? toGraphemes(text) : [...text]
 
   let out = ''
   let pendingSpace = false
-  for (const grapheme of toGraphemes(text)) {
-    if (/^\s+$/.test(grapheme)) {
+  for (const unit of units) {
+    if (isCollapsibleCluster(unit)) {
       pendingSpace = true
       continue
     }
     if (pendingSpace && out.length > 0) out += ' '
     pendingSpace = false
-    out += grapheme
+    out += unit
   }
   return out
 }
@@ -169,9 +206,14 @@ function sentenceEndWithin(text: string, from: number, to: number): number {
  * cannot produce a lone surrogate or an orphaned combining mark. The anchor is
  * never crossed, so the match survives every adjustment.
  */
-function chooseWindow(text: string, anchor: TextRange, radius: number): Window {
+function chooseWindow(
+  text: string,
+  anchor: TextRange,
+  radius: number,
+  leadingRadius: number = radius,
+): Window {
   const boundaries = graphemeBoundaries(text)
-  let start = Math.max(0, anchor.start - radius)
+  let start = Math.max(0, anchor.start - leadingRadius)
   let end = Math.min(text.length, anchor.end + radius)
 
   if (start > 0) {
@@ -395,6 +437,16 @@ function rangesInWindow(
   return mergeRanges(shifted)
 }
 
+export interface ExcerptOptions {
+  /** Also build the larger, ellipsis-free window for the browser-side fitter. */
+  readonly candidate?: boolean
+  /**
+   * The excerpt will be shown in a small fixed box, so keep the match near the
+   * start rather than centred.
+   */
+  readonly compact?: boolean
+}
+
 export interface BuiltExcerpts {
   readonly excerpt: SearchExcerpt
   readonly candidate: SearchExcerptCandidate | null
@@ -411,12 +463,12 @@ export interface BuiltExcerpts {
 export function buildExcerpts(
   sources: readonly ExcerptSource[],
   terms: readonly string[],
-  includeCandidate: boolean,
+  options: ExcerptOptions = {},
 ): BuiltExcerpts {
   const selected = selectField(sources, terms)
   return {
-    excerpt: excerptFrom(selected),
-    candidate: includeCandidate ? candidateFrom(selected) : null,
+    excerpt: excerptFrom(selected, options.compact === true),
+    candidate: options.candidate === true ? candidateFrom(selected) : null,
   }
 }
 
@@ -427,11 +479,12 @@ export function buildExcerpts(
 export function buildExcerpt(
   sources: readonly ExcerptSource[],
   terms: readonly string[],
+  compact = false,
 ): SearchExcerpt {
-  return excerptFrom(selectField(sources, terms))
+  return excerptFrom(selectField(sources, terms), compact)
 }
 
-function excerptFrom(selected: FieldWindow | null): SearchExcerpt {
+function excerptFrom(selected: FieldWindow | null, compact = false): SearchExcerpt {
   if (selected === null) {
     return {
       text: '',
@@ -467,7 +520,12 @@ function excerptFrom(selected: FieldWindow | null): SearchExcerpt {
     }
   }
 
-  const window = chooseWindow(region, anchor, FALLBACK_RADIUS)
+  const window = chooseWindow(
+    region,
+    anchor,
+    FALLBACK_RADIUS,
+    compact ? COMPACT_LEAD_IN : FALLBACK_RADIUS,
+  )
   const omittedBefore = regionStart + window.start > 0
   const omittedAfter = regionStart + window.end < displayLength
   const lead = omittedBefore ? ELLIPSIS : ''

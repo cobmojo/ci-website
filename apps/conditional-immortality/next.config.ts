@@ -17,12 +17,20 @@ import type { NextConfig } from 'next'
  * WebKit upgrades the site's own scripts and fonts to a port with no TLS and
  * fails every one of them.
  *
- * So it is emitted when, and only when, the canonical origin is HTTPS. A
- * deployment sets `NEXT_PUBLIC_SITE_URL` and gets the directive; the local
- * production server the browser suites run against does not, and is testable in
- * all three engines.
+ * So it is emitted when, and only when, the canonical origin is HTTPS —
+ * resolved exactly as `site-config.ts` resolves it, including the Vercel
+ * fallbacks, so a deployment that sets no `NEXT_PUBLIC_SITE_URL` still gets
+ * the production policy. The local production server the browser suites run
+ * against resolves to none of them, and is testable in all three engines.
  */
-const servedOverHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? '').startsWith('https://')
+const canonicalOrigin =
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : '') ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+
+const servedOverHttps = canonicalOrigin.startsWith('https://')
 
 const CSP_DIRECTIVES: Record<string, string[]> = {
   'default-src': ["'self'"],

@@ -28,8 +28,31 @@ describe('collapseWhitespace', () => {
     expect(collapseWhitespace('a b c')).toBe('a b c')
   })
 
-  it('treats a non-breaking space as collapsible', () => {
-    expect(collapseWhitespace('a  b')).toBe('a b')
+  it('leaves a non-breaking space exactly as the author wrote it', () => {
+    // CSS does not collapse U+00A0 and does not let a line break at one. It is
+    // in JavaScript's whitespace class, so collapsing with that class would
+    // quietly turn a reference the author deliberately held together into one
+    // a browser may split across two lines.
+    const nbsp = String.fromCharCode(0x00a0)
+    expect(collapseWhitespace(`Matthew${nbsp}10:28`)).toBe(`Matthew${nbsp}10:28`)
+    expect(collapseWhitespace(`a${nbsp}${nbsp}b`)).toBe(`a${nbsp}${nbsp}b`)
+    // A collapsible run beside one still collapses; the no-break space stays.
+    expect(collapseWhitespace(`a  ${nbsp} b`)).toBe(`a ${nbsp} b`)
+  })
+
+  it('leaves the fixed-width spaces alone for the same reason', () => {
+    const enQuad = String.fromCharCode(0x2000)
+    const ideographic = String.fromCharCode(0x3000)
+    expect(collapseWhitespace(`a${enQuad}b`)).toBe(`a${enQuad}b`)
+    expect(collapseWhitespace(`a${ideographic}b`)).toBe(`a${ideographic}b`)
+  })
+
+  it('collapses every whitespace character CSS does collapse', () => {
+    for (const code of [0x20, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x2028, 0x2029]) {
+      const ws = String.fromCharCode(code)
+      expect(collapseWhitespace(`a${ws}${ws}b`), `U+${code.toString(16)}`).toBe('a b')
+      expect(collapseWhitespace(`${ws}a${ws}`), `U+${code.toString(16)}`).toBe('a')
+    }
   })
 
   it('does not orphan a combining mark that follows a space', () => {

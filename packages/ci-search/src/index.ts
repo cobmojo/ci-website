@@ -6,6 +6,7 @@ export {
   CANDIDATE_MAX_LENGTH,
   CANDIDATE_MIN_LENGTH,
   collapseWhitespace,
+  type ExcerptOptions,
   type ExcerptSource,
   excerptSources,
   type SearchExcerpt,

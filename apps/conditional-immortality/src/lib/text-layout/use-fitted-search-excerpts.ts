@@ -171,9 +171,16 @@ export function useFittedSearchExcerpts({
       })
     }
 
-    // A new result set invalidates anything in flight before anything is read.
+    /*
+     * A new result set invalidates anything in flight, and anything already
+     * applied. Two queries often return the same document, so keeping the map
+     * would render the previous query's excerpt — and its highlight — under
+     * the new query until the batch lands. Dropping it puts every row back on
+     * its own fallback, which is always right for the query being shown.
+     */
     tokenRef.current += 1
     geometryRef.current = null
+    setFitted(previous => (previous === EMPTY ? previous : EMPTY))
     schedule()
 
     const observer =

@@ -99,6 +99,71 @@ async function excerptStates(page: Page) {
   )
 }
 
+/**
+ * Marks that the clipped box hides.
+ *
+ * The excerpt is clamped to its line budget, so a match that lands on line
+ * three of a two-line box is in the DOM, is `<mark>`ed, and is invisible. Every
+ * assertion this suite had about marks was satisfied by such a row: they
+ * counted marks, and counted lines, and never asked whether the reader could
+ * see the one inside the other.
+ *
+ * A geometric test, not a heuristic: the mark's own rect against the rect of
+ * the box that clips it, with a pixel of tolerance for rounding.
+ */
+async function hiddenMarks(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('[data-search-excerpt]')].flatMap(element => {
+      const box = element.getBoundingClientRect()
+      return [...element.querySelectorAll('mark')]
+        .filter(mark => {
+          const rect = mark.getBoundingClientRect()
+          if (rect.width === 0 && rect.height === 0) return true
+          return (
+            rect.bottom > box.bottom + 1 ||
+            rect.top < box.top - 1 ||
+            rect.right > box.right + 1 ||
+            rect.left < box.left - 1
+          )
+        })
+        .map(mark => ({
+          mark: mark.textContent ?? '',
+          state: element.dataset.pretextState ?? '',
+          excerpt: element.textContent ?? '',
+        }))
+    }),
+  )
+}
+
+/** How many marks are on screen at all, so a clipping assertion is not vacuous. */
+async function markCount(page: Page) {
+  return page.locator('[data-search-excerpt] mark').count()
+}
+
+/**
+ * Rows that are marked in the DOM and show none of it.
+ *
+ * The reader-facing guarantee, and the one the server-built excerpt can
+ * actually keep: whatever the line breaks turn out to be, a row that matched
+ * shows the reader something highlighted inside the box they can see.
+ */
+async function rowsWithNoVisibleMark(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('[data-search-excerpt]')]
+      .map(element => {
+        const box = element.getBoundingClientRect()
+        const marks = [...element.querySelectorAll('mark')]
+        const visible = marks.filter(mark => {
+          const rect = mark.getBoundingClientRect()
+          if (rect.width === 0 && rect.height === 0) return false
+          return rect.bottom <= box.bottom + 1 && rect.top >= box.top - 1
+        })
+        return { marks: marks.length, visible: visible.length, text: element.textContent ?? '' }
+      })
+      .filter(row => row.marks > 0 && row.visible === 0),
+  )
+}
+
 async function waitForFitted(page: Page) {
   await page.waitForFunction(() =>
     [...document.querySelectorAll<HTMLElement>('[data-search-excerpt]')].some(
@@ -361,6 +426,81 @@ test.describe('responsive fitting', () => {
     const canvases = await page.locator('dialog canvas').count()
     expect(canvases).toBe(0)
   })
+})
+
+/* ------------------------------------------------------------------ *
+ * The match has to be visible, not merely present
+ * ------------------------------------------------------------------ */
+
+/*
+ * Queries whose matches sit late in the sentence they were found in.
+ *
+ * These are the ones that exposed the bug: at 320px the fallback excerpt put
+ * its lead-in across both available lines and pushed the highlighted phrase
+ * onto the clipped third.
+ */
+const LATE_MATCH_QUERIES = [
+  'eternal punishment',
+  'unquenchable fire',
+  'second death',
+  'destruction',
+  'Matthew 10:28',
+]
+
+test.describe('the marked match is inside the clipped box', () => {
+  for (const { label, width, height } of FITTING_VIEWPORTS) {
+    /*
+     * The fallback excerpt gets the weaker of the two invariants, and it is
+     * the strongest one that is true of it.
+     *
+     * It is built on the server, which knows neither the reader's width nor
+     * where the browser will break the lines, so it cannot promise that a
+     * fourth occurrence three lines down is on screen. What it can promise —
+     * and what was broken — is that the row is not a mystery: the excerpt is
+     * built around the first match with a short lead-in, so at every width
+     * there is a highlight inside the clipped box.
+     */
+    test(`on the fallback excerpt at ${label}`, async ({ page, context }) => {
+      // With the runtime blocked every row stays on its server-built excerpt,
+      // which is the state this is about: nothing has been measured.
+      await blockPretextRuntime(context)
+      await page.setViewportSize({ width, height })
+      await page.goto('/')
+      const dialog = await search(page, LATE_MATCH_QUERIES[0] as string)
+      const field = dialog.getByRole('searchbox', { name: 'Search terms' })
+
+      for (const query of LATE_MATCH_QUERIES) {
+        await field.fill(query)
+        await expect(dialog.getByRole('listitem').first()).toBeVisible()
+        await expect(dialog.locator('[data-search-excerpt] mark').first()).toBeVisible()
+
+        const states = await excerptStates(page)
+        expect(states.every(state => state.state === 'fallback')).toBe(true)
+        expect(await markCount(page), `${query} should mark something`).toBeGreaterThan(0)
+        expect(await rowsWithNoVisibleMark(page), `${query} at ${label}`).toEqual([])
+      }
+    })
+
+    /*
+     * The fitted excerpt gets the strict one. Fitting measured this exact text
+     * in this exact font at this exact width and trimmed it until it fitted,
+     * so *no* mark may fall outside the box — not one, not a later occurrence.
+     */
+    test(`on the fitted excerpt at ${label}`, async ({ page }) => {
+      await page.setViewportSize({ width, height })
+      await page.goto('/')
+      const dialog = await search(page, LATE_MATCH_QUERIES[0] as string)
+      const field = dialog.getByRole('searchbox', { name: 'Search terms' })
+
+      for (const query of LATE_MATCH_QUERIES) {
+        await field.fill(query)
+        await expect(dialog.getByRole('listitem').first()).toBeVisible()
+        await waitForFitted(page)
+        expect(await markCount(page), `${query} should mark something`).toBeGreaterThan(0)
+        expect(await hiddenMarks(page), `${query} at ${label}`).toEqual([])
+      }
+    })
+  }
 })
 
 /* ------------------------------------------------------------------ *

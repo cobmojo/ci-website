@@ -95,7 +95,13 @@ export function SearchDialogTrigger() {
     if (!index || query.trim().length < 2) return null
     // Candidates are requested here and nowhere else: the server-rendered
     // search page has no fitter to feed and does not pay for them.
-    return search(index.docs, query, { limit: 12, includeExcerptCandidate: true })
+    return search(index.docs, query, {
+      limit: 12,
+      includeExcerptCandidate: true,
+      // The rows show their excerpt in a fixed box, so the fallback has to put
+      // its match where a reader can see it without waiting for a fit.
+      compactExcerpt: true,
+    })
   }, [index, query])
 
   return (
@@ -197,12 +203,7 @@ export function SearchDialogTrigger() {
             ) : null}
 
             {outcome && outcome.results.length > 0 ? (
-              <QuickSearchResults
-                results={outcome.results}
-                terms={outcome.results[0]?.matchedTerms ?? []}
-                open={open}
-                onNavigate={closeDialog}
-              />
+              <QuickSearchResults results={outcome.results} open={open} onNavigate={closeDialog} />
             ) : null}
 
             {outcome && outcome.results.length === 0 ? (

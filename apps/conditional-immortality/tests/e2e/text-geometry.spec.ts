@@ -206,9 +206,15 @@ async function measure(page: Page, text: string, containerWidth: number): Promis
       const clamped = getComputedStyle(probe)
       const blockSizeLh = Number.parseFloat(clamped.blockSize)
 
-      // Lift only the clamp, so the natural height becomes observable.
+      // Lift only the clamp, so the natural height becomes observable. The
+      // production element reserves an exact block and limits itself to the
+      // line budget; both exist to hide a wrong answer, and the whole job here
+      // is to see the answer. Everything that decides *where lines fall* is
+      // left exactly as the site sets it.
       probe.style.blockSize = 'auto'
       probe.style.overflow = 'visible'
+      probe.style.display = 'block'
+      probe.style.setProperty('-webkit-line-clamp', 'none')
 
       const style = getComputedStyle(probe)
       const rect = probe.getBoundingClientRect()

@@ -160,6 +160,12 @@ export interface SearchOptions {
    * The server-rendered search page deliberately leaves it off.
    */
   readonly includeExcerptCandidate?: boolean
+  /**
+   * The excerpt will be shown in a fixed two- or three-line box, so keep the
+   * match near the start of it rather than centred. The quick dialog reserves
+   * exactly that box; the server-rendered page does not and leaves this off.
+   */
+  readonly compactExcerpt?: boolean
 }
 
 export interface SearchOutcome {
@@ -263,11 +269,10 @@ export function search(
   // touches every document; quoting touches twelve.
   const page = scored.slice(offset, offset + limit)
   const results: SearchResult[] = page.map(entry => {
-    const { excerpt, candidate } = buildExcerpts(
-      excerptSources(entry.doc),
-      entry.matchedTerms,
-      options.includeExcerptCandidate === true,
-    )
+    const { excerpt, candidate } = buildExcerpts(excerptSources(entry.doc), entry.matchedTerms, {
+      candidate: options.includeExcerptCandidate === true,
+      compact: options.compactExcerpt === true,
+    })
 
     return {
       doc: entry.doc,

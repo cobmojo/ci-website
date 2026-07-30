@@ -93,7 +93,7 @@ function withPreparationCache(engine: TextLayoutEngine): TextLayoutEngine {
  * One promise per font specification, shared by every row on the page.
  */
 export function ensureMeasuredFont(contract: FontContract, sampleText: string): Promise<boolean> {
-  const key = contract.font
+  const key = `${contract.font}|${subsetSignature(sampleText)}`
   const existing = fontPromises.get(key)
   if (existing) return existing
 
@@ -118,6 +118,34 @@ export function ensureMeasuredFont(contract: FontContract, sampleText: string): 
 
   fontPromises.set(key, promise)
   return promise
+}
+
+/**
+ * Which self-hosted subsets a sample needs.
+ *
+ * Source Serif is served as separate faces by `unicode-range`: Latin, Latin
+ * Extended, and the italics. `document.fonts.load()` only fetches the faces the
+ * sample it is given actually requires, so a readiness answer is only about
+ * those. Keying the cache on the font shorthand alone would let an all-ASCII
+ * query answer `true` for a later query containing Latin Extended text, whose
+ * face may still be in flight — and Pretext would then measure it in whatever
+ * the platform substituted.
+ *
+ * A coarse signature is enough: two queries needing the same subsets can share
+ * an answer, and one needing more cannot borrow it.
+ */
+function subsetSignature(sampleText: string): string {
+  let latin = false
+  let latinExtended = false
+  let other = false
+  for (const character of sampleText) {
+    const code = character.codePointAt(0)
+    if (code === undefined) continue
+    if (code <= 0x00ff) latin = true
+    else if (code <= 0x2c7f || (code >= 0xa720 && code <= 0xa7ff)) latinExtended = true
+    else other = true
+  }
+  return `${latin ? 'l' : ''}${latinExtended ? 'x' : ''}${other ? 'o' : ''}` || 'none'
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {

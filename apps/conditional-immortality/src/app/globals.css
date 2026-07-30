@@ -650,7 +650,7 @@
     --search-excerpt-lines: 2;
     --search-excerpt-line-height: 1.375;
 
-    display: block;
+    /* `display` is set with the clamp below, which needs -webkit-box. */
     font-family: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
     font-style: normal;
     font-weight: 400;
@@ -681,6 +681,21 @@
      * not a substitute for fitting correctly.
      */
     block-size: calc(var(--search-excerpt-lines) * var(--search-excerpt-line-height) * 1em);
+
+    /*
+     * A clamp rather than a plain clip.
+     *
+     * A fitted excerpt is measured to fit and never reaches this. A fallback is
+     * not measured at all — it is whatever the ranker quoted — so at a phone
+     * width it can run past the reserved block. Clipping that silently loses
+     * the last words with nothing to show for it; clamping ends the visible
+     * text with an ellipsis, which is the truth. The fallback also keeps its
+     * match within the first line, so what a clamp removes is trailing context
+     * rather than the reason the row is there.
+     */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--search-excerpt-lines);
     overflow: hidden;
   }
 

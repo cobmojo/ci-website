@@ -22,13 +22,11 @@ import {
  */
 export function QuickSearchResults({
   results,
-  terms,
   open,
   onNavigate,
   runtime,
 }: {
   results: readonly SearchResult[]
-  terms: readonly string[]
   open: boolean
   onNavigate: () => void
   /** Replaced in component tests; production always uses the real one. */
@@ -59,13 +57,13 @@ export function QuickSearchResults({
                 <span className="font-sans text-[0.74rem] text-copper-deep">
                   {/* A section-id match is often the only visible reason a row
                       is here, so the id is highlighted too. */}
-                  <HighlightedText text={result.doc.sectionId} terms={terms} />
+                  <HighlightedText text={result.doc.sectionId} terms={result.matchedTerms} />
                 </span>
               ) : null}
             </span>
 
             <span className="mt-0.5 block font-sans text-[0.98rem] font-medium text-navy">
-              <HighlightedText text={result.doc.title} terms={terms} />
+              <HighlightedText text={result.doc.title} terms={result.matchedTerms} />
             </span>
 
             <FittedSearchExcerpt

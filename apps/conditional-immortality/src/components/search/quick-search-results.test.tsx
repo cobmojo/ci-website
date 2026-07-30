@@ -138,7 +138,6 @@ function renderList(props: Partial<Parameters<typeof QuickSearchResults>[0]> = {
   return render(
     <QuickSearchResults
       results={[result('a'), result('b'), result('c')]}
-      terms={['eee', 'eternal punishment']}
       open
       onNavigate={() => {}}
       runtime={runtimeWith()}
@@ -197,8 +196,41 @@ describe('first paint', () => {
   })
 
   it('highlights the section id, which is often the only visible reason', () => {
-    const { container } = renderList({ terms: ['s04'] })
+    const { container } = renderList({
+      results: [result('a', { matchedTerms: ['s04'], matchedFields: ['id'] })],
+    })
     expect([...container.querySelectorAll('mark')].some(m => m.textContent === 'S04')).toBe(true)
+  })
+
+  /*
+   * Highlighting is per row, not per query.
+   *
+   * A search for two words ranks a row that matched only one of them, and the
+   * union of the query's terms would light up words in that row's title that
+   * are no part of why it is here. Each row is highlighted with the terms the
+   * ranker recorded for that row.
+   */
+  it('highlights each row with its own matched terms', () => {
+    const { container } = renderList({
+      results: [
+        result('a', {
+          doc: { ...doc('a'), title: 'Eternal Punishment' },
+          matchedTerms: ['eternal'],
+        }),
+        result('b', {
+          doc: { ...doc('b'), title: 'Eternal Punishment' },
+          matchedTerms: ['punishment'],
+        }),
+      ],
+    })
+
+    const rows = [...container.querySelectorAll('li')]
+    expect(rows).toHaveLength(2)
+    const marksIn = (row: Element) => [...row.querySelectorAll('mark')].map(m => m.textContent)
+    expect(marksIn(rows[0] as Element)).toContain('Eternal')
+    expect(marksIn(rows[0] as Element)).not.toContain('Punishment')
+    expect(marksIn(rows[1] as Element)).toContain('Punishment')
+    expect(marksIn(rows[1] as Element)).not.toContain('Eternal')
   })
 })
 
@@ -403,20 +435,13 @@ describe('stale results', () => {
     })
 
     const { container, rerender } = render(
-      <QuickSearchResults
-        results={[stale]}
-        terms={['zzz']}
-        open
-        onNavigate={() => {}}
-        runtime={slowRuntime}
-      />,
+      <QuickSearchResults results={[stale]} open onNavigate={() => {}} runtime={slowRuntime} />,
     )
 
     // A newer query arrives, with a runtime that answers immediately.
     rerender(
       <QuickSearchResults
         results={[result('fresh')]}
-        terms={['eee']}
         open
         onNavigate={() => {}}
         runtime={runtimeWith()}
