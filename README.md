@@ -79,7 +79,8 @@ unknown reference fails the build. Do not work around this by typing the verse.
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-489 tests: 235 unit, 222 end-to-end across desktop and mobile, 32 accessibility.
+532 tests: 278 unit, 222 end-to-end across desktop and mobile, 32 accessibility.
+They run on every push; see `.github/workflows/ci.yml`.
 
 ## Conventions
 

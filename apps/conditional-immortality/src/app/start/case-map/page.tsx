@@ -441,7 +441,7 @@ export default function CaseMapPage() {
         <h2 id="map-as-list" className="mt-0 mb-3 border-b border-border pb-2">
           The same map as a list
         </h2>
-        <p className="m-0 mb-6 max-w-[var(--spacing-measure)]">
+        <p className="m-0 mb-6">
           Every node in the diagram appears below, and every section is a link to its page. The
           claims come first with the pages that argue them, then the groups with everything they
           contain.
@@ -514,7 +514,7 @@ export default function CaseMapPage() {
           <h2 id="outside-the-map" className="mt-0 mb-3 border-b border-border pb-2">
             Sections that sit outside the six groups
           </h2>
-          <p className="m-0 mb-4 max-w-[var(--spacing-measure)]">
+          <p className="m-0 mb-4">
             These pages are part of the case without belonging to one of the six groups above. They
             set up the question, clear away obstacles to hearing it, or work through an illustration
             at length.

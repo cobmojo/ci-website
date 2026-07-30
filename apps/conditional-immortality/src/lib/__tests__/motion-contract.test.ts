@@ -124,15 +124,16 @@ const MOVEMENT_PROPERTIES = [
 function transitionedProperties(value: string): string[] {
   return value
     .split(',')
-    .map(part =>
-      part
-        .trim()
-        // Drop durations, delays, easing functions and `allow-discrete`.
-        .replace(/var\([^)]*\)/g, '')
-        .replace(/cubic-bezier\([^)]*\)/g, '')
-        .trim()
-        .split(/\s+/)[0]
-        ?.toLowerCase() ?? '',
+    .map(
+      part =>
+        part
+          .trim()
+          // Drop durations, delays, easing functions and `allow-discrete`.
+          .replace(/var\([^)]*\)/g, '')
+          .replace(/cubic-bezier\([^)]*\)/g, '')
+          .trim()
+          .split(/\s+/)[0]
+          ?.toLowerCase() ?? '',
     )
     .filter(name => name.length > 0)
 }

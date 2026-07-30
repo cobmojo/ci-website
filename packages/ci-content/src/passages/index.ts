@@ -21,7 +21,8 @@ export const passages: readonly PassageRecord[] = PASSAGE_RECORDS.map(record => 
     if (!hasScripture(quotation.reference)) {
       throw new Error(
         `Passage "${record.id}" quotes "${quotation.reference}", which is not in the verified ` +
-          'Scripture corpus. Add it to scripts/conditional-immortality/fetch-scripture.ts.',
+          'Scripture corpus. Add it to ADDITIONAL_REFERENCES in ' +
+          'scripts/conditional-immortality/fetch-scripture.ts.',
       )
     }
   }

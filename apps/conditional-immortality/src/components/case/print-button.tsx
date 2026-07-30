@@ -21,7 +21,11 @@ export function PrintButton({ label = 'Print this page' }: { label?: string }) {
     // `mount-reveal` for the same reason as the other post-hydration controls:
     // this button cannot exist before scripting has run, so it fades in rather
     // than appearing between one frame and the next.
-    <Button variant="secondary" onClick={() => window.print()} className="mount-reveal print:hidden">
+    <Button
+      variant="secondary"
+      onClick={() => window.print()}
+      className="mount-reveal print:hidden"
+    >
       {label}
     </Button>
   )

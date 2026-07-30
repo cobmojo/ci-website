@@ -1,14 +1,9 @@
 'use client'
 
-import {
-  highlightSegments,
-  MATCH_FIELD_LABELS,
-  SEARCH_DOC_TYPE_LABELS,
-  type SearchIndex,
-  search,
-} from '@ci/search'
+import { MATCH_FIELD_LABELS, SEARCH_DOC_TYPE_LABELS, type SearchIndex, search } from '@ci/search'
 import Link from 'next/link'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Highlighted } from './search-results'
 
 /**
  * Site search, as a dialog.
@@ -191,17 +186,7 @@ export function SearchDialogTrigger() {
                         {result.doc.title}
                       </span>
                       <span className="mt-0.5 block text-[0.9rem] leading-snug text-ink-muted">
-                        {highlightSegments(result.excerpt, result.matchedTerms).map((segment, i) =>
-                          segment.matched ? (
-                            // biome-ignore lint/suspicious/noArrayIndexKey: positional by construction
-                            <mark key={i} className="rounded-sm bg-ochre-soft px-0.5 text-ink">
-                              {segment.text}
-                            </mark>
-                          ) : (
-                            // biome-ignore lint/suspicious/noArrayIndexKey: positional by construction
-                            <span key={i}>{segment.text}</span>
-                          ),
-                        )}
+                        <Highlighted text={result.excerpt} terms={result.matchedTerms} />
                       </span>
                       <span className="mt-0.5 block font-sans text-[0.76rem] text-ink-subtle">
                         Matched in{' '}

@@ -249,9 +249,10 @@
   select,
   input,
   textarea,
-  [role='button'] {
-    transition-property: color, background-color, border-color, text-decoration-color,
-      text-decoration-thickness, opacity;
+  [role="button"] {
+    transition-property:
+      color, background-color, border-color, text-decoration-color, text-decoration-thickness,
+      opacity;
     transition-duration: var(--motion-feedback);
     /* `ease` spelled out: it is the default, but many readers of this file will
        assume the default is linear. Gentle asymmetric curves suit hover. */
@@ -426,11 +427,16 @@
    * a flash; the same control fading in over 180ms is not.
    */
   @keyframes reveal-fade {
-    from { opacity: 0; }
+    from {
+      opacity: 0;
+    }
   }
 
   @keyframes status-in {
-    from { opacity: 0; translate: 0 -0.25rem; }
+    from {
+      opacity: 0;
+      translate: 0 -0.25rem;
+    }
   }
 
   .status-message,
@@ -552,10 +558,17 @@
   .measure-prose :is(p, dd, li, blockquote) {
     /*
      * Two caps, whichever bites first. The rem cap holds the column width for
-     * body text; the ch cap is font-relative, so small supporting text does
-     * not quietly reach ninety characters inside the same 42rem box.
+     * body text; the em cap keeps small supporting text from running long
+     * inside the same box.
+     *
+     * Deliberately em, not ch. `ch` is the advance of the digit zero, 18% wider
+     * than the average character in Inter, so 74ch held 87 characters — and
+     * being a font metric it rounds differently per platform, which put the
+     * same paragraph at 87 characters on one and 91 on another. Average advance
+     * is 0.485em–0.535em across all four faces here, so an em cap holds a
+     * stable measure: 39em lands every prose size at 70–80 characters.
      */
-    max-width: min(var(--spacing-measure), 74ch);
+    max-width: min(var(--spacing-measure), 39em);
   }
 
   /* A list item that is a layout row, not a line of prose, keeps its width. */
@@ -623,8 +636,9 @@
     /* Tier 2. */
     .pressable {
       transition-property: color, background-color, border-color, opacity, scale;
-      transition-duration: var(--motion-feedback), var(--motion-feedback),
-        var(--motion-feedback), var(--motion-feedback), var(--motion-press);
+      transition-duration:
+        var(--motion-feedback), var(--motion-feedback), var(--motion-feedback),
+        var(--motion-feedback), var(--motion-press);
       transition-timing-function: ease, ease, ease, ease, var(--ease-out-quad);
     }
 

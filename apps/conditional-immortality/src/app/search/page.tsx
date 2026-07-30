@@ -110,7 +110,7 @@ export default async function SearchPage({
         />
 
         <h1 className="mt-0 mb-2">Search</h1>
-        <p className="mt-0 mb-6 max-w-[var(--spacing-measure)] text-ink-muted">
+        <p className="mt-0 mb-6 text-ink-muted">
           Search case sections, key passages, objections, topics, the glossary, the source library
           and the video transcript. Scripture references work in any common form, including Matthew
           10:28, Matt 10 28 and Mt. 10:28.
@@ -269,7 +269,7 @@ export default async function SearchPage({
           </nav>
         ) : null}
 
-        <p className="mt-10 max-w-[var(--spacing-measure)] font-sans text-[0.88rem] text-ink-subtle">
+        <p className="mt-10 font-sans text-[0.88rem] text-ink-subtle">
           Search runs entirely in your browser against an index built when the site was published.
           Nothing you type is sent to a server, and no search history is kept.
         </p>

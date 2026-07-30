@@ -14,7 +14,12 @@ import { languageNotes } from '../language/index'
 import { commentLedger, mediaDispositions, migrationTotals } from '../migration/index'
 import { passages, scriptureIndex } from '../passages/index'
 import { revisions } from '../revisions/index'
-import { hasScripture } from '../scripture/web-text'
+import {
+  getScripture,
+  hasScripture,
+  requireScripture,
+  scriptureReferences,
+} from '../scripture/web-text'
 import { getSource, sources } from '../sources/index'
 import { getTopic, topics } from '../topics/index'
 import { video } from '../video/index'
@@ -128,6 +133,17 @@ describe('cross-references', () => {
       for (const reference of [...section.primaryPassages, ...section.relatedPassages]) {
         expect(parseReference(reference), `${section.id}: ${reference}`).toBeDefined()
       }
+    }
+  })
+
+  it('normalises every reference in the Scripture corpus and index', () => {
+    // If the versification table and the corpus disagree, the parser rejects
+    // text the site can render. Fail here rather than on the page.
+    for (const reference of scriptureReferences) {
+      expect(parseReference(reference), `corpus: ${reference}`).toBeDefined()
+    }
+    for (const entry of scriptureIndex) {
+      expect(parseReference(entry.reference), `index: ${entry.reference}`).toBeDefined()
     }
   })
 
@@ -369,5 +385,48 @@ describe('rights metadata', () => {
       expect(source.url ?? '').not.toMatch(/^(mailto|tel):/i)
       expect(source.sourceDocumentUrl ?? '').not.toMatch(/^(mailto|tel):/i)
     }
+  })
+})
+
+/**
+ * The corpus is a plain object literal, so a bare `in` check or index reaches
+ * its prototype and every accessor has to guard against it.
+ */
+describe('the Scripture corpus does not answer for its prototype', () => {
+  const INHERITED = [
+    'constructor',
+    'toString',
+    'valueOf',
+    'hasOwnProperty',
+    'isPrototypeOf',
+    'propertyIsEnumerable',
+    'toLocaleString',
+    '__proto__',
+    '__defineGetter__',
+  ]
+
+  it('reports no passage for an inherited property name', () => {
+    for (const name of INHERITED) {
+      expect(hasScripture(name), name).toBe(false)
+    }
+  })
+
+  it('returns nothing for an inherited property name', () => {
+    for (const name of INHERITED) {
+      expect(getScripture(name), name).toBeUndefined()
+    }
+  })
+
+  it('throws for an inherited property name, as it does for any unknown reference', () => {
+    for (const name of INHERITED) {
+      expect(() => requireScripture(name), name).toThrow(/No verified Scripture text/)
+    }
+    expect(() => requireScripture('Nowhere 1:1')).toThrow(/No verified Scripture text/)
+  })
+
+  it('still finds a real passage', () => {
+    expect(hasScripture('Mark 9:42-48')).toBe(true)
+    expect(getScripture('Mark 9:42-48')?.reference).toBe('Mark 9:42-48')
+    expect(requireScripture('Mark 9:42-48').text.length).toBeGreaterThan(0)
   })
 })
