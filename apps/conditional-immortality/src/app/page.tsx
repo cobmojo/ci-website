@@ -2,6 +2,7 @@ import { getSection, PRINCIPAL_CLAIMS } from '@ci/content/case'
 import { findPassageByReference } from '@ci/content/passages'
 import { topics } from '@ci/content/topics'
 import { video } from '@ci/content/video'
+import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ClickToLoadVideo } from '@/components/media/click-to-load-video'
@@ -195,19 +196,16 @@ export default function HomePage() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/start/what-is-conditional-immortality/"
-                className="inline-flex min-h-12 items-center rounded-md bg-navy px-5 font-sans text-[1rem] font-medium text-white no-underline hover:bg-navy-deep"
+                className={buttonVariants({ variant: 'primary', size: 'lg' })}
               >
                 Read the 3-minute summary
               </Link>
-              <Link
-                href="/case/"
-                className="inline-flex min-h-12 items-center rounded-md border border-navy px-5 font-sans text-[1rem] font-medium text-navy no-underline hover:bg-panel"
-              >
+              <Link href="/case/" className={buttonVariants({ variant: 'outline', size: 'lg' })}>
                 Start the full case
               </Link>
               <Link
                 href="/watch/"
-                className="inline-flex min-h-12 items-center rounded-md border border-copper/45 bg-copper/10 px-5 font-sans text-[1rem] font-medium text-copper-deep no-underline hover:bg-copper/15"
+                className={buttonVariants({ variant: 'copperSoft', size: 'lg' })}
               >
                 Watch the 28-minute overview
               </Link>
@@ -462,7 +460,7 @@ export default function HomePage() {
             </p>
             <Link
               href="/corrections/"
-              className="inline-flex min-h-12 items-center rounded-md bg-navy px-5 font-sans text-[1rem] font-medium text-white no-underline hover:bg-navy-deep"
+              className={buttonVariants({ variant: 'primary', size: 'lg' })}
             >
               Submit a correction or counterargument
             </Link>

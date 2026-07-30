@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Source detection stops at this workspace and skips anything reached through
+   node_modules, which is how @ci/ui resolves. Without this the utilities used
+   only by `buttonVariants` are never generated. */
+@source "../../../../packages/ui/src";
+
 /* ------------------------------------------------------------------ *
  * Self-hosted fonts.
  *

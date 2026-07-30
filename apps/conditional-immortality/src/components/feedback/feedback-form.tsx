@@ -10,6 +10,7 @@ import {
   feedbackTypes,
   type PublicationConsent,
 } from '@ci/content-schema/feedback'
+import { buttonVariants } from '@ci/ui'
 import { useForm } from '@tanstack/react-form'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -631,7 +632,7 @@ function FeedbackFormFields({
                 type="submit"
                 aria-busy={isSubmitting || undefined}
                 aria-describedby={ids.status}
-                className="inline-flex min-h-11 items-center justify-center rounded-md bg-navy px-5 font-sans text-[0.97rem] font-medium text-white no-underline hover:bg-navy-deep"
+                className={buttonVariants({ variant: 'primary' })}
               >
                 {isSubmitting ? 'Sending' : 'Send submission'}
               </button>
