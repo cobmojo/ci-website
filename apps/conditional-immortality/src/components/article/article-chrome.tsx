@@ -7,7 +7,7 @@ import {
   REVIEW_STATUS_DEFINITIONS,
   REVIEW_STATUS_LABELS,
 } from '@ci/content-schema'
-import { Badge } from '@ci/ui'
+import { Badge, buttonVariants } from '@ci/ui'
 import Link from 'next/link'
 import { formatLongDate } from '@/lib/format'
 
@@ -254,10 +254,7 @@ export function FeedbackCta({ sectionId }: { sectionId?: string }) {
         Factual corrections, better sources, serious counterarguments and accessibility reports are
         all welcome.
       </p>
-      <Link
-        href={href}
-        className="pressable inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
-      >
+      <Link href={href} className={buttonVariants({ variant: 'primary' })}>
         Submit a correction or counterargument
       </Link>
     </section>

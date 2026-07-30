@@ -7,6 +7,7 @@ import {
   type SearchFilters,
   search,
 } from '@ci/search'
+import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/article/article-chrome'
@@ -135,10 +136,7 @@ export default async function SearchPage({
                 className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
               />
             </div>
-            <button
-              type="submit"
-              className="pressable inline-flex min-h-11 items-center rounded-md bg-navy px-5 font-sans text-[0.95rem] font-medium text-white hover:bg-navy-deep"
-            >
+            <button type="submit" className={buttonVariants({ variant: 'primary' })}>
               Search
             </button>
           </div>

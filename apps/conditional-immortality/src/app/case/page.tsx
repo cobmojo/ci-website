@@ -6,6 +6,7 @@ import {
   PRINCIPAL_CLAIMS,
 } from '@ci/content/case'
 import type { CaseGroup, CaseSection } from '@ci/content-schema'
+import { buttonVariants } from '@ci/ui'
 import Link from 'next/link'
 import {
   Breadcrumbs,
@@ -317,16 +318,10 @@ export default function CaseHubPage() {
             as files you can keep. Printing from here gives you this map rather than the argument.
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/full-case/"
-              className="pressable inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
-            >
+            <Link href="/full-case/" className={buttonVariants({ variant: 'primary' })}>
               Read the full case on one page
             </Link>
-            <Link
-              href="/download/"
-              className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.95rem] font-medium text-navy no-underline hover:bg-panel-strong"
-            >
+            <Link href="/download/" className={buttonVariants({ variant: 'secondary' })}>
               Download a copy
             </Link>
             <PrintButton label="Print this map" />

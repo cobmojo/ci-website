@@ -26,6 +26,8 @@ export const buttonVariants = cva(
         outline: 'border border-navy text-navy hover:bg-panel',
         ghost: 'text-navy hover:bg-panel',
         copper: 'bg-copper text-white hover:bg-copper-deep',
+        /* A tint and a hairline, not a solid fill. Distinct from `copper`. */
+        copperSoft: 'border border-copper/45 bg-copper/10 text-copper-deep hover:bg-copper/15',
       },
       size: {
         sm: 'min-h-9 px-3 py-1.5 text-[0.9rem]',

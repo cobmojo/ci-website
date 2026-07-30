@@ -1,4 +1,5 @@
 import { video } from '@ci/content/video'
+import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
@@ -58,10 +59,7 @@ export default function DownloadPage() {
                   a new page.
                 </p>
                 <p className="m-0 font-sans text-[0.95rem]">
-                  <Link
-                    href="/full-case/"
-                    className="pressable inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-medium text-white no-underline hover:bg-navy-deep"
-                  >
+                  <Link href="/full-case/" className={buttonVariants({ variant: 'primary' })}>
                     Open the full case
                   </Link>
                 </p>
@@ -85,7 +83,7 @@ export default function DownloadPage() {
                   <a
                     href="/download/transcript.txt"
                     download
-                    className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className={buttonVariants({ variant: 'secondary' })}
                   >
                     Download transcript.txt
                   </a>
@@ -114,7 +112,7 @@ export default function DownloadPage() {
                   <a
                     href="/download/bibliography.txt"
                     download
-                    className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className={buttonVariants({ variant: 'secondary' })}
                   >
                     Download bibliography.txt
                   </a>
@@ -143,7 +141,7 @@ export default function DownloadPage() {
                 <p className="m-0 font-sans text-[0.95rem]">
                   <a
                     href="/download/handout.html"
-                    className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className={buttonVariants({ variant: 'secondary' })}
                   >
                     Open the printable handout
                   </a>
@@ -169,7 +167,7 @@ export default function DownloadPage() {
                 <p className="m-0 font-sans text-[0.95rem]">
                   <Link
                     href="/original-document/"
-                    className="pressable inline-flex min-h-11 items-center rounded-md border border-navy px-4 font-medium text-navy no-underline hover:bg-panel"
+                    className={buttonVariants({ variant: 'outline' })}
                   >
                     Read about the original document
                   </Link>
