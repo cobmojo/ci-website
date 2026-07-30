@@ -68,7 +68,10 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
   return (
     <section
       aria-labelledby="scripture-filter-title"
-      className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
+      // Fades in on mount rather than popping: these controls only exist once
+      // scripting has run. The status line below is deliberately not animated —
+      // it changes on every keystroke.
+      className="mount-reveal mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
     >
       {css ? <style>{css}</style> : null}
 

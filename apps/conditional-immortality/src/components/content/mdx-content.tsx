@@ -29,7 +29,13 @@ function HeadingAnchor({ id }: { id?: string }) {
   return (
     <a
       href={`#${id}`}
-      className="ml-2 align-middle text-[0.62em] text-border-strong no-underline opacity-0 transition-opacity focus:opacity-100 group-hover:opacity-100 print:hidden"
+      // Visibility and colour both live in `heading-anchor` in globals.css
+      // rather than in utilities here. A `group-hover` utility hid the anchor
+      // unconditionally and revealed it on hover, which meant it was
+      // permanently invisible on a touch device; a colour utility here would
+      // sit on the resting state too, and the resting anchor has to clear the
+      // contrast requirement, not just the hovered one.
+      className="heading-anchor ml-2 align-middle text-[0.62em] no-underline print:hidden"
       aria-label="Link to this section"
     >
       #
@@ -59,14 +65,16 @@ function InternalOrExternalLink({ href, children, ...rest }: ComponentPropsWitho
 }
 
 const components = {
+  // No `group` class: `heading-anchor` keys off `:is(h2, h3):hover` directly,
+  // so the marker class is no longer load bearing.
   h2: ({ children, id, ...rest }: ComponentPropsWithoutRef<'h2'>) => (
-    <h2 id={id} className="group" {...rest}>
+    <h2 id={id} {...rest}>
       {children}
       <HeadingAnchor id={id} />
     </h2>
   ),
   h3: ({ children, id, ...rest }: ComponentPropsWithoutRef<'h3'>) => (
-    <h3 id={id} className="group" {...rest}>
+    <h3 id={id} {...rest}>
       {children}
       <HeadingAnchor id={id} />
     </h3>

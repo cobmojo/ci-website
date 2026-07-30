@@ -287,9 +287,13 @@ function FeedbackFormFields({
     <div>
       {/* Announced on change, and visible. Present in the DOM from first render
           so assistive technology is already observing it when it fills. */}
+      {/* `status-message` fades each result in, and rises it a quarter of a rem
+          where motion is welcome. Enough to draw the eye to a form result the
+          reader is waiting for, not far enough to be read on the way. The live
+          region announces regardless: the animation is for the eye only. */}
       <div aria-live="polite" id={ids.status}>
         {status === 'success' ? (
-          <p className="m-0 mb-5 rounded-md border border-affirm/30 bg-affirm-soft p-4 font-sans text-[0.95rem] text-ink">
+          <p className="status-message m-0 mb-5 rounded-md border border-affirm/30 bg-affirm-soft p-4 font-sans text-[0.95rem] text-ink">
             <strong className="font-semibold text-affirm">Received.</strong> Your submission has
             been recorded. Every submission is read. If it leads to a change, that change is
             published in the <Link href="/changelog/">changelog</Link> with the issue and the
@@ -297,14 +301,14 @@ function FeedbackFormFields({
           </p>
         ) : null}
         {status === 'error' || status === 'rate-limited' || status === 'invalid' ? (
-          <p className="m-0 mb-5 rounded-md border border-deny/30 bg-deny-soft p-4 font-sans text-[0.95rem] text-ink">
+          <p className="status-message m-0 mb-5 rounded-md border border-deny/30 bg-deny-soft p-4 font-sans text-[0.95rem] text-ink">
             <strong className="font-semibold text-deny">Not recorded.</strong>{' '}
             {detail ||
               'Something went wrong. Your text is still in the form, so you can try again.'}
           </p>
         ) : null}
         {status === 'submitting' ? (
-          <p className="m-0 mb-5 rounded-md border border-border-strong bg-panel p-4 font-sans text-[0.95rem] text-ink-muted">
+          <p className="status-message m-0 mb-5 rounded-md border border-border-strong bg-panel p-4 font-sans text-[0.95rem] text-ink-muted">
             Sending your submission.
           </p>
         ) : null}

@@ -7,10 +7,16 @@ import { cn } from './utils'
  *
  * `min-h-11` keeps every target at or above the 44px WCAG 2.2 target-size
  * guidance without needing per-instance overrides.
+ *
+ * There is no `transition-colors` here any more. Tier 1 feedback is declared
+ * once in the base layer of `globals.css` against `button`, so this surface and
+ * the hand-written links that are styled to look identical to it now share one
+ * duration and one curve instead of two. `pressable` opts into the Tier 2 press
+ * scale. See `docs/motion-brief.md`.
  */
 export const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 rounded-md font-sans font-medium ' +
-    'no-underline transition-colors min-h-11 px-4 py-2 text-[0.97rem] ' +
+    'no-underline pressable min-h-11 px-4 py-2 text-[0.97rem] ' +
     'disabled:pointer-events-none disabled:opacity-60',
   {
     variants: {

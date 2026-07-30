@@ -13,9 +13,11 @@ import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
  * The list is not a fallback: it is the accessible equivalent, and it carries
  * every node and every edge the diagram carries.
  *
- * Nothing here is interactive. There is no animation, no dragging and no
- * pointer-only affordance, so the diagram behaves identically in print, in a
- * screen reader, and on a touch device.
+ * The diagram itself is inert: nothing to pan, zoom, drag or hover, and no
+ * pointer-only affordance, so it behaves identically in print, in a screen
+ * reader, and on a touch device. The links below it get the same Tier 1 colour
+ * feedback as every other link on the site and nothing more. Nothing on this
+ * page moves.
  */
 
 const CRUMBS: readonly Crumb[] = [

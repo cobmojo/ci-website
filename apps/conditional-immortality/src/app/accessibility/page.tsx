@@ -64,7 +64,7 @@ const TESTED: readonly TestedItem[] = [
     id: 'motion',
     title: 'Reduced motion',
     detail:
-      'There is almost no motion here to begin with: no carousels, no parallax, no animated illustrations, no auto-playing video. What little transition exists is reduced to effectively nothing when the operating system reports a preference for reduced motion, and that rule was verified with the preference switched on.',
+      'There is very little motion here: no carousels, no parallax, no animated illustrations, no auto-playing video, and nothing that appears or moves as you scroll. What motion exists is confined to things you operate, such as a panel opening or a button responding to a press, and to scrolling smoothly when you follow a link to a heading further down the same page. When the operating system reports a preference for reduced motion, every one of those movements is removed, replaced by a plain fade or by nothing at all. The colour changes that show you where the pointer is are kept, because taking those away would make the interface harder to follow rather than gentler. Both versions are checked automatically on every build, and the still version was also reviewed with the preference switched on.',
   },
   {
     id: 'languages',

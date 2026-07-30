@@ -48,6 +48,9 @@ Read these before changing anything substantive.
 - [Authoring brief](docs/authoring-brief.md). Binding rules for writing content:
   style, citation, quotation and the things that will fail the build.
 - [Routing brief](docs/routing-brief.md). Binding rules for adding a route.
+- [Motion brief](docs/motion-brief.md). Binding rules for animation: the five
+  tiers, what is deliberately not animated, and the two variants everything
+  ships in.
 - [Maintenance guide](docs/maintenance-guide.md). Every routine task and the
   command that does it.
 - [Implementation report](docs/implementation-report.md). Architecture, testing,
@@ -76,7 +79,7 @@ unknown reference fails the build. Do not work around this by typing the verse.
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-455 tests: 237 unit, 186 end-to-end across desktop and mobile, 32 accessibility.
+537 tests: 281 unit, 224 end-to-end across desktop and mobile, 32 accessibility.
 They run on every push; see `.github/workflows/ci.yml`.
 
 ## Conventions

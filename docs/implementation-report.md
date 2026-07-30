@@ -90,15 +90,15 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-455 tests, all passing.
+537 tests, all passing.
 
 | Suite | Count |
 |---|---|
 | Unit, `@ci/content-schema` | 46 |
 | Unit, `@ci/content` | 64 |
 | Unit, `@ci/search` | 39 |
-| Unit, `conditional-immortality` | 88 |
-| End-to-end, desktop and mobile | 186 |
+| Unit, `conditional-immortality` | 132 |
+| End-to-end, desktop and mobile | 224 |
 | Accessibility, axe plus structural | 32 |
 
 Plus six gates that fail the build: content validation, the content audit, the
@@ -119,6 +119,27 @@ landmarks with every `nav` named; the skip link moves focus, not just scroll;
 dialogs trap focus and restore it to their trigger on Escape; no horizontal
 scrolling at 320 CSS pixels; Greek carries `lang="grc"` and Hebrew
 `lang="he" dir="rtl"`; print output keeps the argument and drops the chrome.
+
+Motion ships in two variants, and both are tested. See
+[the motion brief](motion-brief.md) for the tiers and for what was deliberately
+left unanimated. The previous blanket `prefers-reduced-motion` rule, which
+collapsed every duration to 0.001ms with `!important` on `*`, has been replaced:
+it removed meaning along with movement and could not be overridden. Movement is
+now opt-in under `prefers-reduced-motion: no-preference`, colour feedback is
+kept under `reduce`, and an end-to-end sweep over eight representative pages
+asserts that with the preference set no rendered element animates a movement
+property.
+
+Two findings from that work are worth recording because both were caught by
+measurement rather than by reasoning:
+
+- `scroll-behavior: smooth` on `html` suppresses the App Router's scroll-to-top
+  on client navigation, so a reader following "Next section" from two thousand
+  pixels down an article arrived two thousand pixels down the next one. Smooth
+  scrolling is now applied for the duration of one fragment navigation instead.
+- The `<details>` height animation cannot be shipped on Chromium 148: a
+  collapsed `::details-content` never re-expands, so the disclosure appears open
+  and empty. Withdrawn, with a test that fails if it returns.
 
 Fixed during testing: three contrast failures, a target-size failure on the
 glossary jump list, a heading skip on the search page, a skip link that only

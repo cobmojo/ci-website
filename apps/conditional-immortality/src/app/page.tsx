@@ -399,7 +399,7 @@ export default function HomePage() {
               <li key={topic.id}>
                 <Link
                   href={`/topics/${topic.slug}/`}
-                  className="inline-flex min-h-11 items-center rounded-md border border-border bg-paper-raised px-3 font-sans text-[0.9rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
+                  className="pressable inline-flex min-h-11 items-center rounded-md border border-border bg-paper-raised px-3 font-sans text-[0.9rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
                 >
                   {topic.title}
                 </Link>
