@@ -38,8 +38,10 @@ export function ScrollRegion({
   children: ReactNode
 }) {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: a fieldset groups form controls; this groups a scrollable table, and using one would put a landmark on all forty-eight of them
     <div
       className={cn('overflow-x-auto overscroll-x-contain', className)}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1 requires that a pointer-scrollable region also be scrollable from the keyboard, and only a focusable container can be
       tabIndex={0}
       role="group"
       aria-label={label}

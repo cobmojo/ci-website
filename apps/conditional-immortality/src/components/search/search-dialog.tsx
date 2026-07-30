@@ -1,14 +1,10 @@
 'use client'
 
-import {
-  highlightSegments,
-  MATCH_FIELD_LABELS,
-  SEARCH_DOC_TYPE_LABELS,
-  type SearchIndex,
-  search,
-} from '@ci/search'
+import { type SearchIndex, search } from '@ci/search'
 import Link from 'next/link'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { QuickSearchResults } from '@/components/search/quick-search-results'
+import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
 
 /**
  * Site search, as a dialog.
@@ -19,6 +15,10 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
  * fetched lazily on first open so pages that are never searched pay nothing.
  *
  * Searching runs entirely in the browser. No query is ever sent to a server.
+ *
+ * The text-layout runtime that fits excerpts follows the same rule as the
+ * index: nothing is fetched until a reader shows an interest in searching, and
+ * neither fetch is ever waited on before results appear.
  */
 export function SearchDialogTrigger() {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -46,13 +46,26 @@ export function SearchDialogTrigger() {
     }
   }, [index, loading])
 
-  const openDialog = useCallback(() => {
+  /**
+   * Search intent: hovering or focusing the trigger.
+   *
+   * Both fetches are started and neither is awaited. `loadTextLayoutEngine`
+   * caches its own promise and swallows its own failures, so calling it on
+   * every pointer pass costs one request in total and can never reject.
+   */
+  const prewarm = useCallback(() => {
     void loadIndex()
+    void loadTextLayoutEngine()
+  }, [loadIndex])
+
+  const openDialog = useCallback(() => {
+    // Opening always starts the loads, whether or not prewarming happened.
+    prewarm()
     dialogRef.current?.showModal()
     setOpen(true)
     // Focus the field after the dialog is painted.
     requestAnimationFrame(() => inputRef.current?.focus())
-  }, [loadIndex])
+  }, [prewarm])
 
   const closeDialog = useCallback(() => {
     dialogRef.current?.close()
@@ -80,7 +93,9 @@ export function SearchDialogTrigger() {
 
   const outcome = useMemo(() => {
     if (!index || query.trim().length < 2) return null
-    return search(index.docs, query, { limit: 12 })
+    // Candidates are requested here and nowhere else: the server-rendered
+    // search page has no fitter to feed and does not pay for them.
+    return search(index.docs, query, { limit: 12, includeExcerptCandidate: true })
   }, [index, query])
 
   return (
@@ -91,6 +106,12 @@ export function SearchDialogTrigger() {
         aria-haspopup={mounted ? 'dialog' : undefined}
         aria-controls={mounted ? dialogId : undefined}
         className="search-trigger inline-flex min-h-11 items-center gap-2 rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[0.88rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
+        onPointerEnter={() => {
+          if (mounted) prewarm()
+        }}
+        onFocus={() => {
+          if (mounted) prewarm()
+        }}
         onClick={event => {
           if (!mounted) return
           event.preventDefault()
@@ -131,6 +152,7 @@ export function SearchDialogTrigger() {
               type="search"
               value={query}
               onChange={event => setQuery(event.target.value)}
+              onFocus={prewarm}
               placeholder="Search passages, sections, topics, sources"
               autoComplete="off"
               className="min-h-11 w-full rounded-md border border-border bg-paper-raised px-3 font-sans text-[1rem] text-ink"
@@ -153,6 +175,12 @@ export function SearchDialogTrigger() {
           </div>
 
           <div className="max-h-[62vh] overflow-y-auto px-4 py-3">
+            {/*
+              Result counts are announced; excerpt fitting is not. Replacing an
+              excerpt with a better-fitting substring says nothing new about the
+              results, and announcing every one of them would turn a refinement
+              into a stream of interruptions.
+            */}
             <p id={statusId} aria-live="polite" className="sr-only">
               {loading
                 ? 'Loading the search index.'
@@ -166,51 +194,12 @@ export function SearchDialogTrigger() {
             ) : null}
 
             {outcome && outcome.results.length > 0 ? (
-              <ol className="m-0 list-none p-0">
-                {outcome.results.map(result => (
-                  <li key={result.doc.id} className="border-b border-border py-2.5 last:border-0">
-                    <Link
-                      href={result.doc.route}
-                      onClick={closeDialog}
-                      className="block rounded px-1 no-underline hover:bg-panel"
-                    >
-                      <span className="flex flex-wrap items-baseline gap-x-2">
-                        <span className="font-sans text-[0.74rem] tracking-wide text-ink-subtle uppercase">
-                          {SEARCH_DOC_TYPE_LABELS[result.doc.type]}
-                        </span>
-                        {result.doc.sectionId ? (
-                          <span className="font-sans text-[0.74rem] text-copper-deep">
-                            {result.doc.sectionId}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="mt-0.5 block font-sans text-[0.98rem] font-medium text-navy">
-                        {result.doc.title}
-                      </span>
-                      <span className="mt-0.5 block text-[0.9rem] leading-snug text-ink-muted">
-                        {highlightSegments(result.excerpt, result.matchedTerms).map((segment, i) =>
-                          segment.matched ? (
-                            // biome-ignore lint/suspicious/noArrayIndexKey: positional by construction
-                            <mark key={i} className="rounded-sm bg-ochre-soft px-0.5 text-ink">
-                              {segment.text}
-                            </mark>
-                          ) : (
-                            // biome-ignore lint/suspicious/noArrayIndexKey: positional by construction
-                            <span key={i}>{segment.text}</span>
-                          ),
-                        )}
-                      </span>
-                      <span className="mt-0.5 block font-sans text-[0.76rem] text-ink-subtle">
-                        Matched in{' '}
-                        {result.matchedFields
-                          .slice(0, 2)
-                          .map(field => MATCH_FIELD_LABELS[field])
-                          .join(', ')}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
+              <QuickSearchResults
+                results={outcome.results}
+                terms={outcome.results[0]?.matchedTerms ?? []}
+                open={open}
+                onNavigate={closeDialog}
+              />
             ) : null}
 
             {outcome && outcome.results.length === 0 ? (
@@ -243,8 +232,6 @@ export function SearchDialogTrigger() {
           </div>
         </dialog>
       ) : null}
-
-      {open ? null : null}
     </>
   )
 }

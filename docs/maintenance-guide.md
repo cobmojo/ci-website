@@ -20,7 +20,14 @@ bun run validate
 
 That is formatting, lint, typecheck, content validation, the content audit,
 unit tests, the production build, the PII scan and the link check, in that
-order. `bun run ci` adds the end-to-end suite.
+order.
+
+```bash
+bun run ci
+```
+
+`validate`, then `test:browser`: end-to-end on desktop and mobile,
+accessibility, and the text-geometry contract in Chromium, Firefox and WebKit.
 
 Run the pieces individually while working:
 
@@ -29,10 +36,21 @@ bun run content:validate   # registry integrity, cross-references, MDX rules
 bun run content:audit      # migration completeness, regenerates ledger exports
 bun run content:pii        # scans built output for source contact details
 bun run content:links      # internal links and fragments in built HTML
+
+bun run test:e2e           # desktop and mobile end-to-end
+bun run test:a11y          # axe plus structural accessibility
+bun run test:text-geometry # Pretext against real browser layout, three engines
+bun run test:browser       # all four of the above
 ```
 
 `content:pii` and `content:links` read the build output, so run `bun run build`
-first.
+first. The browser suites build it themselves.
+
+Playwright needs its browsers once per machine:
+
+```bash
+bunx playwright install chromium firefox webkit
+```
 
 ---
 
@@ -163,6 +181,35 @@ Nothing to do. The index is built from the content registries during
 To change ranking, edit the field weights in `packages/ci-search/src/query.ts`.
 To add a synonym group, edit `packages/ci-search/src/synonyms.ts`. Both have
 tests; run `bun run test` in `packages/ci-search`.
+
+Ranking is pinned by a snapshot. `src/__tests__/ranking-baseline.json` records
+what thirty real queries returned against the real content index — totals,
+order, scores, matched fields and terms. A deliberate ranking change means
+regenerating it in the same commit and saying why; an accidental one fails the
+suite, which is the point.
+
+---
+
+## Work on the fitted search excerpt
+
+The quick-search dialog fits its excerpts to an exact line budget using
+Pretext. Read `docs/pretext-text-geometry.md` before changing any of it. The
+short version:
+
+- The measured typography lives in one class, `.quick-search-excerpt`, in
+  `globals.css`. Changing a declaration there changes what Pretext is told;
+  the geometry suite will tell you if the two stop agreeing.
+- `apps/conditional-immortality/src/lib/text-layout/supported-text.ts` decides
+  what may be measured. Widening it is a font change first: add the subset to
+  `globals.css`, add the range there, add corpus cases, then run the suite.
+- `bun run test:text-geometry` is the gate, and it is also the gate for
+  upgrading Pretext. Never upgrade from `main`.
+
+The typography corpus the contract is proved against is in
+`apps/conditional-immortality/tests/fixtures/typography-corpus.ts`. Its approved
+half must agree with the browser exactly; its fallback half must be declined
+with the documented reason. Do not move a case from the second half to the first
+to make a run go green.
 
 ---
 

@@ -25,7 +25,9 @@
     "content:links": "bun run scripts/conditional-immortality/link-check.ts",
     "source:import": "bun run scripts/conditional-immortality/import-source.ts",
     "validate": "bun run format:check && bun run lint && bun run typecheck && bun run content:validate && bun run content:audit && bun run test && bun run build && bun run content:pii && bun run content:links",
-    "ci": "bun run validate && bun run test:e2e"
+    "ci": "bun run validate && bun run test:browser",
+    "test:text-geometry": "turbo run test:text-geometry",
+    "test:browser": "turbo run test:browser"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",

@@ -1,4 +1,6 @@
 import { parseReference } from '@ci/content-schema/bible'
+import { buildExcerpts, excerptSources } from './excerpt'
+import { normalize } from './normalize-with-source-map'
 import { expandQuery } from './synonyms'
 import type { MatchField, SearchDoc, SearchFilters, SearchResult } from './types'
 
@@ -22,20 +24,6 @@ const FIELD_WEIGHTS: Record<MatchField, number> = {
 const SYNONYM_FACTOR = 0.45
 /** Whole-phrase hits count for more than individual word hits. */
 const PHRASE_BONUS = 1.9
-
-function normalise(value: string): string {
-  return (
-    value
-      .toLowerCase()
-      .normalize('NFKD')
-      // Curly quotes and dashes should match their ASCII equivalents.
-      .replace(/[‘’‛]/g, "'")
-      .replace(/[“”]/g, '"')
-      .replace(/[‐-―−]/g, '-')
-      .replace(/\s+/g, ' ')
-      .trim()
-  )
-}
 
 const STOP_WORDS = new Set([
   'the',
@@ -67,7 +55,7 @@ const STOP_WORDS = new Set([
 ])
 
 function tokenise(value: string): string[] {
-  return normalise(value)
+  return normalize(value)
     .split(/[^a-z0-9':]+/)
     .filter(token => token.length > 1 && !STOP_WORDS.has(token))
 }
@@ -91,10 +79,10 @@ function countOccurrences(haystack: string, needle: string): number {
 export function scriptureQueryVariants(query: string): readonly string[] {
   const parsed = parseReference(query)
   if (!parsed) return []
-  const variants = new Set<string>([normalise(parsed.normalized)])
-  variants.add(normalise(`${parsed.book} ${parsed.chapter}`))
+  const variants = new Set<string>([normalize(parsed.normalized)])
+  variants.add(normalize(`${parsed.book} ${parsed.chapter}`))
   if (parsed.verseStart !== undefined) {
-    variants.add(normalise(`${parsed.book} ${parsed.chapter}:${parsed.verseStart}`))
+    variants.add(normalize(`${parsed.book} ${parsed.chapter}:${parsed.verseStart}`))
   }
   return [...variants]
 }
@@ -104,18 +92,40 @@ interface FieldSource {
   readonly text: string
 }
 
+/**
+ * Normalised fields, computed once per document.
+ *
+ * A search normalises every field of every document, which is 438,000
+ * characters of lowercasing, NFKD and folding — on every keystroke, for a
+ * corpus that was built at deploy time and cannot change while the page is
+ * open. Keyed weakly on the document, so an index that is replaced is
+ * collected with its entries.
+ *
+ * This is a memo, not a behaviour change: the ranking snapshot proves the
+ * scores are identical.
+ */
+const normalisedFields = new WeakMap<SearchDoc, readonly FieldSource[]>()
+
 function fieldsOf(doc: SearchDoc): readonly FieldSource[] {
+  const cached = normalisedFields.get(doc)
+  if (cached) return cached
+  const fields = computeFields(doc)
+  normalisedFields.set(doc, fields)
+  return fields
+}
+
+function computeFields(doc: SearchDoc): readonly FieldSource[] {
   return [
-    { field: 'title', text: normalise(doc.title) },
-    { field: 'id', text: normalise([doc.sectionId ?? '', ...doc.aliases].join(' ')) },
-    { field: 'summary', text: normalise(doc.summary) },
-    { field: 'heading', text: normalise(doc.headings.join(' · ')) },
-    { field: 'scripture', text: normalise(doc.scriptureRefs.join(' · ')) },
+    { field: 'title', text: normalize(doc.title) },
+    { field: 'id', text: normalize([doc.sectionId ?? '', ...doc.aliases].join(' ')) },
+    { field: 'summary', text: normalize(doc.summary) },
+    { field: 'heading', text: normalize(doc.headings.join(' · ')) },
+    { field: 'scripture', text: normalize(doc.scriptureRefs.join(' · ')) },
     {
       field: doc.type === 'transcript' ? 'transcript' : 'body',
-      text: normalise(doc.body),
+      text: normalize(doc.body),
     },
-    { field: 'notes', text: normalise(doc.notes) },
+    { field: 'notes', text: normalize(doc.notes) },
   ]
 }
 
@@ -138,37 +148,18 @@ function matchesFilters(doc: SearchDoc, filters: SearchFilters): boolean {
   )
 }
 
-const EXCERPT_RADIUS = 110
-
-function buildExcerpt(body: string, terms: readonly string[]): string {
-  const haystack = normalise(body)
-  let bestIndex = -1
-  let bestTerm = ''
-  for (const term of terms) {
-    const index = haystack.indexOf(term)
-    if (index !== -1 && (bestIndex === -1 || term.length > bestTerm.length)) {
-      bestIndex = index
-      bestTerm = term
-    }
-  }
-
-  const source = body.replace(/\s+/g, ' ').trim()
-  if (bestIndex === -1) {
-    return source.length > EXCERPT_RADIUS * 2
-      ? `${source.slice(0, EXCERPT_RADIUS * 2).trimEnd()}…`
-      : source
-  }
-
-  const start = Math.max(0, bestIndex - EXCERPT_RADIUS)
-  const end = Math.min(source.length, bestIndex + bestTerm.length + EXCERPT_RADIUS)
-  const slice = source.slice(start, end).trim()
-  return `${start > 0 ? '…' : ''}${slice}${end < source.length ? '…' : ''}`
-}
-
 export interface SearchOptions {
   readonly filters?: SearchFilters
   readonly limit?: number
   readonly offset?: number
+  /**
+   * Also build a larger, ellipsis-free excerpt candidate for each returned row.
+   *
+   * Opt-in because it costs a grapheme-level pass over the quoted field, and
+   * only the browser-side fitter in the quick-search dialog has any use for it.
+   * The server-rendered search page deliberately leaves it off.
+   */
+  readonly includeExcerptCandidate?: boolean
 }
 
 export interface SearchOutcome {
@@ -176,6 +167,20 @@ export interface SearchOutcome {
   readonly total: number
   /** Terms the ranker actually used, for the "why it matched" line. */
   readonly usedTerms: readonly string[]
+}
+
+/**
+ * A document that scored, before any excerpt work has been done.
+ *
+ * Scoring runs over every candidate document; excerpts run over the handful
+ * that are actually returned. Keeping them apart is what stops a twelve-row
+ * dialog from quoting two hundred documents on every keystroke.
+ */
+interface ScoredDoc {
+  readonly doc: SearchDoc
+  readonly score: number
+  readonly matchedFields: readonly MatchField[]
+  readonly matchedTerms: readonly string[]
 }
 
 /**
@@ -194,7 +199,7 @@ export function search(
   const limit = options.limit ?? 25
   const offset = options.offset ?? 0
 
-  const query = normalise(rawQuery)
+  const query = normalize(rawQuery)
   const candidates = docs.filter(doc => matchesFilters(doc, filters))
 
   if (!query) {
@@ -210,7 +215,7 @@ export function search(
   const primary: string[] = [phrase, ...words, ...scriptureVariants]
   const usedTerms = [...new Set([...primary, ...synonyms])].filter(Boolean)
 
-  const scored: SearchResult[] = []
+  const scored: ScoredDoc[] = []
 
   for (const doc of candidates) {
     const fields = fieldsOf(doc)
@@ -242,68 +247,39 @@ export function search(
     if (score === 0) continue
 
     // Exact whole-title match should always float to the top.
-    if (normalise(doc.title) === phrase) score += 400
-    if (doc.sectionId && normalise(doc.sectionId) === phrase) score += 400
+    if (normalize(doc.title) === phrase) score += 400
+    if (doc.sectionId && normalize(doc.sectionId) === phrase) score += 400
 
     const matchedFields = [...matchedByField.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([field]) => field)
 
-    scored.push({
-      doc,
-      score,
-      matchedFields,
-      matchedTerms: [...matchedTerms],
-      excerpt: buildExcerpt(doc.body || doc.summary, [...matchedTerms]),
-    })
+    scored.push({ doc, score, matchedFields, matchedTerms: [...matchedTerms] })
   }
 
   scored.sort((a, b) => b.score - a.score || a.doc.title.localeCompare(b.doc.title))
 
-  return {
-    results: scored.slice(offset, offset + limit),
-    total: scored.length,
-    usedTerms,
-  }
-}
+  // Excerpts are built only for the rows that are actually returned. Scoring
+  // touches every document; quoting touches twelve.
+  const page = scored.slice(offset, offset + limit)
+  const results: SearchResult[] = page.map(entry => {
+    const { excerpt, candidate } = buildExcerpts(
+      excerptSources(entry.doc),
+      entry.matchedTerms,
+      options.includeExcerptCandidate === true,
+    )
 
-/**
- * Split an excerpt into plain and matched runs so the renderer can mark hits
- * with `<mark>` without ever injecting HTML from content.
- */
-export function highlightSegments(
-  text: string,
-  terms: readonly string[],
-): readonly { text: string; matched: boolean }[] {
-  const usable = [...new Set(terms)]
-    .filter(term => term.length > 1)
-    .sort((a, b) => b.length - a.length)
-  if (usable.length === 0) return [{ text, matched: false }]
-
-  const haystack = normalise(text)
-  const marks = new Array<boolean>(text.length).fill(false)
-
-  for (const term of usable) {
-    let index = haystack.indexOf(term)
-    while (index !== -1) {
-      for (let i = index; i < Math.min(index + term.length, marks.length); i += 1) marks[i] = true
-      index = haystack.indexOf(term, index + term.length)
+    return {
+      doc: entry.doc,
+      score: entry.score,
+      matchedFields: entry.matchedFields,
+      matchedTerms: entry.matchedTerms,
+      excerpt: excerpt.text,
+      excerptMatchRanges: excerpt.matchRanges,
+      excerptField: excerpt.sourceField,
+      ...(candidate ? { excerptCandidate: candidate } : {}),
     }
-  }
+  })
 
-  const segments: { text: string; matched: boolean }[] = []
-  let current = ''
-  let currentMatched = marks[0] ?? false
-  for (let i = 0; i < text.length; i += 1) {
-    const matched = marks[i] ?? false
-    if (matched === currentMatched) {
-      current += text[i]
-    } else {
-      if (current) segments.push({ text: current, matched: currentMatched })
-      current = text[i] ?? ''
-      currentMatched = matched
-    }
-  }
-  if (current) segments.push({ text: current, matched: currentMatched })
-  return segments
+  return { results, total: scored.length, usedTerms }
 }

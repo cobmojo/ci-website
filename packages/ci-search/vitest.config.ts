@@ -12,5 +12,14 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    /*
+     * Several suites here are corpus-scale rather than unit-scale: they build
+     * the real search index from the content registries and replay thirty real
+     * queries against it. That is the point of them — a ranking snapshot over a
+     * fixture corpus would prove much less — but it is more work than the
+     * five-second default assumes, especially with four packages testing in
+     * parallel under Turborepo.
+     */
+    testTimeout: 30_000,
   },
 })

@@ -1,3 +1,5 @@
+import type { TextRange } from './normalize-with-source-map'
+
 /** Page families that appear in search results. */
 export const SEARCH_DOC_TYPES = [
   'case-section',
@@ -98,12 +100,40 @@ export const MATCH_FIELD_LABELS: Record<MatchField, string> = {
   notes: 'source notes',
 }
 
+/**
+ * A larger, ellipsis-free window of source text for the browser-side fitter.
+ *
+ * Produced only for the rows a caller actually renders, and only when that
+ * caller opts in. Never stored in the search index and never carried through a
+ * Server Component: it is input to a client-side enhancement, nothing more.
+ */
+export interface SearchExcerptCandidate {
+  /** Single-spaced and trimmed, ready for `white-space: normal`. */
+  readonly text: string
+  /** At least one exact match, as offsets into `text`. */
+  readonly matchRanges: readonly TextRange[]
+  readonly omittedBefore: boolean
+  readonly omittedAfter: boolean
+  readonly sourceField: MatchField
+}
+
 export interface SearchResult {
   readonly doc: SearchDoc
   readonly score: number
   /** Which fields matched, best first. Rendered as "why it matched". */
   readonly matchedFields: readonly MatchField[]
-  /** Body excerpt around the strongest match, with `[[` `]]` marking terms. */
+  /**
+   * Source-faithful excerpt around the strongest match, with a leading or
+   * trailing ellipsis only where text was actually omitted. Plain text: the
+   * renderer marks it with `<mark>` using `excerptMatchRanges`, never by
+   * injecting markup.
+   */
   readonly excerpt: string
+  /** Where the matches are in `excerpt`, so an added ellipsis is never marked. */
+  readonly excerptMatchRanges: readonly TextRange[]
+  /** Which field `excerpt` was quoted from, or `null` for a document with no text. */
+  readonly excerptField: MatchField | null
   readonly matchedTerms: readonly string[]
+  /** Present only when the caller passed `includeExcerptCandidate`. */
+  readonly excerptCandidate?: SearchExcerptCandidate
 }

@@ -217,7 +217,9 @@ describe('excerpts and highlighting', () => {
 
   it('handles a term that is absent', () => {
     const segments = highlightSegments('nothing here', ['absent'])
-    expect(segments).toEqual([{ text: 'nothing here', matched: false }])
+    // Segments now carry the offsets they were sliced at, so a renderer can key
+    // on position instead of array index.
+    expect(segments).toEqual([{ text: 'nothing here', matched: false, start: 0, end: 12 }])
   })
 })
 

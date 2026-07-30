@@ -7,6 +7,23 @@ import type { NextConfig } from 'next'
  * origin ever contacted is YouTube's privacy-enhanced domain, and only after a
  * visitor deliberately presses play on the watch page or the homepage poster.
  */
+/**
+ * Whether this build is served over HTTPS.
+ *
+ * `upgrade-insecure-requests` rewrites every `http://` subresource to `https://`.
+ * On an HTTPS origin that is exactly what we want. On a plain-HTTP origin there
+ * is nothing to upgrade *to*, and the directive is not harmless: Chromium and
+ * Firefox exempt loopback from it, WebKit does not, so on a local HTTP server
+ * WebKit upgrades the site's own scripts and fonts to a port with no TLS and
+ * fails every one of them.
+ *
+ * So it is emitted when, and only when, the canonical origin is HTTPS. A
+ * deployment sets `NEXT_PUBLIC_SITE_URL` and gets the directive; the local
+ * production server the browser suites run against does not, and is testable in
+ * all three engines.
+ */
+const servedOverHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? '').startsWith('https://')
+
 const CSP_DIRECTIVES: Record<string, string[]> = {
   'default-src': ["'self'"],
   'script-src': ["'self'", "'unsafe-inline'"],
@@ -20,7 +37,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
   'base-uri': ["'self'"],
   'form-action': ["'self'"],
   'frame-ancestors': ["'none'"],
-  'upgrade-insecure-requests': [],
+  ...(servedOverHttps ? { 'upgrade-insecure-requests': [] } : {}),
 }
 
 const csp = Object.entries(CSP_DIRECTIVES)
