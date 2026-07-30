@@ -4,13 +4,14 @@ import type { TranscriptCue } from '@ci/content-schema'
  * Transcript cues for the featured video.
  *
  * Source: the author's own manually created English caption track published
- * with the video, retrieved 2026-07-29 from the public timed-text endpoint.
- * These are the published caption times and text, not estimates and not
- * machine transcription. Cue text was proofread against the source document
- * for Scripture references, section numbering and theological terminology.
+ * with the video, retrieved 2026-07-29. These are the published caption times
+ * and text, not estimates and not machine transcription. Cue text was checked
+ * against the source document for Scripture references, section numbering and
+ * theological terminology; only whitespace differs from the published track.
  *
- * Regenerate with `bun run scripts/conditional-immortality/import-transcript.ts`
- * rather than editing timings by hand.
+ * GENERATED FILE — do not edit by hand. Regenerate with
+ * `bun run scripts/conditional-immortality/import-transcript.ts` rather than
+ * editing timings by hand.
  */
 export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   {
@@ -20,7 +21,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 6.64,
-    duration: 7.0,
+    duration: 7,
     text: 'Eternal Conscious Torment where the unsaved get thrown into hell and suffer consciously forever.',
   },
   {
@@ -60,7 +61,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 54.24,
-    duration: 6.0,
+    duration: 6,
     text: 'sinner enters an intermediate state, is physically resurrected for Judgment Day, and on Judgment',
   },
   {
@@ -95,7 +96,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 100.08,
-    duration: 7.0,
+    duration: 7,
     text: 'that Jesus died to pay for all of your sins so that you can spend eternity with him in Heaven.',
   },
   {
@@ -149,7 +150,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: 'and omnipotent; are you? The immortality of the soul is actually taken from Plato, not the Bible,',
   },
   {
-    start: 164.0,
+    start: 164,
     duration: 6.92,
     text: 'which emphasizes our fleeting existence. God alone has immortality and Jesus gives Believers immortal',
   },
@@ -174,7 +175,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: 'infinite punishment creates for Eternal Conscious Torment is that since it trickles out a finite',
   },
   {
-    start: 195.0,
+    start: 195,
     duration: 6.84,
     text: 'magnitude of punishment over an infinite time, God never actually administers the proper judgment for',
   },
@@ -284,7 +285,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: 'was not still burning, but that it was completely burned down. Neither Isaiah nor Jesus imply that',
   },
   {
-    start: 329.0,
+    start: 329,
     duration: 5.44,
     text: 'these dead bodies will remain in the state of being eaten or burning forever. And, importantly,',
   },
@@ -304,7 +305,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: 'about a resurrection to shame and everlasting contempt. Now, the word "shame" is probably better',
   },
   {
-    start: 352.0,
+    start: 352,
     duration: 6.96,
     text: 'understood in our modern usage as "reproach", see Psalm 69, and the root word for "contempt"',
   },
@@ -380,7 +381,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 441.36,
-    duration: 6.0,
+    duration: 6,
     text: 'smoke going up forever and ever as a sign of complete and permanent destruction not ongoing',
   },
   {
@@ -389,12 +390,12 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: 'burning. One other contested portion of this passage is when it says "and they have no rest day',
   },
   {
-    start: 454.0,
-    duration: 6.0,
+    start: 454,
+    duration: 6,
     text: 'or night," which can sound like they are forever unable to rest because they are in torment. What\'s',
   },
   {
-    start: 460.0,
+    start: 460,
     duration: 5.76,
     text: 'very interesting is the parallel between these evil worshippers and the four living creatures',
   },
@@ -464,7 +465,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: 'the same fate of eternal torment. First, let\'s acknowledge that "tormented day and night forever',
   },
   {
-    start: 545.0,
+    start: 545,
     duration: 5.12,
     text: 'and ever" had to be added in verse 10 because, otherwise, the reader would assume that everything',
   },
@@ -604,7 +605,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: "would be the exact same thing that he's already suffering in Hades because we see that Hades",
   },
   {
-    start: 715.0,
+    start: 715,
     duration: 5.64,
     text: 'also gets destroyed in the Lake of Fire. Number six: weeping and gnashing of of teeth and outer',
   },
@@ -619,7 +620,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: 'about blackest darkness or outer darkness. Now, these occur before and during the last judgment.',
   },
   {
-    start: 734.0,
+    start: 734,
     duration: 5.84,
     text: 'Matthew 13 says that they get thrown in the fiery furnace in that place will be weeping and gnashing',
   },
@@ -675,7 +676,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 800.28,
-    duration: 5.0,
+    duration: 5,
     text: 'to be a slam dunk for Eternal Conscious Torment, are actually all supporting the annihilation view;',
   },
   {
@@ -690,7 +691,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 817.92,
-    duration: 6.0,
+    duration: 6,
     text: "will be destroyed not kept alive and tortured. Number nine: the punishment doesn't happen",
   },
   {
@@ -850,12 +851,12 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 1022.04,
-    duration: 7.0,
+    duration: 7,
     text: 'then his death would be unnecessary and confusing. Abraham was to kill Isaac, not to torture him.',
   },
   {
     start: 1029.04,
-    duration: 7.0,
+    duration: 7,
     text: "This foreshadowed Christ. Christ's death paints a picture of the fate of the wicked: a trial,",
   },
   {
@@ -889,13 +890,13 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: '19: hell is not the opposite of Heaven. Romans 5 says the gift of eternal life cannot be compared',
   },
   {
-    start: 1075.0,
+    start: 1075,
     duration: 5.56,
     text: 'with the condemnation and death brought by sin. Eternal life is far, far greater; it is not the',
   },
   {
     start: 1080.56,
-    duration: 6.0,
+    duration: 6,
     text: 'opposite of hell. In Matthew 7, Jesus says that more people go to hell than to heaven,',
   },
   {
@@ -965,12 +966,12 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 1166.84,
-    duration: 5.0,
+    duration: 5,
     text: 'in heaven we will eat from the Tree of Life to sustain our physical bodies. The unrighteous',
   },
   {
     start: 1171.84,
-    duration: 6.0,
+    duration: 6,
     text: "will not have access to it because they can't get into the city, therefore they cannot live forever.",
   },
   {
@@ -1110,7 +1111,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 1349.72,
-    duration: 6.0,
+    duration: 6,
     text: 'heaven to not have been born, so why would Jesus even make this statement? It seems like it could',
   },
   {
@@ -1129,12 +1130,12 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: 'in chapter 21 and 22 are actually just recapping the fate of the present ungodly. The unrighteous',
   },
   {
-    start: 1376.0,
-    duration: 5.0,
+    start: 1376,
+    duration: 5,
     text: "cannot inhabit the new Heaven and new earth, since that's where righteousness dwells. And,",
   },
   {
-    start: 1381.0,
+    start: 1381,
     duration: 6.12,
     text: "in my opinion, the holy city does not have a lake of fire view. 29: Wouldn't the Conditional",
   },
@@ -1189,7 +1190,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: "their boat or what's in the water. They're going to say, \"Let me get on to that cruise ship. How do",
   },
   {
-    start: 1445.0,
+    start: 1445,
     duration: 5.88,
     text: 'I get on to that cruise ship?" Number 30: is the Conditional Immortality view even punishment if',
   },
@@ -1284,7 +1285,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
     text: "truth matters. We don't want to say things are true when they're not. Second, if God has",
   },
   {
-    start: 1560.0,
+    start: 1560,
     duration: 6.72,
     text: 'revealed something then there is value in knowing it to the extent he has made it knowable. Third,',
   },
@@ -1345,7 +1346,7 @@ export const TRANSCRIPT_CUES: readonly TranscriptCue[] = [
   },
   {
     start: 1635.84,
-    duration: 6.0,
+    duration: 6,
     text: "and thus they don't put much effort into pursuing eternal life. This false assumption has two",
   },
   {

@@ -24,7 +24,7 @@ const record = {
   durationSeconds: 1712,
   publishedAt: '2025-03-06',
   transcriptSource:
-    'Author-supplied English caption track published with the video on YouTube, retrieved via the public timed-text endpoint and proofread against the source document.',
+    'Author-supplied English caption track published with the video on YouTube, retrieved with youtube-transcript-api and checked against the source document. The cue times and wording are the published ones; only whitespace was normalised.',
   transcriptRetrievedAt: '2026-07-29',
   sourceIds: ['welch-video-overview'],
   chapters: VIDEO_CHAPTERS,

@@ -19,8 +19,13 @@ bun run validate
 ```
 
 That is formatting, lint, typecheck, content validation, the content audit,
-unit tests, the production build, the PII scan and the link check, in that
-order. `bun run ci` adds the end-to-end suite.
+the documentation path check, unit tests, the production build, the PII scan,
+the link check and the first-load JavaScript budget, in that order. The last
+three read the build output, which is why they come after it. `bun run ci` adds
+the end-to-end suite.
+
+All of it also runs on every push and pull request through
+`.github/workflows/ci.yml`, so a red gate is reported rather than discovered.
 
 Run the pieces individually while working:
 
@@ -29,6 +34,8 @@ bun run content:validate   # registry integrity, cross-references, MDX rules
 bun run content:audit      # migration completeness, regenerates ledger exports
 bun run content:pii        # scans built output for source contact details
 bun run content:links      # internal links and fragments in built HTML
+bun run content:bundle     # first-load JavaScript budget per route
+bun run content:docs       # every file path named in prose or a comment exists
 ```
 
 `content:pii` and `content:links` read the build output, so run `bun run build`
@@ -68,10 +75,18 @@ tells you to add it. Do not work around this by typing the verse.
 
 ## Add a Scripture passage to the corpus
 
-1. Add the reference to the list in
+1. Add the reference to `ADDITIONAL_REFERENCES` in
    `scripts/conditional-immortality/fetch-scripture.ts`.
-2. Run it. Chapters already retrieved are cached, so only new ones are fetched.
-3. Commit the regenerated `packages/ci-content/src/scripture/web-text.ts`.
+2. Run it. Books already retrieved are cached, so only new ones are fetched.
+3. Commit the regenerated `packages/ci-content/src/scripture/web-text.ts`, and
+   empty `ADDITIONAL_REFERENCES` again.
+
+Passages already in the corpus are re-fetched and **checked**, not overwritten.
+If the live World English Bible no longer matches what is committed, the script
+reports every difference and writes nothing, because changing verified Scripture
+is an editorial decision. One narrow exception is recorded in the script: the
+feed drops a footnote marker in Mark 9:47 without leaving its space, and the
+committed text is right.
 
 ---
 
@@ -144,9 +159,20 @@ has lost its destination.
 
 The transcript is the author's published caption track, not a reconstruction.
 
+The plain timed-text endpoint no longer serves it — `api/timedtext` answers 200
+with an empty body — so the fetch goes through `youtube-transcript-api`, a
+Python package. It is the only non-JavaScript dependency in the repository, and
+it is needed for this one script and nothing else.
+
 ```bash
+python -m pip install youtube-transcript-api
 bun run scripts/conditional-immortality/import-transcript.ts
 ```
+
+The script compares what it fetched against the committed cues and reports
+whether anything changed before writing. All 279 cues and all 279 timings
+currently match the published track exactly, once non-breaking spaces and line
+breaks are normalised.
 
 Then adjust chapter boundaries in `packages/ci-content/src/video/index.ts` if
 the video changed. Chapters must not overlap, must stay inside the duration and

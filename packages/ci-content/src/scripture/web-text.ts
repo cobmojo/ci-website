@@ -13,7 +13,7 @@ import type { ScriptureQuotation } from '@ci/content-schema'
  * of this size quotes Scripture far beyond what incidental-quotation
  * allowances for copyrighted modern translations would permit.
  *
- * Retrieved 2026-07-29. Regenerate with
+ * GENERATED FILE — do not edit by hand. Retrieved 2026-07-29. Regenerate with
  * `bun run scripts/conditional-immortality/fetch-scripture.ts`.
  */
 
@@ -3463,8 +3463,8 @@ export function requireScripture(reference: string): ScripturePassage {
   if (!passage) {
     throw new Error(
       `No verified Scripture text for "${reference}". Add it to ` +
-        'scripts/conditional-immortality/fetch-scripture.ts and re-run that script. ' +
-        'Never hand-write Scripture text.',
+        'ADDITIONAL_REFERENCES in scripts/conditional-immortality/fetch-scripture.ts ' +
+        'and re-run that script. Never hand-write Scripture text.',
     )
   }
   return passage
