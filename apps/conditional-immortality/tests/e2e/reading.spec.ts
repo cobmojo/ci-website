@@ -488,6 +488,12 @@ test('closing the search dialog returns focus to its trigger', async ({ page }) 
 test('the keyboard shortcut opens the search dialog and closes it again', async ({ page }) => {
   await page.goto('/')
 
+  // The shortcut handler exists only after hydration, and `aria-expanded`
+  // appears on the trigger at the same moment, so waiting for it keeps the
+  // keypress from racing the handler's registration.
+  const trigger = page.getByRole('link', { name: 'Search', exact: true })
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
   const dialog = page.getByRole('dialog', { name: 'Search this site' })
   await page.keyboard.press('Control+k')
   await expect(dialog).toBeVisible()

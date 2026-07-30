@@ -17,6 +17,7 @@ import {
   CaseChapterNavigation,
 } from '@/components/article/chapter-navigation'
 import { MdxContent } from '@/components/content/mdx-content'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { formatLongDate, formatTimestamp } from '@/lib/format'
 import { passageBySlugOrReference } from '@/lib/passages'
 import type { LoadedSection } from '@/lib/sections'
@@ -85,14 +86,10 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
                     <Link href={`/watch/#${chapter.id}`}>{chapter.title}</Link>{' '}
                     <span className="text-ink-subtle">
                       (
-                      <a
-                        href={videoTimestampUrl(chapter.start)}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
+                      <NewTabLink href={videoTimestampUrl(chapter.start)}>
                         {formatTimestamp(chapter.start)}
-                        <span className="sr-only"> on YouTube, opens in a new tab</span>
-                      </a>
+                        <span className="sr-only"> on YouTube</span>
+                      </NewTabLink>
                       )
                     </span>
                   </li>

@@ -1,6 +1,7 @@
-import { caseSections, ESSENTIAL_PATH } from '@ci/content/case'
+import { caseSections, ESSENTIAL_PATH, objectionSections } from '@ci/content/case'
+import { video } from '@ci/content/video'
 import { describe, expect, it } from 'vitest'
-import { PRIMARY_NAV } from '../navigation'
+import { PRIMARY_NAV, WATCH_CTA } from '../navigation'
 
 /**
  * Orientation copy makes numeric claims in words: the homepage and the 404
@@ -30,7 +31,7 @@ describe('the part counts the orientation copy relies on', () => {
 
   it('has 34 numbered arguments and 3 roadblocks, as the case hub states', () => {
     expect(parts.filter(section => section.group === 'roadblock').length).toBe(3)
-    expect(parts.length - 3).toBe(34)
+    expect(parts.filter(section => section.group !== 'roadblock').length).toBe(34)
   })
 
   it('has 40 entries in all, as "all forty" on the case hub states', () => {
@@ -44,5 +45,17 @@ describe('the part counts the orientation copy relies on', () => {
   it('keeps the header nav description in step with the part count', () => {
     const caseEntry = PRIMARY_NAV.find(item => item.href === '/case/')
     expect(caseEntry?.description).toContain(`${parts.length} parts`)
+  })
+
+  it('has seven objections, as the objections index description states', () => {
+    expect(objectionSections.length).toBe(7)
+  })
+
+  it('keeps the Watch CTA running time in step with the video registry', () => {
+    // "28 minutes, with chapters and a full transcript" appears in the header
+    // and the mobile sheet via WATCH_CTA; the number must be the video's.
+    // Floor, not round: the site speaks of a 28:32 video as "28 minutes",
+    // the same convention ClickToLoadVideo uses for its poster.
+    expect(WATCH_CTA.description).toContain(`${Math.floor(video.durationSeconds / 60)} minutes`)
   })
 })

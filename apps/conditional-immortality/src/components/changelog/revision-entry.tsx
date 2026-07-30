@@ -99,7 +99,7 @@ export function RevisionEntry({
           </span>
           <Link href={`/changelog/${section.id.toLowerCase()}/`}>Every change to {section.id}</Link>
         </p>
-      ) : linkSiteWideToChangelog && showSection ? (
+      ) : linkSiteWideToChangelog ? (
         <p className="m-0 mt-4 font-sans text-[0.88rem]">
           <Link href="/changelog/">See it in the full changelog</Link>
         </p>

@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
 import { MdxContent } from '@/components/content/mdx-content'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { loadSection } from '@/lib/sections'
@@ -182,10 +183,7 @@ export default function FullCasePage() {
                   {source.url ? (
                     <>
                       <br />
-                      <a href={source.url} rel="noopener noreferrer" target="_blank">
-                        {source.url}
-                        <span className="sr-only"> (opens in a new tab)</span>
-                      </a>
+                      <NewTabLink href={source.url}>{source.url}</NewTabLink>
                     </>
                   ) : null}
                 </li>

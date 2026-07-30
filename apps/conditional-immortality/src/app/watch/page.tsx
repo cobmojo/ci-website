@@ -4,6 +4,7 @@ import { video, videoTimestampUrl } from '@ci/content/video'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb, FeedbackCta } from '@/components/article/article-chrome'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { ClickToLoadVideo } from '@/components/media/click-to-load-video'
 import { formatLongDate, formatTimestamp, isoDuration } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
@@ -199,14 +200,9 @@ export default function WatchPage() {
                 ))}
 
                 <p className="mt-2 mb-0 font-sans text-[0.84rem] text-ink-subtle print:hidden">
-                  <a
-                    href={videoTimestampUrl(segment.start)}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
+                  <NewTabLink href={videoTimestampUrl(segment.start)}>
                     Open this moment on YouTube
-                    <span className="sr-only"> (opens in a new tab)</span>
-                  </a>
+                  </NewTabLink>
                 </p>
               </section>
             ))}
@@ -231,10 +227,7 @@ export default function WatchPage() {
                   {source.url ? (
                     <>
                       {' '}
-                      <a href={source.url} rel="noopener noreferrer" target="_blank">
-                        Open {hostLabel(source.url)}
-                        <span className="sr-only"> (opens in a new tab)</span>
-                      </a>
+                      <NewTabLink href={source.url}>Open {hostLabel(source.url)}</NewTabLink>
                     </>
                   ) : null}{' '}
                   <Link href={`/sources/#${source.id}`} className="text-ink-subtle">

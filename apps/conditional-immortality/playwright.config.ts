@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test'
  *
  * Project names are load bearing: `package.json` runs
  * `--project=chromium-desktop --project=chromium-mobile` for `test:e2e` and
- * `--project=accessibility` for `test:a11y`.
+ * `--project=accessibility --project=accessibility-mobile` for `test:a11y`.
  */
 
 /** Deliberately not the 3210 `next dev` uses, or a dev server gets adopted. */

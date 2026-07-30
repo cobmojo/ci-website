@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { formatTimestamp } from '@/lib/format'
 import { siteConfig } from '@/lib/site-config'
 
@@ -139,9 +140,7 @@ export function ClickToLoadVideo({
       <p className="mt-3 mb-0 font-sans text-[0.86rem] leading-snug text-ink-muted">
         This video is loaded from YouTube only when you choose to play it. Nothing is requested from
         YouTube before then, and the privacy-enhanced player is used when it is.{' '}
-        <a href={watchUrl} rel="noopener noreferrer" target="_blank">
-          Watch it on YouTube directly: {watchUrl}
-        </a>
+        <NewTabLink href={watchUrl}>Watch it on YouTube directly: {watchUrl}</NewTabLink>
       </p>
     </div>
   )

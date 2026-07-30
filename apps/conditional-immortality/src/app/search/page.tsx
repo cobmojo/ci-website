@@ -167,9 +167,7 @@ export default async function SearchPage({
           </fieldset>
 
           <details className="mt-4">
-            {/* The negative margin keeps the disclosure's visual position while
-                the padding gives the summary itself a 44px hit area. */}
-            <summary className="-my-2 cursor-pointer py-2.5 font-sans text-[0.9rem] font-medium text-navy">
+            <summary className="summary-hit-area font-sans text-[0.9rem] font-medium text-navy">
               More filters
             </summary>
             <div className="mt-3 grid gap-5 sm:grid-cols-2">

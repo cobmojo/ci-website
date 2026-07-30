@@ -551,13 +551,12 @@ export const FeedbackSubmissionInputSchema = z
       .union([
         // Web addresses only. The form's client-side validator refuses any
         // other scheme, and this schema is documented as its mirror; without
-        // the refinement a no-JS submission could store a `javascript:` URL.
-        z
-          .string()
-          .url()
-          .refine(value => /^https?:\/\//i.test(value), {
-            message: 'Please give a web address beginning with http:// or https://.',
-          }),
+        // the protocol constraint a no-JS submission could store a
+        // `javascript:` URL.
+        z.url({
+          protocol: /^https?$/,
+          error: 'Please give a web address beginning with http:// or https://.',
+        }),
         z.literal(''),
       ])
       .optional(),

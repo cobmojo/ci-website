@@ -66,8 +66,10 @@ function InternalOrExternalLink({ href, children, ...rest }: ComponentPropsWitho
 }
 
 const components = {
-  // No `group` class: `heading-anchor` keys off `:is(h2, h3):hover` directly,
-  // so the marker class is no longer load bearing.
+  // No `group` class: `heading-anchor` keys off `:is(h2, h3, h4):hover`
+  // directly, so the marker class is no longer load bearing. The `h4` entry
+  // exists for the continuous edition: authored headings stop at `###`, but
+  // demotion turns those into `h4`, and a demoted heading keeps its anchor.
   h2: ({ children, id, ...rest }: ComponentPropsWithoutRef<'h2'>) => (
     <h2 id={id} {...rest}>
       {children}
@@ -80,6 +82,12 @@ const components = {
       <HeadingAnchor id={id} />
     </h3>
   ),
+  h4: ({ children, id, ...rest }: ComponentPropsWithoutRef<'h4'>) => (
+    <h4 id={id} {...rest}>
+      {children}
+      <HeadingAnchor id={id} />
+    </h4>
+  ),
   a: InternalOrExternalLink,
   Scripture,
   TranslationNote,
@@ -91,6 +99,27 @@ const components = {
   ECTReading,
   CIReading,
   Details,
+}
+
+/**
+ * The rehype demotion step only reaches markdown headings: literal JSX stays
+ * an `mdxJsxFlowElement` in the tree and renders its heading at React time.
+ * So the components that render their own headings are demoted here, in the
+ * substitution map, and both mechanisms always move together.
+ */
+const DEMOTED_CALLOUT_LEVEL = { h2: 'h3', h3: 'h4', h4: 'h5', h5: 'h5', p: 'p' } as const
+
+const demotedComponents = {
+  ...components,
+  Callout: ({ as = 'h3', ...rest }: ComponentPropsWithoutRef<typeof Callout>) => (
+    <Callout {...rest} as={DEMOTED_CALLOUT_LEVEL[as]} />
+  ),
+  ECTReading: (props: ComponentPropsWithoutRef<typeof ECTReading>) => (
+    <ECTReading {...props} as="h5" />
+  ),
+  CIReading: (props: ComponentPropsWithoutRef<typeof CIReading>) => (
+    <CIReading {...props} as="h5" />
+  ),
 }
 
 /**
@@ -131,7 +160,7 @@ export function MdxContent({
   return (
     <MDXRemote
       source={source}
-      components={components}
+      components={demoteHeadings ? demotedComponents : components}
       options={{
         parseFrontmatter: false,
         mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins },

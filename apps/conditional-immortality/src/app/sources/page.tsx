@@ -12,6 +12,7 @@ import {
 import { Badge } from '@ci/ui'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { type FilterOption, SourceFilter } from '@/components/sources/source-filter'
 import { formatLongDate, pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
@@ -231,10 +232,7 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Link</dt>
                         <dd className="m-0 break-words text-ink">
-                          <a href={source.url} rel="noopener noreferrer" target="_blank">
-                            {source.url}
-                            <span className="sr-only"> (opens in a new tab)</span>
-                          </a>
+                          <NewTabLink href={source.url}>{source.url}</NewTabLink>
                         </dd>
                       </div>
                     ) : null}
@@ -242,10 +240,7 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Archived copy</dt>
                         <dd className="m-0 break-words text-ink">
-                          <a href={source.archiveUrl} rel="noopener noreferrer" target="_blank">
-                            {source.archiveUrl}
-                            <span className="sr-only"> (opens in a new tab)</span>
-                          </a>
+                          <NewTabLink href={source.archiveUrl}>{source.archiveUrl}</NewTabLink>
                         </dd>
                       </div>
                     ) : null}
@@ -253,14 +248,9 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Link as given in the original document</dt>
                         <dd className="m-0 break-words text-ink">
-                          <a
-                            href={source.sourceDocumentUrl}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
+                          <NewTabLink href={source.sourceDocumentUrl}>
                             {source.sourceDocumentUrl}
-                            <span className="sr-only"> (opens in a new tab)</span>
-                          </a>
+                          </NewTabLink>
                         </dd>
                       </div>
                     ) : null}

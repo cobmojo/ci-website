@@ -287,7 +287,7 @@ export default function CaseHubPage() {
                     <p className="m-0 text-[0.98rem] text-ink-muted">{section.shortSummary}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <EvidenceRoleBadge section={section} />
-                      <ReviewStatusBadge section={section} />
+                      <ReviewStatusBadge status={section.reviewStatus} />
                     </div>
                     <p className="m-0 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-sans text-[0.82rem] text-ink-subtle">
                       <span>Approximately {readingMinutesFor(section)} minutes</span>

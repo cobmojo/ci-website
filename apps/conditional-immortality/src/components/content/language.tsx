@@ -63,25 +63,43 @@ export function Compare({ children }: { children: ReactNode }) {
   return <div className="my-6 grid gap-4 md:grid-cols-2">{children}</div>
 }
 
-export function ECTReading({ children }: { children: ReactNode }) {
+/**
+ * The reading panels take their heading level as a prop for the same reason
+ * `Callout` does: a panel must not break the document outline it lands in.
+ * Authored bodies sit under `###` at deepest, so `h4` is the default; the
+ * continuous edition demotes every heading a level and passes `h5`.
+ */
+export function ECTReading({
+  children,
+  as: Heading = 'h4',
+}: {
+  children: ReactNode
+  as?: 'h4' | 'h5'
+}) {
   return (
     <div className="rounded-md border border-border-strong bg-panel p-4">
-      <h4 className="mt-0 mb-2 font-sans text-[0.86rem] font-semibold tracking-wide text-navy uppercase">
+      <Heading className="mt-0 mb-2 font-sans text-[0.86rem] font-semibold tracking-wide text-navy uppercase">
         <span aria-hidden="true">▣ </span>
         The eternal conscious torment reading
-      </h4>
+      </Heading>
       <div className="text-[1rem] [&>*+*]:mt-3 [&>p]:m-0">{children}</div>
     </div>
   )
 }
 
-export function CIReading({ children }: { children: ReactNode }) {
+export function CIReading({
+  children,
+  as: Heading = 'h4',
+}: {
+  children: ReactNode
+  as?: 'h4' | 'h5'
+}) {
   return (
     <div className="rounded-md border border-copper/35 bg-paper-raised p-4">
-      <h4 className="mt-0 mb-2 font-sans text-[0.86rem] font-semibold tracking-wide text-copper-deep uppercase">
+      <Heading className="mt-0 mb-2 font-sans text-[0.86rem] font-semibold tracking-wide text-copper-deep uppercase">
         <span aria-hidden="true">◈ </span>
         The conditionalist reading
-      </h4>
+      </Heading>
       <div className="text-[1rem] [&>*+*]:mt-3 [&>p]:m-0">{children}</div>
     </div>
   )
@@ -95,10 +113,7 @@ export function CIReading({ children }: { children: ReactNode }) {
 export function Details({ summary, children }: { summary: string; children: ReactNode }) {
   return (
     <details className="my-5 rounded-md border border-border bg-paper-raised px-4 py-3">
-      {/* The negative margin swallows the container padding the summary's own
-          padding restores, so the visible layout is unchanged while the
-          summary's hit area reaches the 44px floor. */}
-      <summary className="-my-3 cursor-pointer py-3 font-sans text-[0.95rem] font-medium text-navy">
+      <summary className="summary-hit-area font-sans text-[0.95rem] font-medium text-navy">
         {summary}
       </summary>
       <div className="mt-3 [&>*+*]:mt-3">{children}</div>

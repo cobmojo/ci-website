@@ -10,8 +10,9 @@ import {
   type ReviewStatus,
   type SourceRecord,
 } from '@ci/content-schema'
-import { Badge, buttonVariants } from '@ci/ui'
+import { Badge, buttonVariants, cn } from '@ci/ui'
 import Link from 'next/link'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { formatLongDate } from '@/lib/format'
 
 /* ------------------------------------------------------------------ *
@@ -66,24 +67,15 @@ export function EvidenceRoleBadge({ section }: { section: CaseSection }) {
   )
 }
 
-export function ReviewStatusBadge({
-  section,
-  status,
-}: {
-  section?: CaseSection
-  /** For surfaces that carry a bare status rather than a whole section. */
-  status?: ReviewStatus
-}) {
-  const resolved = status ?? section?.reviewStatus
-  if (!resolved) return null
-  const needsAttention = resolved === 'revision-needed' || resolved === 'specialist-review-pending'
+export function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
+  const needsAttention = status === 'revision-needed' || status === 'specialist-review-pending'
   return (
     <Badge
       tone={needsAttention ? 'ochre' : 'neutral'}
       glyph={needsAttention ? '!' : '✓'}
-      title={REVIEW_STATUS_DEFINITIONS[resolved]}
+      title={REVIEW_STATUS_DEFINITIONS[status]}
     >
-      {REVIEW_STATUS_LABELS[resolved]}
+      {REVIEW_STATUS_LABELS[status]}
     </Badge>
   )
 }
@@ -117,7 +109,7 @@ export function ArticleHeader({
 
       <div className="mt-5 flex flex-wrap gap-2">
         <EvidenceRoleBadge section={section} />
-        <ReviewStatusBadge section={section} />
+        <ReviewStatusBadge status={section.reviewStatus} />
       </div>
 
       <dl className="article-metadata mt-5 grid gap-x-8 gap-y-2 border-t border-border pt-4 font-sans text-[0.86rem] sm:grid-cols-2 lg:grid-cols-4">
@@ -255,17 +247,20 @@ export function SourcesCited({
   sources,
   headingId,
   title,
-  className = 'mt-10 border-t border-border pt-6',
+  divider = true,
 }: {
   sources: readonly SourceRecord[]
   headingId: string
   title: string
-  /** The section wrapper. Pages that already carry a divider above pass their own. */
-  className?: string
+  /** Pages whose preceding section already drew the divider switch it off. */
+  divider?: boolean
 }) {
   if (sources.length === 0) return null
   return (
-    <section aria-labelledby={headingId} className={className}>
+    <section
+      aria-labelledby={headingId}
+      className={cn('mt-10', divider && 'border-t border-border pt-6')}
+    >
       <h2 id={headingId} className="mt-0 mb-3 text-[1.18rem]">
         {title}
       </h2>
@@ -276,10 +271,10 @@ export function SourcesCited({
             {source.url ? (
               <>
                 {' '}
-                <a href={source.url} rel="noopener noreferrer" target="_blank">
+                <NewTabLink href={source.url}>
                   View original
-                  <span className="sr-only"> of {source.title}, opens in a new tab</span>
-                </a>
+                  <span className="sr-only"> of {source.title}</span>
+                </NewTabLink>
               </>
             ) : null}{' '}
             <Link href={`/sources/#${source.id}`} className="text-ink-subtle">

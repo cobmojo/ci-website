@@ -37,9 +37,11 @@ wrong motion token, a dead package export, dead component state). Every accepted
 finding is a correction toward a contract the repository itself already states.
 
 **The motion system is preserved.** No tier changes, no new animation, no
-reinstated exclusions. The one motion change in this pass moves an existing
-Tier 2 press from the Tier 1 duration token to the Tier 2 token the brief assigns
-to presses, which is conformance, not redesign.
+reinstated exclusions. The only motion changes in this pass move two existing
+declarations onto the tokens the brief already assigns them: the video-glyph
+press onto the Tier 2 duration and curve, and the shared `reveal-fade` arrival
+onto the Tier 3 curve. Both are conformance, not redesign, and both are now
+held by the motion contract test.
 
 **Baseline verification.** At the base commit, `CI=1 bun run validate` passes
 completely (formatting, lint, typecheck, content validation, content audit, docs
@@ -381,6 +383,44 @@ the work.
 | F51 | Implemented | `accessibility-mobile` project at 375×812 with touch; `test:a11y` runs both |
 | F52 | Implemented | |
 | F53 | Implemented | `orientation-copy.test.ts` pins 37/34/3/40/12 and the nav description |
+
+### Post-review refinements
+
+After implementation, an adversarial code review (ten independent finder
+angles, one verifier per candidate, and a gap sweep) confirmed 28 residual
+findings against the implementation itself, all corrected in a follow-up
+commit:
+
+- **Continuous-edition outline completed.** The rehype demotion only reached
+  markdown headings; component-rendered headings (`Callout`, `ECTReading`,
+  `CIReading`) are now demoted through the substitution map in `MdxContent`,
+  and demoted `h4` headings keep their copy-link anchors (new `h4` entry and
+  a widened anchor-reveal selector).
+- **Tier 2 fully unified.** The video-glyph press also takes
+  `--ease-out-quad`; the contract test now asserts token and curve.
+- **Single sources of truth.** The form's visible labels drive the
+  server-error report (`FIELD_LABELS`); the 400 wire shape is a shared
+  `FeedbackFieldError` type; the sourceUrl rule uses `z.url({ protocol })`;
+  `ReviewStatusBadge` takes one required `status`; `SourcesCited` exposes a
+  `divider` flag instead of a className override.
+- **Duplication removed.** Shared `NewTabLink` (seven external links, plus
+  the one the first pass missed), shared `DialogCloseButton` (both
+  overlays), one `.summary-hit-area` class (three disclosures), and
+  `ScrollRegion` used on the original-document tables.
+- **Guards made real.** The numbered-arguments count is counted rather than
+  derived; the objections and Watch-CTA numbers are pinned to their
+  registries; the transient `scheduled_tasks.lock` session file is untracked
+  and ignored; the Playwright comment and this document's motion summary were
+  corrected.
+
+Three confirmed review findings were deliberately not applied, with reasons:
+the method page's badge tooltip duplicating its adjacent definition (fixing
+it would add a single-call-site boolean prop, the same altitude smell the
+review flagged elsewhere; the tooltip is the badge's uniform contract), the
+watch page's video-sources list joining `SourcesCited` (its "Open
+youtube.com" affordance is deliberately different from "View original"), and
+the mobile sheet reusing `NavLinkItem` (the shared logic already lives in
+`isActiveRoute`; the components differ structurally).
 
 ## 10. Final verification
 

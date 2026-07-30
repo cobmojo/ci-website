@@ -473,10 +473,26 @@
       opacity: 0;
     }
 
-    :is(h2, h3):hover > .heading-anchor,
+    /* h4 appears only on the continuous edition, where demotion turns an
+       authored h3 into one; a demoted heading keeps its anchor. */
+    :is(h2, h3, h4):hover > .heading-anchor,
     .heading-anchor:focus-visible {
       opacity: 1;
     }
+  }
+
+  /*
+   * Disclosure summaries.
+   *
+   * The padding gives the summary itself a hit area at or above the 44px
+   * floor, and the negative margin hands the space back to the layout, so
+   * the rendered geometry is unchanged. One class, because the trick is easy
+   * to get subtly wrong and every disclosure on the site should share it.
+   */
+  .summary-hit-area {
+    cursor: pointer;
+    margin-block: -0.75rem;
+    padding-block: 0.75rem;
   }
 
   /* Long-form article typography. Applied to rendered MDX bodies. */
@@ -741,10 +757,11 @@
     }
 
     .video-play:active .video-play__glyph {
-      /* Tier 2 presses share one clock. The hover growth above keeps the
-         Tier 1 feedback duration; the press itself takes the press token,
-         exactly as `.pressable` does. */
+      /* Tier 2 presses share one clock and one curve. The hover growth above
+         keeps the Tier 1 feedback timing; the press itself takes the press
+         token and the press curve, exactly as `.pressable` does. */
       transition-duration: var(--motion-press);
+      transition-timing-function: var(--ease-out-quad);
       scale: 0.97;
     }
 

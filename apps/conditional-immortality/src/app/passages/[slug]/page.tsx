@@ -252,7 +252,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
             sources={sources}
             headingId="passage-sources"
             title="Sources consulted for this passage"
-            className="mt-10"
+            divider={false}
           />
 
           <footer className="mt-8 border-t border-border pt-4 font-sans text-[0.85rem] text-ink-subtle">

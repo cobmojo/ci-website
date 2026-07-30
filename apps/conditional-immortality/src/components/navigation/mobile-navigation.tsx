@@ -4,6 +4,7 @@ import { cn } from '@ci/ui'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
 import { FOOTER_NAV, isActiveRoute, PRIMARY_NAV, WATCH_CTA } from '@/lib/navigation'
 
 /**
@@ -45,6 +46,7 @@ export function MobileNavigation() {
   if (!mounted) return null
 
   const currentPath = pathname ?? '/'
+  const watchActive = isActiveRoute(currentPath, WATCH_CTA.href)
 
   return (
     <>
@@ -98,21 +100,7 @@ export function MobileNavigation() {
             >
               Site navigation
             </h2>
-            <button
-              type="button"
-              onClick={close}
-              className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-ink-muted hover:bg-panel"
-            >
-              <span className="sr-only">Close navigation</span>
-              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
-                <path
-                  d="M4 4l10 10M14 4L4 14"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
+            <DialogCloseButton label="Close navigation" onClick={close} />
           </div>
 
           <nav aria-label="Primary" className="flex-1 overflow-y-auto px-4 py-4">
@@ -142,12 +130,10 @@ export function MobileNavigation() {
               <li>
                 <Link
                   href={WATCH_CTA.href}
-                  aria-current={isActiveRoute(currentPath, WATCH_CTA.href) ? 'page' : undefined}
+                  aria-current={watchActive ? 'page' : undefined}
                   className={cn(
                     'block rounded-md px-3 py-2.5 font-sans text-[1rem] font-medium no-underline',
-                    isActiveRoute(currentPath, WATCH_CTA.href)
-                      ? 'bg-panel text-copper-deep'
-                      : 'text-copper-deep hover:bg-panel',
+                    watchActive ? 'bg-panel text-copper-deep' : 'text-copper-deep hover:bg-panel',
                   )}
                 >
                   {WATCH_CTA.label}

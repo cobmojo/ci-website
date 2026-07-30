@@ -3,6 +3,7 @@
 import { MATCH_FIELD_LABELS, SEARCH_DOC_TYPE_LABELS, type SearchIndex, search } from '@ci/search'
 import Link from 'next/link'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
 import { Highlighted } from './search-results'
 
 /**
@@ -141,21 +142,7 @@ export function SearchDialogTrigger() {
               aria-describedby={statusId}
               className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
             />
-            <button
-              type="button"
-              onClick={closeDialog}
-              className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-ink-muted hover:bg-panel"
-            >
-              <span className="sr-only">Close search</span>
-              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
-                <path
-                  d="M4 4l10 10M14 4L4 14"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
+            <DialogCloseButton label="Close search" onClick={closeDialog} />
           </div>
 
           <div className="max-h-[62vh] overflow-y-auto px-4 py-3">

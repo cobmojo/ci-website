@@ -360,13 +360,15 @@ describe('animation craft', () => {
     expect(withoutComments(css)).not.toMatch(/scale:\s*0(\s|;|\))/)
   })
 
-  it('runs every press confirmation on the press token', () => {
-    // Tier 2 is one gesture with one clock. `.pressable` carries
-    // `--motion-press` in its per-property duration list; the video play
-    // glyph performs the identical 0.97 squash and must not drift onto the
-    // Tier 1 feedback duration.
+  it('runs every press confirmation on the press token and the press curve', () => {
+    // Tier 2 is one gesture with one clock and one curve. `.pressable`
+    // carries `--motion-press` with `--ease-out-quad` in its per-property
+    // lists; the video play glyph performs the identical 0.97 squash and must
+    // not drift onto the Tier 1 feedback timing on either axis.
     const live = withoutComments(css)
-    expect(live).toMatch(/\.video-play:active\s+\.video-play__glyph\s*\{[^}]*var\(--motion-press\)/)
+    const press = live.match(/\.video-play:active\s+\.video-play__glyph\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(press).toContain('var(--motion-press)')
+    expect(press).toContain('var(--ease-out-quad)')
   })
 
   it('gives Tier 3 arrivals the overlay curve, not the Tier 1 keyword', () => {
