@@ -7,7 +7,7 @@ import {
   scriptureQueryVariants,
   search,
 } from '../index'
-import { normalise, normaliseWithMap } from '../query'
+import { mapNormalizedRange, normalize, normalizeWithSourceMap } from '../normalize-with-source-map'
 import type { SearchDoc } from '../types'
 
 function doc(overrides: Partial<SearchDoc> & Pick<SearchDoc, 'id' | 'title'>): SearchDoc {
@@ -219,7 +219,9 @@ describe('excerpts and highlighting', () => {
 
   it('handles a term that is absent', () => {
     const segments = highlightSegments('nothing here', ['absent'])
-    expect(segments).toEqual([{ text: 'nothing here', matched: false }])
+    // Segments now carry the offsets they were sliced at, so a renderer can key
+    // on position instead of array index.
+    expect(segments).toEqual([{ text: 'nothing here', matched: false, start: 0, end: 12 }])
   })
 
   // The run is located in the normalised text but marked in the original, so
@@ -274,9 +276,9 @@ describe('transcript results', () => {
 })
 
 /**
- * Two implementations of one rule: ranking uses `normalise`, highlighting uses
- * `normaliseWithMap`, so a disagreement puts a highlight where the ranker never
- * matched.
+ * Two implementations of one rule: ranking uses `normalize`, highlighting uses
+ * `normalizeWithSourceMap`, so a disagreement puts a highlight where the ranker
+ * never matched.
  */
 describe('the two normalisers agree', () => {
   const SAMPLES = [
@@ -314,7 +316,9 @@ describe('the two normalisers agree', () => {
 
   it('produce the same string for every awkward sample', () => {
     for (const sample of SAMPLES) {
-      expect(normaliseWithMap(sample).value, JSON.stringify(sample)).toBe(normalise(sample))
+      expect(normalizeWithSourceMap(sample).normalized, JSON.stringify(sample)).toBe(
+        normalize(sample),
+      )
     }
   })
 
@@ -331,26 +335,30 @@ describe('the two normalisers agree', () => {
         doc.scriptureRefs.join(' \u00b7 '),
       ]
       for (const field of fields) {
-        expect(normaliseWithMap(field).value, `${doc.id}: ${field.slice(0, 60)}`).toBe(
-          normalise(field),
+        expect(normalizeWithSourceMap(field).normalized, `${doc.id}: ${field.slice(0, 60)}`).toBe(
+          normalize(field),
         )
       }
     }
   })
 
-  it('index one source position per character of the normalised text', () => {
+  it('map every normalised offset to one forward-moving span of the source', () => {
+    // The chunk map is compact rather than one entry per character, so the
+    // invariant is stated over offsets: each one resolves to a real span inside
+    // the original, and spans never travel backwards — which is what lets a
+    // matched run map to a single span.
     for (const sample of SAMPLES) {
-      const map = normaliseWithMap(sample)
-      expect(map.start, JSON.stringify(sample)).toHaveLength(map.value.length)
-      expect(map.end, JSON.stringify(sample)).toHaveLength(map.value.length)
-      for (let i = 0; i < map.value.length; i += 1) {
-        const start = map.start[i] ?? -1
-        const end = map.end[i] ?? -1
-        expect(start).toBeGreaterThanOrEqual(0)
-        expect(end).toBeGreaterThan(start)
-        expect(end).toBeLessThanOrEqual(sample.length)
-        // Positions only ever move forward, so a matched run maps to one span.
-        if (i > 0) expect(start).toBeGreaterThanOrEqual(map.start[i - 1] ?? 0)
+      const mapped = normalizeWithSourceMap(sample)
+      let previousStart = 0
+      for (let i = 0; i < mapped.normalized.length; i += 1) {
+        const span = mapNormalizedRange(mapped, { start: i, end: i + 1 })
+        expect(span, JSON.stringify(sample)).not.toBeNull()
+        if (!span) continue
+        expect(span.start).toBeGreaterThanOrEqual(0)
+        expect(span.end).toBeGreaterThan(span.start)
+        expect(span.end).toBeLessThanOrEqual(sample.length)
+        expect(span.start).toBeGreaterThanOrEqual(previousStart)
+        previousStart = span.start
       }
     }
   })
@@ -437,7 +445,9 @@ describe('the two normalisers agree under fuzzing', () => {
       for (let i = 0; i < length; i += 1) {
         sample += POOL[Math.floor(next() * POOL.length)] ?? ''
       }
-      expect(normaliseWithMap(sample).value, JSON.stringify(sample)).toBe(normalise(sample))
+      expect(normalizeWithSourceMap(sample).normalized, JSON.stringify(sample)).toBe(
+        normalize(sample),
+      )
     }
   })
 })

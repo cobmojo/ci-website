@@ -1,40 +1,18 @@
-import {
-  highlightSegments,
-  MATCH_FIELD_LABELS,
-  SEARCH_DOC_TYPE_LABELS,
-  type SearchResult,
-} from '@ci/search'
+import { MATCH_FIELD_LABELS, SEARCH_DOC_TYPE_LABELS, type SearchResult } from '@ci/search'
 import { Badge } from '@ci/ui'
 import Link from 'next/link'
+import { HighlightedText, MarkedText } from '@/components/search/highlighted-text'
 
 /**
- * Highlighted excerpt.
+ * The server-rendered result list.
  *
- * Matched runs are wrapped in `<mark>`, which conveys the emphasis
- * semantically rather than by colour alone. Text is passed as React children,
- * never as HTML, so nothing from content can inject markup.
+ * This is what `/search/` shows and what a reader with scripting disabled gets.
+ * It stays a Server Component: no measurement, no Pretext, no client bundle.
+ * The quick-search dialog's fitted excerpt is an enhancement layered over the
+ * same excerpt data, never a replacement for this.
  */
-export function Highlighted({ text, terms }: { text: string; terms: readonly string[] }) {
-  const segments = highlightSegments(text, terms)
-  return (
-    <>
-      {/* The index is the right key here: the segments are a positional
-          partition of one string, so segment n is only ever segment n. */}
-      {segments.map((segment, index) =>
-        segment.matched ? (
-          <mark key={index} className="rounded-sm bg-ochre-soft px-0.5 text-ink">
-            {segment.text}
-          </mark>
-        ) : (
-          <span key={index}>{segment.text}</span>
-        ),
-      )}
-    </>
-  )
-}
-
 export function SearchResultItem({ result }: { result: SearchResult }) {
-  const { doc, matchedFields, matchedTerms, excerpt } = result
+  const { doc, matchedFields, matchedTerms, excerpt, excerptMatchRanges } = result
   const why = matchedFields
     .slice(0, 3)
     .map(field => MATCH_FIELD_LABELS[field])
@@ -50,12 +28,13 @@ export function SearchResultItem({ result }: { result: SearchResult }) {
 
       <h3 className="m-0 text-[1.05rem]">
         <Link href={doc.route} className="no-underline hover:underline">
-          <Highlighted text={doc.title} terms={matchedTerms} />
+          <HighlightedText text={doc.title} terms={matchedTerms} />
         </Link>
       </h3>
 
       <p className="m-0 mt-1 text-[0.97rem] leading-snug text-ink-muted">
-        <Highlighted text={excerpt} terms={matchedTerms} />
+        {/* Ranges rather than terms: the builder's own ellipsis stays unmarked. */}
+        <MarkedText text={excerpt} ranges={excerptMatchRanges} />
       </p>
 
       {why ? (

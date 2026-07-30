@@ -1,0 +1,2472 @@
+{
+  "Matthew 10:28": {
+    "total": 62,
+    "usedTerms": ["matthew 10:28", "matthew", "10:28", "matthew 10"],
+    "results": [
+      {
+        "id": "passage:matthew-10-28",
+        "score": 1484.6,
+        "matchedFields": ["title", "id", "scripture"],
+        "matchedTerms": ["10:28", "matthew", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "section:S10",
+        "score": 1067.875453,
+        "matchedFields": ["summary", "id", "scripture", "body"],
+        "matchedTerms": ["10:28", "matthew", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "language:apollumi",
+        "score": 359.129325,
+        "matchedFields": ["scripture", "body", "notes"],
+        "matchedTerms": ["10:28", "matthew", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "section:S22",
+        "score": 293.94226,
+        "matchedFields": ["scripture", "body", "notes"],
+        "matchedTerms": ["10:28", "matthew", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "section:S20",
+        "score": 285.37013,
+        "matchedFields": ["id", "summary", "scripture", "body", "notes"],
+        "matchedTerms": ["matthew"]
+      },
+      {
+        "id": "glossary:apollumi",
+        "score": 243.6,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["10:28", "matthew", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "passage:matthew-13-24-43",
+        "score": 230.6797,
+        "matchedFields": ["title", "id", "scripture", "body", "notes"],
+        "matchedTerms": ["matthew"]
+      },
+      {
+        "id": "topic:perishing",
+        "score": 221,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["10:28", "matthew", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "passage:matthew-25-31-46",
+        "score": 204,
+        "matchedFields": ["title", "id", "scripture", "body"],
+        "matchedTerms": ["matthew"]
+      },
+      {
+        "id": "topic:body-soul-and-spirit",
+        "score": 203,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["10:28", "matthew", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "passage:matthew-7-13-14",
+        "score": 196,
+        "matchedFields": ["title", "id", "scripture"],
+        "matchedTerms": ["matthew"]
+      },
+      {
+        "id": "topic:gehenna",
+        "score": 174.6,
+        "matchedFields": ["scripture"],
+        "matchedTerms": ["10:28", "matthew", "matthew 10", "matthew 10:28"]
+      }
+    ]
+  },
+  "unquenchable fire": {
+    "total": 64,
+    "usedTerms": [
+      "unquenchable fire",
+      "unquenchable",
+      "fire",
+      "fire that never goes out",
+      "not quenched"
+    ],
+    "results": [
+      {
+        "id": "section:S01",
+        "score": 1174.69812,
+        "matchedFields": ["id", "title", "body", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "fire",
+          "fire that never goes out",
+          "not quenched",
+          "unquenchable",
+          "unquenchable fire"
+        ]
+      },
+      {
+        "id": "glossary:unquenchable-fire",
+        "score": 1009.868425,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["fire", "not quenched", "unquenchable", "unquenchable fire"]
+      },
+      {
+        "id": "section:S13",
+        "score": 535.507925,
+        "matchedFields": ["id", "summary", "title", "body", "heading", "notes"],
+        "matchedTerms": ["fire", "unquenchable", "unquenchable fire"]
+      },
+      {
+        "id": "topic:fire",
+        "score": 505.837453,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["fire", "fire that never goes out", "unquenchable", "unquenchable fire"]
+      },
+      {
+        "id": "transcript:mark-9",
+        "score": 437.549438,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["fire", "not quenched", "unquenchable", "unquenchable fire"]
+      },
+      {
+        "id": "source:rethinking-hell-fire-not-quenched",
+        "score": 366.31,
+        "matchedFields": ["title", "summary", "id", "body", "notes"],
+        "matchedTerms": ["fire", "not quenched", "unquenchable", "unquenchable fire"]
+      },
+      {
+        "id": "section:S03",
+        "score": 275.949204,
+        "matchedFields": ["title", "id", "body", "summary", "heading", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "topic:lake-of-fire",
+        "score": 253.458839,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "passage:mark-9-42-48",
+        "score": 206.320694,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": [
+          "fire",
+          "fire that never goes out",
+          "not quenched",
+          "unquenchable",
+          "unquenchable fire"
+        ]
+      },
+      {
+        "id": "source:fudge-fire-that-consumes",
+        "score": 202,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "language:asbestos",
+        "score": 149.135153,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": [
+          "fire",
+          "fire that never goes out",
+          "not quenched",
+          "unquenchable",
+          "unquenchable fire"
+        ]
+      },
+      {
+        "id": "passage:isaiah-66-15-24",
+        "score": 141.275153,
+        "matchedFields": ["body", "summary"],
+        "matchedTerms": [
+          "fire",
+          "fire that never goes out",
+          "not quenched",
+          "unquenchable",
+          "unquenchable fire"
+        ]
+      }
+    ]
+  },
+  "aionios": {
+    "total": 112,
+    "usedTerms": ["aionios", "eternal", "everlasting", "permanent", "age to come"],
+    "results": [
+      {
+        "id": "glossary:aionios",
+        "score": 717.71,
+        "matchedFields": ["title", "summary", "id", "body"],
+        "matchedTerms": ["age to come", "aionios", "eternal", "everlasting"]
+      },
+      {
+        "id": "topic:eternal-and-everlasting",
+        "score": 434.615865,
+        "matchedFields": ["id", "title", "summary", "body"],
+        "matchedTerms": ["age to come", "aionios", "eternal", "everlasting", "permanent"]
+      },
+      {
+        "id": "section:S04",
+        "score": 374.62568,
+        "matchedFields": ["id", "body", "title", "summary", "heading", "notes"],
+        "matchedTerms": ["age to come", "aionios", "eternal", "everlasting", "permanent"]
+      },
+      {
+        "id": "topic:eternal-life",
+        "score": 308.928941,
+        "matchedFields": ["id", "title", "summary", "body"],
+        "matchedTerms": ["age to come", "aionios", "eternal", "everlasting", "permanent"]
+      },
+      {
+        "id": "language:aionios",
+        "score": 203.268941,
+        "matchedFields": ["id", "summary", "body"],
+        "matchedTerms": ["age to come", "aionios", "eternal", "everlasting", "permanent"]
+      },
+      {
+        "id": "section:S11",
+        "score": 166.986527,
+        "matchedFields": ["id", "title", "summary", "body", "notes"],
+        "matchedTerms": ["eternal"]
+      },
+      {
+        "id": "topic:eternal-conscious-torment",
+        "score": 140.4,
+        "matchedFields": ["id", "title", "body"],
+        "matchedTerms": ["eternal", "everlasting", "permanent"]
+      },
+      {
+        "id": "glossary:eternal-conscious-torment",
+        "score": 72,
+        "matchedFields": ["title", "id"],
+        "matchedTerms": ["eternal"]
+      },
+      {
+        "id": "passage:matthew-25-31-46",
+        "score": 65.148941,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": ["age to come", "eternal", "everlasting", "permanent"]
+      },
+      {
+        "id": "section:S14",
+        "score": 65.058941,
+        "matchedFields": ["id", "body", "heading", "notes"],
+        "matchedTerms": ["eternal", "permanent"]
+      },
+      {
+        "id": "source:welch-video-overview",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["eternal"]
+      },
+      {
+        "id": "source:rethinking-hell-early-church",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["eternal"]
+      }
+    ]
+  },
+  "second death": {
+    "total": 114,
+    "usedTerms": ["second death", "second", "death", "lake of fire"],
+    "results": [
+      {
+        "id": "section:S03",
+        "score": 1155.244098,
+        "matchedFields": ["title", "id", "summary", "body", "notes"],
+        "matchedTerms": ["death", "lake of fire", "second", "second death"]
+      },
+      {
+        "id": "glossary:second-death",
+        "score": 1066,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["death", "second", "second death"]
+      },
+      {
+        "id": "section:S18",
+        "score": 998.147982,
+        "matchedFields": ["id", "summary", "title", "body", "notes", "heading"],
+        "matchedTerms": ["death", "second", "second death"]
+      },
+      {
+        "id": "topic:second-death",
+        "score": 922.35,
+        "matchedFields": ["title", "id", "body", "summary"],
+        "matchedTerms": ["death", "lake of fire", "second", "second death"]
+      },
+      {
+        "id": "topic:lake-of-fire",
+        "score": 581.786988,
+        "matchedFields": ["id", "summary", "body", "title", "notes"],
+        "matchedTerms": ["death", "lake of fire", "second", "second death"]
+      },
+      {
+        "id": "transcript:lake-of-fire",
+        "score": 576.510696,
+        "matchedFields": ["title", "transcript", "summary"],
+        "matchedTerms": ["death", "lake of fire", "second", "second death"]
+      },
+      {
+        "id": "section:S07",
+        "score": 553.738105,
+        "matchedFields": ["summary", "body", "title", "heading", "id", "notes"],
+        "matchedTerms": ["death", "second", "second death"]
+      },
+      {
+        "id": "topic:death",
+        "score": 408.463373,
+        "matchedFields": ["id", "title", "body", "summary", "notes"],
+        "matchedTerms": ["death", "second", "second death"]
+      },
+      {
+        "id": "section:S17",
+        "score": 302.492243,
+        "matchedFields": ["title", "summary", "id", "body", "notes"],
+        "matchedTerms": ["death"]
+      },
+      {
+        "id": "passage:revelation-20-10-15",
+        "score": 291.715544,
+        "matchedFields": ["summary", "body", "notes"],
+        "matchedTerms": ["death", "lake of fire", "second", "second death"]
+      },
+      {
+        "id": "glossary:lake-of-fire",
+        "score": 291.3,
+        "matchedFields": ["summary", "title", "body"],
+        "matchedTerms": ["death", "lake of fire", "second", "second death"]
+      },
+      {
+        "id": "transcript:physical-and-final-death",
+        "score": 267.775,
+        "matchedFields": ["title", "summary", "transcript"],
+        "matchedTerms": ["death", "lake of fire", "second", "second death"]
+      }
+    ]
+  },
+  "S04": {
+    "total": 5,
+    "usedTerms": ["s04"],
+    "results": [
+      {
+        "id": "section:S04",
+        "score": 694.685725,
+        "matchedFields": ["id"],
+        "matchedTerms": ["s04"]
+      },
+      {
+        "id": "transcript:eternal-punishment",
+        "score": 114,
+        "matchedFields": ["id"],
+        "matchedTerms": ["s04"]
+      },
+      {
+        "id": "section:S19",
+        "score": 30.4,
+        "matchedFields": ["body"],
+        "matchedTerms": ["s04"]
+      },
+      {
+        "id": "section:S01",
+        "score": 15.2,
+        "matchedFields": ["body"],
+        "matchedTerms": ["s04"]
+      },
+      {
+        "id": "section:S20",
+        "score": 15.2,
+        "matchedFields": ["body"],
+        "matchedTerms": ["s04"]
+      }
+    ]
+  },
+  "Sodom": {
+    "total": 11,
+    "usedTerms": ["sodom", "sodom and gomorrah"],
+    "results": [
+      {
+        "id": "section:S14",
+        "score": 824.518585,
+        "matchedFields": ["id", "title", "summary", "body", "notes"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "topic:sodom-and-gomorrah",
+        "score": 539.6,
+        "matchedFields": ["title", "id", "body", "notes"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "transcript:sodom-and-gomorrah",
+        "score": 311.107858,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "section:S15",
+        "score": 188.491144,
+        "matchedFields": ["summary", "body", "heading"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "passage:second-peter-2-6",
+        "score": 130.91,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "section:S02",
+        "score": 87.93143,
+        "matchedFields": ["body", "heading"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "section:S03",
+        "score": 63.281144,
+        "matchedFields": ["body"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "section:S23",
+        "score": 22.04,
+        "matchedFields": ["body"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "section:S13",
+        "score": 22.04,
+        "matchedFields": ["body"],
+        "matchedTerms": ["sodom", "sodom and gomorrah"]
+      },
+      {
+        "id": "section:S01",
+        "score": 15.2,
+        "matchedFields": ["body"],
+        "matchedTerms": ["sodom"]
+      },
+      {
+        "id": "topic:day-of-the-lord",
+        "score": 15.2,
+        "matchedFields": ["body"],
+        "matchedTerms": ["sodom"]
+      }
+    ]
+  },
+  "eternal punishment": {
+    "total": 123,
+    "usedTerms": [
+      "eternal punishment",
+      "eternal",
+      "punishment",
+      "everlasting",
+      "permanent",
+      "age to come",
+      "aionios",
+      "punished",
+      "penalty"
+    ],
+    "results": [
+      {
+        "id": "section:S04",
+        "score": 1452.286285,
+        "matchedFields": ["id", "title", "body", "heading", "summary", "notes"],
+        "matchedTerms": [
+          "age to come",
+          "aionios",
+          "eternal",
+          "eternal punishment",
+          "everlasting",
+          "permanent",
+          "punished",
+          "punishment"
+        ]
+      },
+      {
+        "id": "topic:eternal-and-everlasting",
+        "score": 577.1897,
+        "matchedFields": ["id", "title", "body", "summary"],
+        "matchedTerms": [
+          "age to come",
+          "aionios",
+          "eternal",
+          "eternal punishment",
+          "everlasting",
+          "permanent",
+          "punishment"
+        ]
+      },
+      {
+        "id": "section:S11",
+        "score": 570.82839,
+        "matchedFields": ["summary", "id", "body", "title", "notes"],
+        "matchedTerms": ["eternal", "eternal punishment", "punishment"]
+      },
+      {
+        "id": "section:RB3",
+        "score": 483.810725,
+        "matchedFields": ["body", "title", "id", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "eternal",
+          "eternal punishment",
+          "penalty",
+          "permanent",
+          "punished",
+          "punishment"
+        ]
+      },
+      {
+        "id": "transcript:eternal-punishment",
+        "score": 454.60964,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["eternal", "eternal punishment", "permanent", "punishment"]
+      },
+      {
+        "id": "section:S30",
+        "score": 421.8854,
+        "matchedFields": ["body", "title", "id", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "eternal",
+          "eternal punishment",
+          "penalty",
+          "permanent",
+          "punished",
+          "punishment"
+        ]
+      },
+      {
+        "id": "topic:eternal-conscious-torment",
+        "score": 379.975425,
+        "matchedFields": ["id", "title", "body"],
+        "matchedTerms": [
+          "eternal",
+          "eternal punishment",
+          "everlasting",
+          "penalty",
+          "permanent",
+          "punishment"
+        ]
+      },
+      {
+        "id": "topic:eternal-life",
+        "score": 347.745425,
+        "matchedFields": ["id", "title", "body", "summary"],
+        "matchedTerms": [
+          "age to come",
+          "aionios",
+          "eternal",
+          "eternal punishment",
+          "everlasting",
+          "permanent",
+          "punishment"
+        ]
+      },
+      {
+        "id": "passage:matthew-25-31-46",
+        "score": 326.867571,
+        "matchedFields": ["summary", "body", "notes"],
+        "matchedTerms": [
+          "age to come",
+          "eternal",
+          "eternal punishment",
+          "everlasting",
+          "permanent",
+          "punishment"
+        ]
+      },
+      {
+        "id": "topic:punishment",
+        "score": 281.2,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["penalty", "permanent", "punishment"]
+      },
+      {
+        "id": "glossary:aionios",
+        "score": 228.81,
+        "matchedFields": ["id", "summary", "title", "body"],
+        "matchedTerms": ["age to come", "aionios", "eternal", "everlasting"]
+      },
+      {
+        "id": "language:aionios",
+        "score": 209.56085,
+        "matchedFields": ["body", "summary", "id", "notes"],
+        "matchedTerms": [
+          "age to come",
+          "aionios",
+          "eternal",
+          "eternal punishment",
+          "everlasting",
+          "permanent",
+          "punishment"
+        ]
+      }
+    ]
+  },
+  "destroy soul and body": {
+    "total": 109,
+    "usedTerms": [
+      "destroy soul and body",
+      "destroy",
+      "soul",
+      "body",
+      "perish",
+      "destruction",
+      "consume",
+      "extinction",
+      "destroyed",
+      "perishing",
+      "apollumi",
+      "spirit",
+      "anthropology"
+    ],
+    "results": [
+      {
+        "id": "section:S10",
+        "score": 1689.805499,
+        "matchedFields": ["id", "title", "body", "heading", "summary", "notes"],
+        "matchedTerms": [
+          "anthropology",
+          "apollumi",
+          "body",
+          "destroy",
+          "destroy soul and body",
+          "destroyed",
+          "perish",
+          "perishing",
+          "soul",
+          "spirit"
+        ]
+      },
+      {
+        "id": "topic:body-soul-and-spirit",
+        "score": 784.190231,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["anthropology", "body", "destroy", "destroyed", "soul", "spirit"]
+      },
+      {
+        "id": "section:S08",
+        "score": 685.630808,
+        "matchedFields": ["id", "body", "title", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "body",
+          "consume",
+          "destroy",
+          "destroyed",
+          "destruction",
+          "perish",
+          "perishing",
+          "soul"
+        ]
+      },
+      {
+        "id": "section:S22",
+        "score": 368.878798,
+        "matchedFields": ["body", "summary", "heading", "id", "notes"],
+        "matchedTerms": ["body", "destroy", "destroyed", "perish", "soul"]
+      },
+      {
+        "id": "topic:perishing",
+        "score": 355.7,
+        "matchedFields": ["id", "title", "summary", "body"],
+        "matchedTerms": [
+          "apollumi",
+          "body",
+          "destroy",
+          "destroyed",
+          "destruction",
+          "perish",
+          "perishing",
+          "soul"
+        ]
+      },
+      {
+        "id": "section:RB2",
+        "score": 332.825796,
+        "matchedFields": ["id", "body", "summary", "notes"],
+        "matchedTerms": ["anthropology", "body", "perish", "soul", "spirit"]
+      },
+      {
+        "id": "passage:matthew-10-28",
+        "score": 303.661872,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": [
+          "apollumi",
+          "body",
+          "destroy",
+          "destroyed",
+          "extinction",
+          "perish",
+          "soul",
+          "spirit"
+        ]
+      },
+      {
+        "id": "source:themelios-destroyed-for-ever",
+        "score": 292.9,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["destroy", "destroyed"]
+      },
+      {
+        "id": "topic:destruction",
+        "score": 269.2797,
+        "matchedFields": ["id", "body", "title"],
+        "matchedTerms": ["body", "consume", "destroy", "destroyed", "destruction"]
+      },
+      {
+        "id": "glossary:apollumi",
+        "score": 261.9,
+        "matchedFields": ["id", "summary", "title", "body"],
+        "matchedTerms": ["apollumi", "destroy", "perish"]
+      },
+      {
+        "id": "language:apollumi",
+        "score": 221.8797,
+        "matchedFields": ["body", "id", "title", "summary", "notes"],
+        "matchedTerms": ["apollumi", "body", "destroy", "destruction", "perish", "soul"]
+      },
+      {
+        "id": "source:rethinking-hell-2-thess-1-9-part-1",
+        "score": 210.85,
+        "matchedFields": ["title", "summary", "body", "notes"],
+        "matchedTerms": ["destroy", "destroyed", "destruction"]
+      }
+    ]
+  },
+  "Mark 9": {
+    "total": 38,
+    "usedTerms": ["mark 9", "mark"],
+    "results": [
+      {
+        "id": "section:S01",
+        "score": 781.14226,
+        "matchedFields": ["title", "id", "scripture", "summary", "body", "notes"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "passage:mark-9-42-48",
+        "score": 600.3,
+        "matchedFields": ["title", "id", "scripture", "body", "notes"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "source:rethinking-hell-worm-does-not-die",
+        "score": 443.7,
+        "matchedFields": ["title", "summary", "body", "notes"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "source:rethinking-hell-fire-not-quenched",
+        "score": 411.8,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "transcript:mark-9",
+        "score": 309.5,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "language:asbestos",
+        "score": 194.906173,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "section:S13",
+        "score": 190.519065,
+        "matchedFields": ["summary", "body", "heading", "notes"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "topic:eternal-conscious-torment",
+        "score": 127.6,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "section:S12",
+        "score": 127.6,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "topic:fire",
+        "score": 125.0797,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "section:S10",
+        "score": 105.750269,
+        "matchedFields": ["body", "scripture"],
+        "matchedTerms": ["mark", "mark 9"]
+      },
+      {
+        "id": "topic:gehenna",
+        "score": 104.4,
+        "matchedFields": ["scripture"],
+        "matchedTerms": ["mark", "mark 9"]
+      }
+    ]
+  },
+  "gehenna": {
+    "total": 81,
+    "usedTerms": ["gehenna", "hell", "hades", "sheol", "lake of fire"],
+    "results": [
+      {
+        "id": "topic:gehenna",
+        "score": 914.685865,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["gehenna", "hades", "hell", "lake of fire", "sheol"]
+      },
+      {
+        "id": "glossary:gehenna",
+        "score": 590,
+        "matchedFields": ["title"],
+        "matchedTerms": ["gehenna"]
+      },
+      {
+        "id": "section:S15",
+        "score": 307.53143,
+        "matchedFields": ["id", "body", "summary", "heading", "notes"],
+        "matchedTerms": ["gehenna", "hades", "hell", "lake of fire", "sheol"]
+      },
+      {
+        "id": "section:S03",
+        "score": 232.497618,
+        "matchedFields": ["title", "id", "summary", "body", "notes"],
+        "matchedTerms": ["hades", "lake of fire"]
+      },
+      {
+        "id": "topic:hades",
+        "score": 204.323773,
+        "matchedFields": ["body", "id", "title", "summary"],
+        "matchedTerms": ["gehenna", "hades", "hell", "lake of fire", "sheol"]
+      },
+      {
+        "id": "section:S10",
+        "score": 198.193783,
+        "matchedFields": ["id", "body"],
+        "matchedTerms": ["gehenna", "hell", "lake of fire"]
+      },
+      {
+        "id": "topic:sheol",
+        "score": 193.783954,
+        "matchedFields": ["body", "id", "title", "summary", "notes"],
+        "matchedTerms": ["gehenna", "hades", "hell", "lake of fire", "sheol"]
+      },
+      {
+        "id": "glossary:hades",
+        "score": 179.61,
+        "matchedFields": ["summary", "title", "body"],
+        "matchedTerms": ["gehenna", "hades", "lake of fire"]
+      },
+      {
+        "id": "section:S34",
+        "score": 165.200465,
+        "matchedFields": ["id", "body", "title", "notes"],
+        "matchedTerms": ["gehenna", "hades", "hell"]
+      },
+      {
+        "id": "passage:mark-9-42-48",
+        "score": 150.538307,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": ["gehenna", "hades", "lake of fire", "sheol"]
+      },
+      {
+        "id": "topic:lake-of-fire",
+        "score": 145.245929,
+        "matchedFields": ["title", "body", "summary", "notes"],
+        "matchedTerms": ["hades", "hell", "lake of fire", "sheol"]
+      },
+      {
+        "id": "section:S05",
+        "score": 141.281144,
+        "matchedFields": ["body", "id", "summary", "notes"],
+        "matchedTerms": ["gehenna", "hades", "hell", "lake of fire", "sheol"]
+      }
+    ]
+  },
+  "hell": {
+    "total": 81,
+    "usedTerms": ["hell", "hades", "sheol", "gehenna", "lake of fire"],
+    "results": [
+      {
+        "id": "section:S34",
+        "score": 564.75752,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["gehenna", "hades", "hell"]
+      },
+      {
+        "id": "source:elliott-hell-vs-heaven",
+        "score": 383.8,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "source:rethinking-hell",
+        "score": 383.8,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "source:macarthur-truth-about-hell",
+        "score": 383.8,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "section:S19",
+        "score": 349.6,
+        "matchedFields": ["title", "id", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "section:S33",
+        "score": 348.793307,
+        "matchedFields": ["id", "summary", "body", "notes"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "source:rethinking-hell-2-thess-1-9-part-1",
+        "score": 307.8,
+        "matchedFields": ["id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "source:rethinking-hell-2-thess-1-9-part-2",
+        "score": 307.8,
+        "matchedFields": ["id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "source:rethinking-hell-bible-fellowship-church",
+        "score": 307.8,
+        "matchedFields": ["id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "source:rethinking-hell-early-church",
+        "score": 307.8,
+        "matchedFields": ["id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "source:rethinking-hell-fire-not-quenched",
+        "score": 307.8,
+        "matchedFields": ["id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      },
+      {
+        "id": "source:rethinking-hell-worm-does-not-die",
+        "score": 307.8,
+        "matchedFields": ["id", "summary", "body"],
+        "matchedTerms": ["hell"]
+      }
+    ]
+  },
+  "ect": {
+    "total": 135,
+    "usedTerms": [
+      "ect",
+      "eternal conscious torment",
+      "eternal torment",
+      "traditional view",
+      "traditionalism"
+    ],
+    "results": [
+      {
+        "id": "topic:resurrection",
+        "score": 542.79143,
+        "matchedFields": ["id", "title", "summary", "body", "notes"],
+        "matchedTerms": ["ect"]
+      },
+      {
+        "id": "source:welch-source-document",
+        "score": 391.21,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["ect", "eternal conscious torment"]
+      },
+      {
+        "id": "topic:eternal-conscious-torment",
+        "score": 364.82,
+        "matchedFields": ["id", "title", "body"],
+        "matchedTerms": [
+          "ect",
+          "eternal conscious torment",
+          "eternal torment",
+          "traditional view",
+          "traditionalism"
+        ]
+      },
+      {
+        "id": "section:S31",
+        "score": 350.745724,
+        "matchedFields": ["summary", "body", "heading", "notes"],
+        "matchedTerms": ["ect", "eternal conscious torment"]
+      },
+      {
+        "id": "section:RB1",
+        "score": 348.828928,
+        "matchedFields": ["body", "id", "heading", "summary", "notes"],
+        "matchedTerms": ["ect", "eternal conscious torment", "eternal torment", "traditional view"]
+      },
+      {
+        "id": "section:S05",
+        "score": 319.069504,
+        "matchedFields": ["summary", "body", "heading", "notes"],
+        "matchedTerms": ["ect", "eternal conscious torment", "traditional view"]
+      },
+      {
+        "id": "section:S14",
+        "score": 297.122647,
+        "matchedFields": ["heading", "body", "summary", "notes"],
+        "matchedTerms": ["ect", "eternal conscious torment"]
+      },
+      {
+        "id": "section:S08",
+        "score": 296.875,
+        "matchedFields": ["summary", "heading", "body", "notes"],
+        "matchedTerms": ["ect", "eternal conscious torment", "traditional view"]
+      },
+      {
+        "id": "section:P00",
+        "score": 292.273227,
+        "matchedFields": ["body", "heading", "summary", "notes"],
+        "matchedTerms": ["ect", "eternal conscious torment", "traditional view"]
+      },
+      {
+        "id": "glossary:resurrection",
+        "score": 269.8,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["ect"]
+      },
+      {
+        "id": "page:compare",
+        "score": 263.15,
+        "matchedFields": ["id", "summary", "heading", "body"],
+        "matchedTerms": ["ect", "eternal conscious torment", "traditional view"]
+      },
+      {
+        "id": "glossary:eternal-conscious-torment",
+        "score": 250.8,
+        "matchedFields": ["id", "title"],
+        "matchedTerms": ["ect", "eternal conscious torment", "eternal torment"]
+      }
+    ]
+  },
+  "annihilationism": {
+    "total": 29,
+    "usedTerms": ["annihilationism", "annihilation", "annihilationist"],
+    "results": [
+      {
+        "id": "topic:annihilationism",
+        "score": 862.099853,
+        "matchedFields": ["title", "id", "body"],
+        "matchedTerms": ["annihilation", "annihilationism", "annihilationist"]
+      },
+      {
+        "id": "glossary:annihilationism",
+        "score": 662,
+        "matchedFields": ["title", "id"],
+        "matchedTerms": ["annihilation", "annihilationism"]
+      },
+      {
+        "id": "source:dear-bible-teaches-annihilationism",
+        "score": 474.7,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["annihilation", "annihilationism"]
+      },
+      {
+        "id": "section:S30",
+        "score": 79.2,
+        "matchedFields": ["title", "id", "body"],
+        "matchedTerms": ["annihilation"]
+      },
+      {
+        "id": "source:rethinking-hell-2-thess-1-9-part-1",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["annihilation"]
+      },
+      {
+        "id": "source:rethinking-hell-2-thess-1-9-part-2",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["annihilation"]
+      },
+      {
+        "id": "source:themelios-destroyed-for-ever",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["annihilation"]
+      },
+      {
+        "id": "source:sprinkle-introduction",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["annihilation"]
+      },
+      {
+        "id": "source:welch-source-document",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["annihilation"]
+      },
+      {
+        "id": "source:rethinking-hell-fire-not-quenched",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["annihilation"]
+      },
+      {
+        "id": "source:rethinking-hell-worm-does-not-die",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["annihilation"]
+      },
+      {
+        "id": "transcript:is-annihilation-punishment",
+        "score": 45,
+        "matchedFields": ["title"],
+        "matchedTerms": ["annihilation"]
+      }
+    ]
+  },
+  "resurrection": {
+    "total": 37,
+    "usedTerms": ["resurrection", "raised", "rise again"],
+    "results": [
+      {
+        "id": "topic:resurrection",
+        "score": 970.050371,
+        "matchedFields": ["id", "title", "summary", "body", "notes"],
+        "matchedTerms": ["raised", "resurrection"]
+      },
+      {
+        "id": "glossary:resurrection",
+        "score": 688.7,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["raised", "resurrection"]
+      },
+      {
+        "id": "topic:intermediate-state",
+        "score": 214.7,
+        "matchedFields": ["id", "summary", "body", "notes"],
+        "matchedTerms": ["resurrection"]
+      },
+      {
+        "id": "section:S22",
+        "score": 143.050371,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": ["raised", "resurrection"]
+      },
+      {
+        "id": "passage:first-corinthians-15",
+        "score": 122.158941,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["raised", "resurrection"]
+      },
+      {
+        "id": "section:S05",
+        "score": 109.59143,
+        "matchedFields": ["summary", "body", "notes"],
+        "matchedTerms": ["resurrection"]
+      },
+      {
+        "id": "passage:daniel-12-2",
+        "score": 107.49143,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["raised", "resurrection"]
+      },
+      {
+        "id": "page:compare",
+        "score": 106.4,
+        "matchedFields": ["summary", "heading"],
+        "matchedTerms": ["resurrection"]
+      },
+      {
+        "id": "topic:second-death",
+        "score": 103.89143,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["resurrection"]
+      },
+      {
+        "id": "topic:hades",
+        "score": 95,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["resurrection"]
+      },
+      {
+        "id": "glossary:final-judgment",
+        "score": 79.8,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["resurrection"]
+      },
+      {
+        "id": "glossary:hades",
+        "score": 79.8,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["resurrection"]
+      }
+    ]
+  },
+  "immortality": {
+    "total": 82,
+    "usedTerms": ["immortality", "immortal", "imperishable"],
+    "results": [
+      {
+        "id": "topic:immortality",
+        "score": 880.44143,
+        "matchedFields": ["title", "id", "body", "notes"],
+        "matchedTerms": ["immortal", "immortality", "imperishable"]
+      },
+      {
+        "id": "section:S22",
+        "score": 862.095156,
+        "matchedFields": ["id", "title", "body", "summary", "heading", "notes"],
+        "matchedTerms": ["immortal", "immortality", "imperishable"]
+      },
+      {
+        "id": "topic:conditional-immortality",
+        "score": 653.3,
+        "matchedFields": ["id", "title", "summary", "body"],
+        "matchedTerms": ["immortal", "immortality"]
+      },
+      {
+        "id": "glossary:immortality",
+        "score": 635,
+        "matchedFields": ["title"],
+        "matchedTerms": ["immortal", "immortality"]
+      },
+      {
+        "id": "source:wenham-case-for-conditional-immortality",
+        "score": 474.7,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["immortal", "immortality"]
+      },
+      {
+        "id": "section:RB2",
+        "score": 407.863271,
+        "matchedFields": ["summary", "body", "heading", "title", "id", "notes"],
+        "matchedTerms": ["immortal", "immortality", "imperishable"]
+      },
+      {
+        "id": "section:RB1",
+        "score": 397.197908,
+        "matchedFields": ["title", "summary", "body", "notes"],
+        "matchedTerms": ["immortal", "immortality"]
+      },
+      {
+        "id": "source:welch-video-overview",
+        "score": 333.7,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["immortal", "immortality"]
+      },
+      {
+        "id": "glossary:conditional-immortality",
+        "score": 333.7,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["immortal", "immortality"]
+      },
+      {
+        "id": "source:themelios-destroyed-for-ever",
+        "score": 333.7,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["immortal", "immortality"]
+      },
+      {
+        "id": "source:truth-according-to-scripture-apostolic-fathers",
+        "score": 333.7,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["immortal", "immortality"]
+      },
+      {
+        "id": "source:welch-source-document",
+        "score": 333.7,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["immortal", "immortality"]
+      }
+    ]
+  },
+  "Revelation 14:11": {
+    "total": 50,
+    "usedTerms": ["revelation 14:11", "revelation", "14:11", "revelation 14"],
+    "results": [
+      {
+        "id": "section:S02",
+        "score": 1119.34226,
+        "matchedFields": ["summary", "title", "id", "body", "scripture"],
+        "matchedTerms": ["14:11", "revelation", "revelation 14", "revelation 14:11"]
+      },
+      {
+        "id": "passage:revelation-14-9-11",
+        "score": 597.0797,
+        "matchedFields": ["title", "id", "scripture", "body"],
+        "matchedTerms": ["revelation", "revelation 14"]
+      },
+      {
+        "id": "section:S28",
+        "score": 439.567909,
+        "matchedFields": ["id", "title", "scripture", "heading", "body", "summary", "notes"],
+        "matchedTerms": ["revelation"]
+      },
+      {
+        "id": "passage:revelation-21-22",
+        "score": 374.988164,
+        "matchedFields": ["id", "title", "scripture", "body"],
+        "matchedTerms": ["revelation"]
+      },
+      {
+        "id": "section:S03",
+        "score": 372.070159,
+        "matchedFields": ["id", "title", "body", "scripture", "notes"],
+        "matchedTerms": ["14:11", "revelation", "revelation 14", "revelation 14:11"]
+      },
+      {
+        "id": "transcript:revelation-14",
+        "score": 314.5,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["revelation", "revelation 14"]
+      },
+      {
+        "id": "language:anapausis",
+        "score": 244.6797,
+        "matchedFields": ["scripture", "body", "notes"],
+        "matchedTerms": ["14:11", "revelation", "revelation 14", "revelation 14:11"]
+      },
+      {
+        "id": "section:S21",
+        "score": 228.991228,
+        "matchedFields": ["scripture", "id", "body", "summary", "heading", "notes"],
+        "matchedTerms": ["revelation"]
+      },
+      {
+        "id": "passage:revelation-20-10-15",
+        "score": 215,
+        "matchedFields": ["title", "id", "scripture", "body", "notes"],
+        "matchedTerms": ["revelation"]
+      },
+      {
+        "id": "section:S12",
+        "score": 208.575425,
+        "matchedFields": ["scripture", "body", "notes"],
+        "matchedTerms": ["14:11", "revelation", "revelation 14", "revelation 14:11"]
+      },
+      {
+        "id": "section:S24",
+        "score": 197.458839,
+        "matchedFields": ["summary", "id", "scripture", "body", "notes"],
+        "matchedTerms": ["revelation"]
+      },
+      {
+        "id": "topic:eternal-conscious-torment",
+        "score": 168.8,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["14:11", "revelation", "revelation 14", "revelation 14:11"]
+      }
+    ]
+  },
+  "worm does not die": {
+    "total": 54,
+    "usedTerms": ["worm does not die", "worm", "die", "undying worm", "their worm"],
+    "results": [
+      {
+        "id": "section:S01",
+        "score": 891.148247,
+        "matchedFields": ["id", "title", "body", "heading", "summary", "notes"],
+        "matchedTerms": ["die", "undying worm", "worm", "worm does not die"]
+      },
+      {
+        "id": "source:rethinking-hell-worm-does-not-die",
+        "score": 815.615,
+        "matchedFields": ["title", "summary", "id", "body", "notes"],
+        "matchedTerms": ["die", "their worm", "undying worm", "worm", "worm does not die"]
+      },
+      {
+        "id": "transcript:mark-9",
+        "score": 237.586775,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["die", "their worm", "undying worm", "worm", "worm does not die"]
+      },
+      {
+        "id": "passage:mark-9-42-48",
+        "score": 227.818539,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["die", "undying worm", "worm", "worm does not die"]
+      },
+      {
+        "id": "section:S17",
+        "score": 185.6797,
+        "matchedFields": ["id", "summary", "body", "notes"],
+        "matchedTerms": ["die"]
+      },
+      {
+        "id": "passage:isaiah-66-15-24",
+        "score": 150.205125,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": ["die", "undying worm", "worm", "worm does not die"]
+      },
+      {
+        "id": "section:S07",
+        "score": 118.347564,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["die"]
+      },
+      {
+        "id": "section:RB2",
+        "score": 80.6797,
+        "matchedFields": ["id", "body"],
+        "matchedTerms": ["die"]
+      },
+      {
+        "id": "section:S15",
+        "score": 66.0394,
+        "matchedFields": ["body", "notes"],
+        "matchedTerms": ["die", "undying worm", "worm"]
+      },
+      {
+        "id": "topic:eternal-conscious-torment",
+        "score": 65.2,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["die", "worm", "worm does not die"]
+      },
+      {
+        "id": "section:S22",
+        "score": 63.575425,
+        "matchedFields": ["summary", "body", "notes"],
+        "matchedTerms": ["die"]
+      },
+      {
+        "id": "topic:death",
+        "score": 50,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["die"]
+      }
+    ]
+  },
+  "Mt 10 28": {
+    "total": 66,
+    "usedTerms": ["mt 10 28", "mt", "10", "28", "matthew 10:28", "matthew 10"],
+    "results": [
+      {
+        "id": "section:S10",
+        "score": 1158.2,
+        "matchedFields": ["id", "summary", "scripture", "body"],
+        "matchedTerms": ["10", "28", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "passage:matthew-10-28",
+        "score": 1084.6,
+        "matchedFields": ["title", "id", "scripture"],
+        "matchedTerms": ["10", "28", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "section:S22",
+        "score": 349.263035,
+        "matchedFields": ["scripture", "body", "heading", "notes"],
+        "matchedTerms": ["10", "28", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "language:apollumi",
+        "score": 330.6,
+        "matchedFields": ["scripture", "body", "notes"],
+        "matchedTerms": ["10", "28", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "glossary:apollumi",
+        "score": 243.6,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["10", "28", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "passage:revelation-20-10-15",
+        "score": 205,
+        "matchedFields": ["title", "id", "body", "scripture", "notes"],
+        "matchedTerms": ["10"]
+      },
+      {
+        "id": "topic:body-soul-and-spirit",
+        "score": 203,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["10", "28", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "topic:perishing",
+        "score": 203,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["10", "28", "matthew 10", "matthew 10:28"]
+      },
+      {
+        "id": "passage:second-thessalonians-1-5-10",
+        "score": 186,
+        "matchedFields": ["title", "id", "scripture", "body"],
+        "matchedTerms": ["10"]
+      },
+      {
+        "id": "section:S14",
+        "score": 184.8,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["10", "28", "matthew 10"]
+      },
+      {
+        "id": "section:S28",
+        "score": 181.09775,
+        "matchedFields": ["id", "scripture", "body"],
+        "matchedTerms": ["10", "28"]
+      },
+      {
+        "id": "section:S23",
+        "score": 174,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["10", "matthew 10"]
+      }
+    ]
+  },
+  "traditional view": {
+    "total": 160,
+    "usedTerms": [
+      "traditional view",
+      "traditional",
+      "view",
+      "ect",
+      "eternal conscious torment",
+      "eternal torment",
+      "traditionalism"
+    ],
+    "results": [
+      {
+        "id": "glossary:traditionalism",
+        "score": 680.71,
+        "matchedFields": ["id", "summary", "title", "body"],
+        "matchedTerms": [
+          "eternal conscious torment",
+          "traditional",
+          "traditional view",
+          "traditionalism",
+          "view"
+        ]
+      },
+      {
+        "id": "topic:eternal-conscious-torment",
+        "score": 575.28,
+        "matchedFields": ["id", "title", "body", "summary"],
+        "matchedTerms": [
+          "ect",
+          "eternal conscious torment",
+          "eternal torment",
+          "traditional",
+          "traditional view",
+          "traditionalism",
+          "view"
+        ]
+      },
+      {
+        "id": "transcript:introduction",
+        "score": 464.974813,
+        "matchedFields": ["title", "transcript", "summary"],
+        "matchedTerms": ["eternal conscious torment", "traditional", "traditional view", "view"]
+      },
+      {
+        "id": "section:RB1",
+        "score": 436.722669,
+        "matchedFields": ["id", "body", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "ect",
+          "eternal conscious torment",
+          "eternal torment",
+          "traditional",
+          "traditional view",
+          "view"
+        ]
+      },
+      {
+        "id": "section:S27",
+        "score": 368.045865,
+        "matchedFields": ["summary", "body", "heading"],
+        "matchedTerms": [
+          "ect",
+          "eternal conscious torment",
+          "traditional",
+          "traditional view",
+          "view"
+        ]
+      },
+      {
+        "id": "page:compare",
+        "score": 279.31,
+        "matchedFields": ["title", "id", "summary", "body", "heading"],
+        "matchedTerms": [
+          "ect",
+          "eternal conscious torment",
+          "traditional",
+          "traditional view",
+          "view"
+        ]
+      },
+      {
+        "id": "section:S08",
+        "score": 219.205,
+        "matchedFields": ["summary", "body", "heading", "notes"],
+        "matchedTerms": [
+          "ect",
+          "eternal conscious torment",
+          "traditional",
+          "traditional view",
+          "view"
+        ]
+      },
+      {
+        "id": "section:S05",
+        "score": 210.105509,
+        "matchedFields": ["body", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "ect",
+          "eternal conscious torment",
+          "traditional",
+          "traditional view",
+          "view"
+        ]
+      },
+      {
+        "id": "glossary:eternal-conscious-torment",
+        "score": 205.8,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["ect", "eternal conscious torment", "eternal torment", "view"]
+      },
+      {
+        "id": "source:anthem-eastside-three-views",
+        "score": 202,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["view"]
+      },
+      {
+        "id": "section:S03",
+        "score": 194.361446,
+        "matchedFields": ["body", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "ect",
+          "eternal conscious torment",
+          "traditional",
+          "traditional view",
+          "view"
+        ]
+      },
+      {
+        "id": "source:welch-video-overview",
+        "score": 192.41,
+        "matchedFields": ["title", "id", "summary", "body", "notes"],
+        "matchedTerms": ["eternal conscious torment", "view"]
+      }
+    ]
+  },
+  "lake of fire": {
+    "total": 109,
+    "usedTerms": [
+      "lake of fire",
+      "lake",
+      "fire",
+      "hell",
+      "hades",
+      "sheol",
+      "gehenna",
+      "second death"
+    ],
+    "results": [
+      {
+        "id": "section:S03",
+        "score": 1229.933935,
+        "matchedFields": ["title", "id", "body", "summary", "notes", "heading"],
+        "matchedTerms": ["fire", "hades", "lake", "lake of fire", "second death"]
+      },
+      {
+        "id": "glossary:lake-of-fire",
+        "score": 964.81,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["fire", "hades", "lake", "lake of fire", "second death"]
+      },
+      {
+        "id": "topic:lake-of-fire",
+        "score": 937.736512,
+        "matchedFields": ["title", "id", "body", "summary", "notes"],
+        "matchedTerms": ["fire", "hades", "hell", "lake", "lake of fire", "second death", "sheol"]
+      },
+      {
+        "id": "section:S13",
+        "score": 631.256657,
+        "matchedFields": ["id", "body", "summary", "title", "heading", "notes"],
+        "matchedTerms": ["fire", "gehenna", "hades", "lake", "lake of fire", "second death"]
+      },
+      {
+        "id": "transcript:lake-of-fire",
+        "score": 572.827598,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["fire", "hades", "lake", "lake of fire", "second death"]
+      },
+      {
+        "id": "section:S01",
+        "score": 377.150178,
+        "matchedFields": ["id", "title", "body", "summary", "heading", "notes"],
+        "matchedTerms": ["fire", "gehenna", "lake", "lake of fire"]
+      },
+      {
+        "id": "topic:second-death",
+        "score": 368.8794,
+        "matchedFields": ["summary", "body", "title", "id"],
+        "matchedTerms": ["fire", "hades", "hell", "lake", "lake of fire", "second death"]
+      },
+      {
+        "id": "section:S32",
+        "score": 342.4597,
+        "matchedFields": ["id", "body", "notes"],
+        "matchedTerms": ["fire", "lake", "lake of fire", "second death"]
+      },
+      {
+        "id": "topic:fire",
+        "score": 333.697453,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["fire", "lake", "lake of fire"]
+      },
+      {
+        "id": "passage:revelation-20-10-15",
+        "score": 328.915722,
+        "matchedFields": ["summary", "body", "notes"],
+        "matchedTerms": ["fire", "gehenna", "hades", "lake", "lake of fire", "second death"]
+      },
+      {
+        "id": "source:rethinking-hell-fire-not-quenched",
+        "score": 285.9,
+        "matchedFields": ["id", "title", "summary", "body", "notes"],
+        "matchedTerms": ["fire", "hell"]
+      },
+      {
+        "id": "glossary:unquenchable-fire",
+        "score": 268.568425,
+        "matchedFields": ["title", "summary", "id", "body"],
+        "matchedTerms": ["fire"]
+      }
+    ]
+  },
+  "conditional immortality": {
+    "total": 143,
+    "usedTerms": [
+      "conditional immortality",
+      "conditional",
+      "immortality",
+      "ci",
+      "conditionalism",
+      "evangelical conditionalism",
+      "immortal",
+      "imperishable"
+    ],
+    "results": [
+      {
+        "id": "topic:conditional-immortality",
+        "score": 1595.85,
+        "matchedFields": ["id", "title", "body", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "ci",
+          "conditional",
+          "conditional immortality",
+          "conditionalism",
+          "evangelical conditionalism",
+          "immortal",
+          "immortality"
+        ]
+      },
+      {
+        "id": "section:S22",
+        "score": 1089.470493,
+        "matchedFields": ["title", "id", "body", "summary", "heading", "notes"],
+        "matchedTerms": [
+          "ci",
+          "conditional",
+          "conditional immortality",
+          "conditionalism",
+          "immortal",
+          "immortality",
+          "imperishable"
+        ]
+      },
+      {
+        "id": "glossary:conditional-immortality",
+        "score": 922.9,
+        "matchedFields": ["title", "summary", "id", "body"],
+        "matchedTerms": ["ci", "conditional", "conditional immortality", "immortal", "immortality"]
+      },
+      {
+        "id": "section:RB1",
+        "score": 811.534968,
+        "matchedFields": ["title", "summary", "body", "notes", "id"],
+        "matchedTerms": [
+          "ci",
+          "conditional",
+          "conditional immortality",
+          "conditionalism",
+          "immortal",
+          "immortality"
+        ]
+      },
+      {
+        "id": "source:wenham-case-for-conditional-immortality",
+        "score": 769.65,
+        "matchedFields": ["title", "summary", "id", "body", "notes"],
+        "matchedTerms": ["ci", "conditional", "conditional immortality", "immortal", "immortality"]
+      },
+      {
+        "id": "source:welch-source-document",
+        "score": 745.5,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["ci", "conditional", "conditional immortality", "immortal", "immortality"]
+      },
+      {
+        "id": "source:welch-video-overview",
+        "score": 681.6,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["ci", "conditional", "conditional immortality", "immortal", "immortality"]
+      },
+      {
+        "id": "source:themelios-destroyed-for-ever",
+        "score": 633.65,
+        "matchedFields": ["title", "summary", "body", "notes"],
+        "matchedTerms": [
+          "conditional",
+          "conditional immortality",
+          "conditionalism",
+          "immortal",
+          "immortality"
+        ]
+      },
+      {
+        "id": "section:S29",
+        "score": 523.158839,
+        "matchedFields": ["title", "body", "notes"],
+        "matchedTerms": [
+          "ci",
+          "conditional",
+          "conditional immortality",
+          "conditionalism",
+          "immortal",
+          "immortality"
+        ]
+      },
+      {
+        "id": "glossary:evangelical-conditionalism",
+        "score": 473.2,
+        "matchedFields": ["title", "summary", "id", "body"],
+        "matchedTerms": [
+          "conditional",
+          "conditional immortality",
+          "conditionalism",
+          "evangelical conditionalism",
+          "immortal",
+          "immortality"
+        ]
+      },
+      {
+        "id": "transcript:conditional-immortality",
+        "score": 466.974338,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["conditional", "conditional immortality", "immortal", "immortality"]
+      },
+      {
+        "id": "transcript:what-conditionalism-claims",
+        "score": 459,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["ci", "conditional", "conditional immortality", "immortal", "immortality"]
+      }
+    ]
+  },
+  "apollumi": {
+    "total": 66,
+    "usedTerms": ["apollumi", "destroy", "perish"],
+    "results": [
+      {
+        "id": "glossary:apollumi",
+        "score": 814.7,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["apollumi", "destroy", "perish"]
+      },
+      {
+        "id": "language:apollumi",
+        "score": 447.555865,
+        "matchedFields": ["id", "title", "summary", "body", "notes"],
+        "matchedTerms": ["apollumi", "destroy", "perish"]
+      },
+      {
+        "id": "topic:perishing",
+        "score": 266.1,
+        "matchedFields": ["id", "title", "summary", "body"],
+        "matchedTerms": ["apollumi", "destroy", "perish"]
+      },
+      {
+        "id": "section:S10",
+        "score": 253.567882,
+        "matchedFields": ["id", "title", "body", "summary", "notes"],
+        "matchedTerms": ["apollumi", "destroy", "perish"]
+      },
+      {
+        "id": "section:S08",
+        "score": 200.364806,
+        "matchedFields": ["id", "title", "summary", "body", "heading", "notes"],
+        "matchedTerms": ["destroy", "perish"]
+      },
+      {
+        "id": "section:S22",
+        "score": 119.008867,
+        "matchedFields": ["summary", "body", "id", "heading", "notes"],
+        "matchedTerms": ["destroy", "perish"]
+      },
+      {
+        "id": "source:themelios-destroyed-for-ever",
+        "score": 90.9,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["destroy"]
+      },
+      {
+        "id": "section:S11",
+        "score": 64.51173,
+        "matchedFields": ["id", "body", "summary"],
+        "matchedTerms": ["destroy", "perish"]
+      },
+      {
+        "id": "source:rethinking-hell-2-thess-1-9-part-1",
+        "score": 63.9,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["destroy"]
+      },
+      {
+        "id": "topic:destruction",
+        "score": 63.305865,
+        "matchedFields": ["id", "body"],
+        "matchedTerms": ["destroy"]
+      },
+      {
+        "id": "section:S31",
+        "score": 62.1,
+        "matchedFields": ["title", "body", "notes"],
+        "matchedTerms": ["destroy", "perish"]
+      },
+      {
+        "id": "passage:john-3-16-36",
+        "score": 51.955865,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": ["apollumi", "destroy", "perish"]
+      }
+    ]
+  },
+  "nephesh": {
+    "total": 1,
+    "usedTerms": ["nephesh"],
+    "results": [
+      {
+        "id": "topic:body-soul-and-spirit",
+        "score": 114,
+        "matchedFields": ["id"],
+        "matchedTerms": ["nephesh"]
+      }
+    ]
+  },
+  "universal reconciliation": {
+    "total": 17,
+    "usedTerms": [
+      "universal reconciliation",
+      "universal",
+      "reconciliation",
+      "universalism",
+      "universalist"
+    ],
+    "results": [
+      {
+        "id": "topic:universal-reconciliation",
+        "score": 1194.8,
+        "matchedFields": ["title", "id", "body"],
+        "matchedTerms": ["reconciliation", "universal", "universal reconciliation", "universalism"]
+      },
+      {
+        "id": "glossary:universal-reconciliation",
+        "score": 937,
+        "matchedFields": ["title", "id"],
+        "matchedTerms": ["reconciliation", "universal", "universal reconciliation", "universalism"]
+      },
+      {
+        "id": "section:S25",
+        "score": 468.66415,
+        "matchedFields": ["id", "summary", "body", "heading", "notes"],
+        "matchedTerms": [
+          "reconciliation",
+          "universal",
+          "universal reconciliation",
+          "universalism",
+          "universalist"
+        ]
+      },
+      {
+        "id": "page:compare",
+        "score": 175.4,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["reconciliation", "universal", "universal reconciliation", "universalism"]
+      },
+      {
+        "id": "source:rethinking-hell-early-church",
+        "score": 153,
+        "matchedFields": ["title", "summary", "body", "notes"],
+        "matchedTerms": ["universal"]
+      },
+      {
+        "id": "page:start",
+        "score": 132.6,
+        "matchedFields": ["summary"],
+        "matchedTerms": ["reconciliation", "universal", "universal reconciliation"]
+      },
+      {
+        "id": "section:S27",
+        "score": 127.75083,
+        "matchedFields": ["body", "heading"],
+        "matchedTerms": [
+          "reconciliation",
+          "universal",
+          "universal reconciliation",
+          "universalism",
+          "universalist"
+        ]
+      },
+      {
+        "id": "section:S26",
+        "score": 111.7,
+        "matchedFields": ["body", "summary"],
+        "matchedTerms": ["reconciliation", "universal", "universal reconciliation", "universalism"]
+      },
+      {
+        "id": "topic:conditional-immortality",
+        "score": 31.2,
+        "matchedFields": ["body"],
+        "matchedTerms": ["reconciliation", "universal", "universal reconciliation"]
+      },
+      {
+        "id": "language:aionios",
+        "score": 15.95,
+        "matchedFields": ["body", "notes"],
+        "matchedTerms": ["universal", "universalist"]
+      },
+      {
+        "id": "topic:annihilationism",
+        "score": 11.6,
+        "matchedFields": ["body"],
+        "matchedTerms": ["universal", "universalism"]
+      },
+      {
+        "id": "section:RB1",
+        "score": 8,
+        "matchedFields": ["body"],
+        "matchedTerms": ["universal"]
+      }
+    ]
+  },
+  "judgment": {
+    "total": 88,
+    "usedTerms": ["judgment", "judgement", "day of judgment", "last judgment", "final judgment"],
+    "results": [
+      {
+        "id": "section:S23",
+        "score": 905.942871,
+        "matchedFields": ["id", "title", "body", "summary", "notes"],
+        "matchedTerms": ["day of judgment", "final judgment", "judgment"]
+      },
+      {
+        "id": "topic:final-judgment",
+        "score": 875.357938,
+        "matchedFields": ["id", "title", "body", "summary", "notes"],
+        "matchedTerms": ["day of judgment", "final judgment", "judgment", "last judgment"]
+      },
+      {
+        "id": "section:S09",
+        "score": 727.368307,
+        "matchedFields": ["title", "id", "summary", "body", "notes"],
+        "matchedTerms": ["day of judgment", "final judgment", "judgment"]
+      },
+      {
+        "id": "section:S15",
+        "score": 698.807864,
+        "matchedFields": ["id", "title", "summary", "body", "notes"],
+        "matchedTerms": ["final judgment", "judgment"]
+      },
+      {
+        "id": "glossary:final-judgment",
+        "score": 634.6,
+        "matchedFields": ["id", "title", "summary", "body"],
+        "matchedTerms": ["final judgment", "judgment", "last judgment"]
+      },
+      {
+        "id": "topic:day-of-the-lord",
+        "score": 404.795,
+        "matchedFields": ["id", "summary", "body", "notes"],
+        "matchedTerms": ["day of judgment", "final judgment", "judgment", "last judgment"]
+      },
+      {
+        "id": "section:S05",
+        "score": 386.234451,
+        "matchedFields": ["id", "body", "summary", "notes"],
+        "matchedTerms": ["day of judgment", "final judgment", "judgment", "last judgment"]
+      },
+      {
+        "id": "section:S25",
+        "score": 348.033307,
+        "matchedFields": ["title", "body"],
+        "matchedTerms": ["final judgment", "judgment"]
+      },
+      {
+        "id": "transcript:day-of-judgment",
+        "score": 298.775,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["day of judgment", "judgment"]
+      },
+      {
+        "id": "transcript:all-in-all",
+        "score": 275.5,
+        "matchedFields": ["title"],
+        "matchedTerms": ["final judgment", "judgment"]
+      },
+      {
+        "id": "section:S30",
+        "score": 247.62643,
+        "matchedFields": ["body", "summary", "heading", "notes"],
+        "matchedTerms": ["day of judgment", "final judgment", "judgment", "last judgment"]
+      },
+      {
+        "id": "section:RB3",
+        "score": 234.033307,
+        "matchedFields": ["body", "summary", "heading", "notes"],
+        "matchedTerms": ["day of judgment", "final judgment", "judgment", "last judgment"]
+      }
+    ]
+  },
+  "Isaiah 66": {
+    "total": 25,
+    "usedTerms": ["isaiah 66", "isaiah", "66"],
+    "results": [
+      {
+        "id": "passage:isaiah-66-15-24",
+        "score": 811.6,
+        "matchedFields": ["title", "id", "scripture", "body"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "section:S01",
+        "score": 538.725513,
+        "matchedFields": ["scripture", "summary", "body", "heading", "notes"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "section:S04",
+        "score": 339.829969,
+        "matchedFields": ["scripture", "body", "heading"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "language:deraon",
+        "score": 219.1797,
+        "matchedFields": ["scripture", "body", "notes"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "language:asbestos",
+        "score": 179.6,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "section:S10",
+        "score": 148.4,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "passage:mark-9-42-48",
+        "score": 83.97113,
+        "matchedFields": ["body"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "section:S13",
+        "score": 82.6797,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["isaiah"]
+      },
+      {
+        "id": "section:S08",
+        "score": 80.575425,
+        "matchedFields": ["scripture", "body"],
+        "matchedTerms": ["isaiah"]
+      },
+      {
+        "id": "passage:daniel-12-2",
+        "score": 62.4,
+        "matchedFields": ["body"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "passage:luke-12-4-5",
+        "score": 62.4,
+        "matchedFields": ["body"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      },
+      {
+        "id": "section:S15",
+        "score": 62.4,
+        "matchedFields": ["body"],
+        "matchedTerms": ["66", "isaiah", "isaiah 66"]
+      }
+    ]
+  },
+  "body and soul": {
+    "total": 61,
+    "usedTerms": ["body and soul", "body", "soul", "spirit", "anthropology"],
+    "results": [
+      {
+        "id": "section:S10",
+        "score": 1826.854493,
+        "matchedFields": ["id", "title", "heading", "body", "summary", "notes"],
+        "matchedTerms": ["anthropology", "body", "body and soul", "soul", "spirit"]
+      },
+      {
+        "id": "topic:body-soul-and-spirit",
+        "score": 794.990231,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["anthropology", "body", "body and soul", "soul", "spirit"]
+      },
+      {
+        "id": "section:RB2",
+        "score": 318.569931,
+        "matchedFields": ["id", "body", "summary", "notes"],
+        "matchedTerms": ["anthropology", "body", "soul", "spirit"]
+      },
+      {
+        "id": "passage:matthew-10-28",
+        "score": 281.279754,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": ["body", "body and soul", "soul", "spirit"]
+      },
+      {
+        "id": "section:S22",
+        "score": 268.761361,
+        "matchedFields": ["body", "heading", "summary", "notes"],
+        "matchedTerms": ["body", "body and soul", "soul"]
+      },
+      {
+        "id": "topic:immortality",
+        "score": 126.15,
+        "matchedFields": ["id", "body", "notes"],
+        "matchedTerms": ["body", "soul"]
+      },
+      {
+        "id": "section:S18",
+        "score": 116.593307,
+        "matchedFields": ["body", "summary", "notes"],
+        "matchedTerms": ["body", "body and soul", "soul", "spirit"]
+      },
+      {
+        "id": "passage:first-corinthians-15",
+        "score": 91.12113,
+        "matchedFields": ["body", "notes"],
+        "matchedTerms": ["body", "body and soul", "soul"]
+      },
+      {
+        "id": "section:S17",
+        "score": 89.044506,
+        "matchedFields": ["body", "notes"],
+        "matchedTerms": ["body", "body and soul", "soul", "spirit"]
+      },
+      {
+        "id": "section:S11",
+        "score": 83.585565,
+        "matchedFields": ["body"],
+        "matchedTerms": ["body", "body and soul", "soul"]
+      },
+      {
+        "id": "section:S08",
+        "score": 65.95,
+        "matchedFields": ["body", "notes"],
+        "matchedTerms": ["body", "body and soul", "soul"]
+      },
+      {
+        "id": "passage:luke-12-4-5",
+        "score": 61.734366,
+        "matchedFields": ["body"],
+        "matchedTerms": ["body", "soul"]
+      }
+    ]
+  },
+  "the": {
+    "total": 187,
+    "usedTerms": ["the"],
+    "results": [
+      {
+        "id": "section:S08",
+        "score": 1216.885663,
+        "matchedFields": ["summary", "id", "title", "heading", "body", "scripture", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:S20",
+        "score": 1212.680792,
+        "matchedFields": ["id", "summary", "title", "body", "scripture", "heading", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:S17",
+        "score": 1113.562798,
+        "matchedFields": ["summary", "id", "title", "heading", "body", "scripture", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:S03",
+        "score": 1096.475953,
+        "matchedFields": ["title", "summary", "heading", "body", "scripture", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:S23",
+        "score": 1077.783448,
+        "matchedFields": ["id", "summary", "title", "body", "heading", "scripture", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:S28",
+        "score": 1072.852968,
+        "matchedFields": ["id", "summary", "title", "heading", "body", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:S02",
+        "score": 1051.330691,
+        "matchedFields": ["title", "summary", "heading", "body", "id", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "topic:day-of-the-lord",
+        "score": 1044.397154,
+        "matchedFields": ["title", "summary", "id", "scripture", "body", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:RB3",
+        "score": 1024.847935,
+        "matchedFields": ["id", "summary", "heading", "body", "scripture", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:S15",
+        "score": 1022.611985,
+        "matchedFields": ["summary", "id", "title", "heading", "body", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:APP1",
+        "score": 985.762855,
+        "matchedFields": ["summary", "id", "title", "heading", "body", "scripture", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
+        "id": "section:S19",
+        "score": 982.554892,
+        "matchedFields": ["summary", "id", "title", "heading", "body", "scripture", "notes"],
+        "matchedTerms": ["the"]
+      }
+    ]
+  },
+  "zzzznotfound": {
+    "total": 0,
+    "usedTerms": ["zzzznotfound"],
+    "results": []
+  },
+  "fire": {
+    "total": 64,
+    "usedTerms": ["fire"],
+    "results": [
+      {
+        "id": "topic:fire",
+        "score": 973.41516,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "section:S13",
+        "score": 973.385058,
+        "matchedFields": ["id", "summary", "title", "heading", "body", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "section:S01",
+        "score": 647.218351,
+        "matchedFields": ["id", "title", "body", "summary", "heading", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "section:S03",
+        "score": 524.303488,
+        "matchedFields": ["title", "id", "body", "summary", "heading", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "glossary:unquenchable-fire",
+        "score": 510.280008,
+        "matchedFields": ["title", "summary", "id", "body"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "topic:lake-of-fire",
+        "score": 481.571795,
+        "matchedFields": ["id", "title", "body", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "source:rethinking-hell-fire-not-quenched",
+        "score": 404.7,
+        "matchedFields": ["title", "id", "summary", "body", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "source:fudge-fire-that-consumes",
+        "score": 383.8,
+        "matchedFields": ["title", "id", "summary", "body"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "section:S14",
+        "score": 257.79143,
+        "matchedFields": ["id", "body", "heading", "notes"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "transcript:lake-of-fire",
+        "score": 231.058317,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "transcript:mark-9",
+        "score": 229.614288,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["fire"]
+      },
+      {
+        "id": "transcript:fire-burns-up",
+        "score": 209,
+        "matchedFields": ["title", "transcript"],
+        "matchedTerms": ["fire"]
+      }
+    ]
+  },
+  "__filtered": [
+    "passage:mark-9-42-48",
+    "passage:isaiah-66-15-24",
+    "passage:revelation-20-10-15",
+    "passage:revelation-14-9-11",
+    "passage:second-peter-2-6"
+  ],
+  "__page2": [
+    "topic:lake-of-fire",
+    "source:rethinking-hell-fire-not-quenched",
+    "source:fudge-fire-that-consumes",
+    "section:S14",
+    "transcript:lake-of-fire"
+  ]
+}

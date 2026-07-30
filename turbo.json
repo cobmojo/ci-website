@@ -35,7 +35,17 @@
     "test:a11y": {
       "dependsOn": ["build"],
       "cache": false,
-      "outputs": []
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:text-geometry": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:browser": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
     }
   }
 }
