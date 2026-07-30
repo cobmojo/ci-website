@@ -1,3 +1,4 @@
+import { buttonVariants } from '@ci/ui'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
 import { formatLongDate } from '@/lib/format'
@@ -249,7 +250,7 @@ export default function AccessibilityPage() {
               <p className="m-0 mb-4">
                 <Link
                   href="/corrections/?type=accessibility#form"
-                  className="inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
+                  className={buttonVariants({ variant: 'primary' })}
                 >
                   Report an accessibility problem
                 </Link>

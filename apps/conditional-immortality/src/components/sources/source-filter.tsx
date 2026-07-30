@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonVariants } from '@ci/ui'
 import { useEffect, useId, useState } from 'react'
 
 /**
@@ -139,7 +140,7 @@ export function SourceFilter({
             setType('')
             setPerspective('')
           }}
-          className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.92rem] font-medium text-navy hover:bg-panel-strong"
+          className={buttonVariants({ variant: 'secondary' })}
         >
           Show every source
         </button>
