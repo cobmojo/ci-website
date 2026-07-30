@@ -57,17 +57,23 @@ export function SearchDialogTrigger() {
 
   /**
    * Keyboard shortcut. Deliberately requires a modifier, so it cannot swallow
-   * a plain keystroke a screen reader or voice control user is typing, and it
-   * is ignored while focus is in any text field.
+   * a plain keystroke a screen reader or voice control user is typing. While
+   * the dialog is open it always toggles closed, because the dialog focuses
+   * its own text field on open and the field must not eat the shortcut; while
+   * it is closed, focus in any other text field suppresses it.
    */
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'k' || !(event.metaKey || event.ctrlKey)) return
+      if (dialogRef.current?.open) {
+        event.preventDefault()
+        closeDialog()
+        return
+      }
       const target = event.target as HTMLElement | null
       if (target?.closest('input, textarea, select, [contenteditable="true"]')) return
       event.preventDefault()
-      if (dialogRef.current?.open) closeDialog()
-      else openDialog()
+      openDialog()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
@@ -84,6 +90,7 @@ export function SearchDialogTrigger() {
         ref={triggerRef}
         href="/search/"
         aria-haspopup={mounted ? 'dialog' : undefined}
+        aria-expanded={mounted ? open : undefined}
         aria-controls={mounted ? dialogId : undefined}
         className="search-trigger pressable inline-flex min-h-11 items-center gap-2 rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[0.88rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
         onClick={event => {
@@ -114,7 +121,7 @@ export function SearchDialogTrigger() {
           // `overlay-panel` carries the enter and exit, and the backdrop wash
           // that used to be a utility class here: the panel and its backdrop
           // have to share one duration and one curve to read as one object.
-          className="overlay-panel m-0 mx-auto mt-[6vh] w-[min(42rem,calc(100vw-2rem))] max-w-none rounded-lg border border-border bg-paper p-0"
+          className="overlay-panel m-0 mx-auto mt-[6vh] w-[min(42rem,calc(100vw-2rem))] max-w-none rounded-md border border-border bg-paper p-0"
         >
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
             <h2 id={`${dialogId}-title`} className="sr-only">
@@ -131,7 +138,8 @@ export function SearchDialogTrigger() {
               onChange={event => setQuery(event.target.value)}
               placeholder="Search passages, sections, topics, sources"
               autoComplete="off"
-              className="min-h-11 w-full rounded-md border border-border bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+              aria-describedby={statusId}
+              className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
             />
             <button
               type="button"
@@ -139,9 +147,9 @@ export function SearchDialogTrigger() {
               className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-ink-muted hover:bg-panel"
             >
               <span className="sr-only">Close search</span>
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
                 <path
-                  d="M3.5 3.5l9 9M12.5 3.5l-9 9"
+                  d="M4 4l10 10M14 4L4 14"
                   stroke="currentColor"
                   strokeWidth="1.7"
                   strokeLinecap="round"
@@ -216,8 +224,10 @@ export function SearchDialogTrigger() {
             ) : null}
           </div>
 
-          <div className="flex items-center justify-between border-t border-border px-4 py-2.5 font-sans text-[0.82rem] text-ink-subtle">
-            <span>
+          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-1 font-sans text-[0.82rem] text-ink-subtle">
+            {/* Tabular figures: the count re-renders on every keystroke and
+                proportional digits would make the line quiver. */}
+            <span className="tabular-nums">
               {outcome && outcome.total > outcome.results.length
                 ? `Showing ${outcome.results.length} of ${outcome.total}`
                 : 'Search runs locally in your browser'}
@@ -225,14 +235,13 @@ export function SearchDialogTrigger() {
             <Link
               href={query ? `/search/?q=${encodeURIComponent(query)}` : '/search/'}
               onClick={closeDialog}
+              className="inline-flex min-h-11 items-center"
             >
               Full search page
             </Link>
           </div>
         </dialog>
       ) : null}
-
-      {open ? null : null}
     </>
   )
 }

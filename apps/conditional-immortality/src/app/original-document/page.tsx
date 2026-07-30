@@ -13,6 +13,7 @@ import {
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
 import { scrollRegionProps } from '@/components/content/scroll-region'
+import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate, pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { siteConfig } from '@/lib/site-config'
@@ -160,7 +161,10 @@ export default function OriginalDocumentPage() {
                 </code>
               </p>
 
-              <div {...scrollRegionProps('Source document statistics')} className="overflow-x-auto">
+              <div
+                {...scrollRegionProps('Source document statistics')}
+                className="overflow-x-auto overscroll-x-contain"
+              >
                 <table className="w-full font-sans text-[0.92rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
                     What the source file contained, and what the migration ledger records. Counts
@@ -326,7 +330,7 @@ export default function OriginalDocumentPage() {
               </p>
               <div
                 {...scrollRegionProps('Editorial comment dispositions')}
-                className="overflow-x-auto"
+                className="overflow-x-auto overscroll-x-contain"
               >
                 <table className="w-full font-sans text-[0.92rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
@@ -394,7 +398,7 @@ export default function OriginalDocumentPage() {
               </p>
               <div
                 {...scrollRegionProps('Embedded media dispositions')}
-                className="overflow-x-auto"
+                className="overflow-x-auto overscroll-x-contain"
               >
                 <table className="w-full font-sans text-[0.9rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
@@ -529,25 +533,20 @@ export default function OriginalDocumentPage() {
             </section>
           </div>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/method/">The editorial method in full</Link>
-              </li>
-              <li>
-                <Link href="/about/">About the author</Link>
-              </li>
-              <li>
-                <Link href="/changelog/">Every change since publication</Link>
-              </li>
-              <li>
-                <Link href="/privacy/">What this site stores</Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/method/">The editorial method in full</Link>
+            </li>
+            <li>
+              <Link href="/about/">About the author</Link>
+            </li>
+            <li>
+              <Link href="/changelog/">Every change since publication</Link>
+            </li>
+            <li>
+              <Link href="/privacy/">What this site stores</Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

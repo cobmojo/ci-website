@@ -2,14 +2,8 @@ import { glossary, glossaryByLetter } from '@ci/content/glossary'
 import { languageNotes } from '@ci/content/language'
 import { findPassageByReference, passageRoute } from '@ci/content/passages'
 import { getTopic, topicRoute } from '@ci/content/topics'
-import {
-  REVIEW_STATUS_DEFINITIONS,
-  REVIEW_STATUS_LABELS,
-  type ReviewStatus,
-} from '@ci/content-schema'
-import { Badge } from '@ci/ui'
 import Link from 'next/link'
-import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { Breadcrumbs, type Crumb, ReviewStatusBadge } from '@/components/article/article-chrome'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**
@@ -45,19 +39,6 @@ function OriginalText({ text, lang }: { text: string; lang: 'grc' | 'he' }) {
     <span lang="grc" className="lang-grc">
       {text}
     </span>
-  )
-}
-
-function ReviewStatusMarker({ status }: { status: ReviewStatus }) {
-  const needsAttention = status === 'revision-needed' || status === 'specialist-review-pending'
-  return (
-    <Badge
-      tone={needsAttention ? 'ochre' : 'neutral'}
-      glyph={needsAttention ? '!' : '✓'}
-      title={REVIEW_STATUS_DEFINITIONS[status]}
-    >
-      {REVIEW_STATUS_LABELS[status]}
-    </Badge>
   )
 }
 
@@ -220,7 +201,7 @@ export default function GlossaryPage() {
                 </h3>
 
                 <div className="mb-3">
-                  <ReviewStatusMarker status={note.reviewStatus} />
+                  <ReviewStatusBadge status={note.reviewStatus} />
                 </div>
 
                 <dl className="m-0 space-y-3 text-[1rem]">

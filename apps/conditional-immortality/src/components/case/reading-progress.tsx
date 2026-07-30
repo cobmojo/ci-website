@@ -117,7 +117,7 @@ export function ReadingProgress({ total }: { total: number }) {
         the permanent id of each part, and clearing it changes nothing else about the site.
       </p>
 
-      <Button variant="secondary" size="sm" onClick={reset} className="mt-4 min-h-11">
+      <Button variant="secondary" size="sm" onClick={reset} className="mt-4">
         Reset reading progress
       </Button>
     </section>

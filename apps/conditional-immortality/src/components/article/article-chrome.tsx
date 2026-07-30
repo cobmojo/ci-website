@@ -1,4 +1,5 @@
 import type { ExtractedHeading } from '@ci/content'
+import { formatCitation } from '@ci/content/sources'
 import {
   CASE_GROUP_LABELS,
   type CaseSection,
@@ -6,6 +7,8 @@ import {
   EVIDENCE_ROLE_LABELS,
   REVIEW_STATUS_DEFINITIONS,
   REVIEW_STATUS_LABELS,
+  type ReviewStatus,
+  type SourceRecord,
 } from '@ci/content-schema'
 import { Badge, buttonVariants } from '@ci/ui'
 import Link from 'next/link'
@@ -63,17 +66,24 @@ export function EvidenceRoleBadge({ section }: { section: CaseSection }) {
   )
 }
 
-export function ReviewStatusBadge({ section }: { section: CaseSection }) {
-  const needsAttention =
-    section.reviewStatus === 'revision-needed' ||
-    section.reviewStatus === 'specialist-review-pending'
+export function ReviewStatusBadge({
+  section,
+  status,
+}: {
+  section?: CaseSection
+  /** For surfaces that carry a bare status rather than a whole section. */
+  status?: ReviewStatus
+}) {
+  const resolved = status ?? section?.reviewStatus
+  if (!resolved) return null
+  const needsAttention = resolved === 'revision-needed' || resolved === 'specialist-review-pending'
   return (
     <Badge
       tone={needsAttention ? 'ochre' : 'neutral'}
       glyph={needsAttention ? '!' : '✓'}
-      title={REVIEW_STATUS_DEFINITIONS[section.reviewStatus]}
+      title={REVIEW_STATUS_DEFINITIONS[resolved]}
     >
-      {REVIEW_STATUS_LABELS[section.reviewStatus]}
+      {REVIEW_STATUS_LABELS[resolved]}
     </Badge>
   )
 }
@@ -230,6 +240,77 @@ export function PreviousNextNavigation({
         </Link>
       ) : null}
     </nav>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * Sources cited
+ *
+ * The one citation list. Section pages, passage pages and topic pages all
+ * render the same ordered list of formatted citations; before this component
+ * the three copies had already drifted on heading size.
+ * ------------------------------------------------------------------ */
+
+export function SourcesCited({
+  sources,
+  headingId,
+  title,
+  className = 'mt-10 border-t border-border pt-6',
+}: {
+  sources: readonly SourceRecord[]
+  headingId: string
+  title: string
+  /** The section wrapper. Pages that already carry a divider above pass their own. */
+  className?: string
+}) {
+  if (sources.length === 0) return null
+  return (
+    <section aria-labelledby={headingId} className={className}>
+      <h2 id={headingId} className="mt-0 mb-3 text-[1.18rem]">
+        {title}
+      </h2>
+      <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">
+        {sources.map(source => (
+          <li key={source.id} id={`source-${source.id}`}>
+            {formatCitation(source)}
+            {source.url ? (
+              <>
+                {' '}
+                <a href={source.url} rel="noopener noreferrer" target="_blank">
+                  View original
+                  <span className="sr-only"> of {source.title}, opens in a new tab</span>
+                </a>
+              </>
+            ) : null}{' '}
+            <Link href={`/sources/#${source.id}`} className="text-ink-subtle">
+              Details
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * Section link list
+ *
+ * A list of case sections as links with their short summaries, shared by the
+ * topic and passage templates.
+ * ------------------------------------------------------------------ */
+
+export function SectionLinkList({ sections }: { sections: readonly CaseSection[] }) {
+  return (
+    <ul className="m-0 list-none space-y-2 p-0 font-sans text-[0.95rem]">
+      {sections.map(section => (
+        <li key={section.id}>
+          <Link href={section.route}>
+            <span className="text-ink-subtle">{section.id}</span> {section.title}
+          </Link>
+          <span className="mt-0.5 block text-[0.9rem] text-ink-muted">{section.shortSummary}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 

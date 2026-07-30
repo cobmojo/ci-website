@@ -31,7 +31,7 @@ const DESTINATIONS: readonly { href: string; label: string; description: string 
     href: '/case/',
     label: 'The Case',
     description:
-      'All thirty-nine parts in a guided reading order, with the essential path marked for a shorter route.',
+      'All thirty-seven parts in a guided reading order, with the essential path marked for a shorter route.',
   },
   {
     href: '/passages/',

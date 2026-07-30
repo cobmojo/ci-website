@@ -14,10 +14,12 @@ import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
  * every node and every edge the diagram carries.
  *
  * The diagram itself is inert: nothing to pan, zoom, drag or hover, and no
- * pointer-only affordance, so it behaves identically in print, in a screen
- * reader, and on a touch device. The links below it get the same Tier 1 colour
- * feedback as every other link on the site and nothing more. Nothing on this
- * page moves.
+ * pointer-only affordance, so a screen reader and a touch device get the same
+ * page. The figure is shown only from `lg` up, which also keeps it off a
+ * portrait A4 print; the structured list beneath it carries the identical
+ * information everywhere, including on paper. The links below it get the same
+ * Tier 1 colour feedback as every other link on the site and nothing more.
+ * Nothing on this page moves.
  */
 
 const CRUMBS: readonly Crumb[] = [

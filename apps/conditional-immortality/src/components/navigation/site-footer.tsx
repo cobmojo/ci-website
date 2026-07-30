@@ -7,7 +7,7 @@ export function SiteFooter() {
   return (
     <footer className="site-footer mt-16 border-t border-border bg-panel/60">
       <div className="mx-auto max-w-[80rem] px-4 py-10 sm:px-6">
-        <nav aria-label="Footer navigation">
+        <nav aria-label="Footer">
           <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {FOOTER_NAV.map(group => (
               <li key={group.title}>
@@ -19,7 +19,10 @@ export function SiteFooter() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="font-sans text-[0.92rem] text-ink-muted hover:text-navy"
+                        // Navigation lists across the site rest without an
+                        // underline and reveal one on hover; the mobile sheet
+                        // renders these same links that way already.
+                        className="font-sans text-[0.92rem] text-ink-muted no-underline hover:text-navy hover:underline"
                       >
                         {link.label}
                       </Link>

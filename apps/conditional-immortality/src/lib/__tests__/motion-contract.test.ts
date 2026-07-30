@@ -359,6 +359,23 @@ describe('animation craft', () => {
     // Starting a scale animation at 0 has no counterpart in the physical world.
     expect(withoutComments(css)).not.toMatch(/scale:\s*0(\s|;|\))/)
   })
+
+  it('runs every press confirmation on the press token', () => {
+    // Tier 2 is one gesture with one clock. `.pressable` carries
+    // `--motion-press` in its per-property duration list; the video play
+    // glyph performs the identical 0.97 squash and must not drift onto the
+    // Tier 1 feedback duration.
+    const live = withoutComments(css)
+    expect(live).toMatch(/\.video-play:active\s+\.video-play__glyph\s*\{[^}]*var\(--motion-press\)/)
+  })
+
+  it('gives Tier 3 arrivals the overlay curve, not the Tier 1 keyword', () => {
+    // The brief assigns `--ease-out-quad` to Tier 3. `status-in` uses it; the
+    // shared `reveal-fade` arrival must use the same curve rather than `ease`.
+    expect(withoutComments(css)).toMatch(
+      /animation:\s*reveal-fade\s+var\(--motion-reveal\)\s+var\(--ease-out-quad\)/,
+    )
+  })
 })
 
 /* ------------------------------------------------------------------ *

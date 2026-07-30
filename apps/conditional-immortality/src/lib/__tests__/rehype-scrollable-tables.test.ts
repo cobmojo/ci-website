@@ -56,7 +56,10 @@ describe('rehypeScrollableTables', () => {
     const wrapper = wrapperOf(run([markdownTable()]))
     // Without tabindex a keyboard cannot scroll the region at all.
     expect(wrapper.properties.tabIndex).toBe(0)
-    expect(wrapper.properties.role).toBe('region')
+    // `group`, not `region`: the Scripture index renders dozens of these, and
+    // a landmark for every table would make the landmark list useless. This is
+    // the same decision `ScrollRegion` documents for hand-written wrappers.
+    expect(wrapper.properties.role).toBe('group')
     expect(wrapper.properties['aria-label']).toBe('Table')
   })
 

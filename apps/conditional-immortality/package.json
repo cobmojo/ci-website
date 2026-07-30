@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile",
-    "test:a11y": "playwright test --project=accessibility"
+    "test:a11y": "playwright test --project=accessibility --project=accessibility-mobile"
   },
   "dependencies": {
     "@ci/content": "workspace:*",

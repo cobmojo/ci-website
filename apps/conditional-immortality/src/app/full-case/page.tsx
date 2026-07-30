@@ -146,7 +146,14 @@ export default function FullCasePage() {
                 className="prose-article article-body max-w-[var(--spacing-measure)]"
                 data-section-id={item.section.id}
               >
-                <MdxContent source={item.body} idPrefix={item.section.id.toLowerCase()} />
+                {/* Headings demoted one level: this page has already spent h2
+                    on the section titles, so the body's own "In brief" must
+                    sit beneath its section in the outline, not beside it. */}
+                <MdxContent
+                  source={item.body}
+                  idPrefix={item.section.id.toLowerCase()}
+                  demoteHeadings
+                />
               </article>
 
               <p className="mt-5 mb-0 font-sans text-[0.85rem] text-ink-subtle">
@@ -177,6 +184,7 @@ export default function FullCasePage() {
                       <br />
                       <a href={source.url} rel="noopener noreferrer" target="_blank">
                         {source.url}
+                        <span className="sr-only"> (opens in a new tab)</span>
                       </a>
                     </>
                   ) : null}

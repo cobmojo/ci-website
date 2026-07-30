@@ -30,7 +30,9 @@ export const buttonVariants = cva(
         copperSoft: 'border border-copper/45 bg-copper/10 text-copper-deep hover:bg-copper/15',
       },
       size: {
-        sm: 'min-h-9 px-3 py-1.5 text-[0.9rem]',
+        /* Smaller text and padding, never a smaller target: the base
+           `min-h-11` floor applies to every size. */
+        sm: 'px-3 py-1.5 text-[0.9rem]',
         md: '',
         lg: 'min-h-12 px-5 text-[1.02rem]',
       },

@@ -65,6 +65,14 @@ export default defineConfig({
       testMatch: A11Y_SPEC,
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
+    {
+      // The same axe and structural sweep at the mobile viewport. Layout,
+      // target sizes and the sheet navigation all differ below the desktop
+      // breakpoints, so a desktop-only gate could pass a mobile regression.
+      name: 'accessibility-mobile',
+      testMatch: A11Y_SPEC,
+      use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
+    },
   ],
 
   webServer: {

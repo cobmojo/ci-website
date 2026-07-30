@@ -67,6 +67,20 @@ const MESSAGE_MIN = 20
 const MESSAGE_MAX = 8000
 
 /**
+ * Reader-facing names for the fields the server may reject, so a server-side
+ * validation report can name the field the way the form labels it rather than
+ * by its wire name.
+ */
+const FIELD_NAMES: Record<string, string> = {
+  type: 'Feedback type',
+  message: 'Your correction',
+  sourceUrl: 'Source web address',
+  name: 'Your name',
+  email: 'Your email',
+  publicationConsent: 'Publication choice',
+}
+
+/**
  * The trailing slash is load bearing. `trailingSlash: true` answers a POST to
  * the unslashed path with a 308, and a redirected submission is at best an
  * extra round trip and at worst dropped by an intermediary.
@@ -258,8 +272,28 @@ function FeedbackFormFields({
         }
 
         if (response.status === 400) {
+          // The server names each rejected field. Surfacing its report is the
+          // only honest option here: a 400 from a scripted submit means the
+          // client-side validators disagreed with the server, so "check the
+          // fields marked below" would point at fields nothing has marked.
+          let report = ''
+          try {
+            const data = (await response.json()) as {
+              fieldErrors?: readonly { field: string; message: string }[]
+            }
+            if (Array.isArray(data.fieldErrors) && data.fieldErrors.length > 0) {
+              report = data.fieldErrors
+                .map(entry => `${FIELD_NAMES[entry.field] ?? 'Form'}: ${entry.message}`)
+                .join(' ')
+            }
+          } catch {
+            // A 400 without a readable body still gets the generic sentence.
+          }
           setStatus('invalid')
-          setDetail('The server could not accept those values. Check the fields marked below.')
+          setDetail(
+            report ||
+              'The server could not accept those values. Check that the message is at least twenty characters and that any web address is complete, then send it again.',
+          )
           return
         }
 
@@ -324,7 +358,18 @@ function FeedbackFormFields({
           // browser performs the native POST above.
           event.preventDefault()
           event.stopPropagation()
-          void form.handleSubmit()
+          const formElement = event.currentTarget
+          void form.handleSubmit().then(() => {
+            // If validation stopped the submit, move focus to the first
+            // rejected control. Its label, description and error are all in
+            // its accessible description, so landing there is what announces
+            // the failure; without this, pressing Send with an invalid form
+            // does nothing a screen reader can hear.
+            requestAnimationFrame(() => {
+              const invalid = formElement.querySelector<HTMLElement>('[aria-invalid="true"]')
+              invalid?.focus()
+            })
+          })
         }}
         className="space-y-6"
       >

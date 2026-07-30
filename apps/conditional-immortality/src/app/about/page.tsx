@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { siteConfig } from '@/lib/site-config'
@@ -193,22 +194,17 @@ export default function AboutPage() {
             </section>
           </div>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/start/">Start here, if you are new to the question</Link>
-              </li>
-              <li>
-                <Link href="/method/">The editorial method in full</Link>
-              </li>
-              <li>
-                <Link href="/corrections/">Send a correction or a counterargument</Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/start/">Start here, if you are new to the question</Link>
+            </li>
+            <li>
+              <Link href="/method/">The editorial method in full</Link>
+            </li>
+            <li>
+              <Link href="/corrections/">Send a correction or a counterargument</Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

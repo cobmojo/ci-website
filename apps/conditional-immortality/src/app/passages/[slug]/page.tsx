@@ -1,11 +1,17 @@
 import { getSection } from '@ci/content/case'
 import { getPassage, passageRoute, passages } from '@ci/content/passages'
-import { formatCitation, getSource } from '@ci/content/sources'
+import { getSource } from '@ci/content/sources'
 import type { CaseSection, PassageRecord, SourceRecord } from '@ci/content-schema'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Breadcrumbs, type Crumb, FeedbackCta } from '@/components/article/article-chrome'
+import {
+  Breadcrumbs,
+  type Crumb,
+  FeedbackCta,
+  SectionLinkList,
+  SourcesCited,
+} from '@/components/article/article-chrome'
 import { Scripture } from '@/components/content/scripture'
 import { formatLongDate } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
@@ -148,7 +154,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
               <p className="m-0 text-[1.02rem] leading-[1.65]">{passage.conditionalistReading}</p>
             </div>
 
-            <div className="mt-4 rounded-md border border-border bg-affirm-soft p-4 sm:p-5">
+            <div className="mt-4 rounded-md border border-affirm/30 bg-affirm-soft p-4 sm:p-5">
               <h3
                 id="where-the-readings-agree"
                 className="mt-0 mb-2 font-sans text-[0.95rem] font-semibold tracking-wide text-affirm uppercase"
@@ -163,7 +169,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
               </ul>
             </div>
 
-            <div className="mt-4 rounded-md border border-border bg-ochre-soft p-4 sm:p-5">
+            <div className="mt-4 rounded-md border border-ochre/40 bg-ochre-soft p-4 sm:p-5">
               <h3
                 id="where-the-disagreement-lies"
                 className="mt-0 mb-2 font-sans text-[0.95rem] font-semibold tracking-wide text-ochre uppercase"
@@ -210,22 +216,11 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
           {/* -------------------------------------------------------------- */}
 
           <section aria-labelledby="used-in-the-case" className="mt-12 border-t border-border pt-6">
-            <h2 id="used-in-the-case" className="mt-0 mb-3 text-[1.2rem]">
+            <h2 id="used-in-the-case" className="mt-0 mb-3 text-[1.18rem]">
               Where this passage appears in the case
             </h2>
             {usedIn.length > 0 ? (
-              <ul className="m-0 list-none space-y-2 p-0 font-sans text-[0.95rem]">
-                {usedIn.map(section => (
-                  <li key={section.id}>
-                    <Link href={section.route}>
-                      <span className="text-ink-subtle">{section.id}</span> {section.title}
-                    </Link>
-                    <span className="mt-0.5 block text-[0.9rem] text-ink-muted">
-                      {section.shortSummary}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <SectionLinkList sections={usedIn} />
             ) : (
               <p className="m-0 text-[1rem] text-ink-muted">
                 This passage is treated on its own page rather than inside a numbered part of the
@@ -237,7 +232,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
 
           {related.length > 0 ? (
             <section aria-labelledby="related-passages" className="mt-10">
-              <h2 id="related-passages" className="mt-0 mb-3 text-[1.2rem]">
+              <h2 id="related-passages" className="mt-0 mb-3 text-[1.18rem]">
                 Related passages
               </h2>
               <ul className="m-0 list-none space-y-2 p-0 font-sans text-[0.95rem]">
@@ -253,32 +248,12 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
             </section>
           ) : null}
 
-          {sources.length > 0 ? (
-            <section aria-labelledby="passage-sources" className="mt-10">
-              <h2 id="passage-sources" className="mt-0 mb-3 text-[1.2rem]">
-                Sources consulted for this passage
-              </h2>
-              <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">
-                {sources.map(source => (
-                  <li key={source.id}>
-                    {formatCitation(source)}
-                    {source.url ? (
-                      <>
-                        {' '}
-                        <a href={source.url} rel="noopener noreferrer" target="_blank">
-                          View original
-                          <span className="sr-only"> of {source.title}, opens in a new tab</span>
-                        </a>
-                      </>
-                    ) : null}{' '}
-                    <Link href={`/sources/#${source.id}`} className="text-ink-subtle">
-                      Details
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          ) : null}
+          <SourcesCited
+            sources={sources}
+            headingId="passage-sources"
+            title="Sources consulted for this passage"
+            className="mt-10"
+          />
 
           <footer className="mt-8 border-t border-border pt-4 font-sans text-[0.85rem] text-ink-subtle">
             <p className="m-0">

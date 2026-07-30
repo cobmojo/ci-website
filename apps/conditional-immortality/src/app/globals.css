@@ -447,7 +447,7 @@
   .status-message,
   .mount-reveal,
   .video-frame {
-    animation: reveal-fade var(--motion-reveal) ease;
+    animation: reveal-fade var(--motion-reveal) var(--ease-out-quad);
   }
 
   /*
@@ -741,6 +741,10 @@
     }
 
     .video-play:active .video-play__glyph {
+      /* Tier 2 presses share one clock. The hover growth above keeps the
+         Tier 1 feedback duration; the press itself takes the press token,
+         exactly as `.pressable` does. */
+      transition-duration: var(--motion-press);
       scale: 0.97;
     }
 

@@ -89,7 +89,7 @@ export default function WatchPage() {
       <div className="mx-auto max-w-[80rem] px-4 py-8 sm:px-6 sm:py-10">
         <Breadcrumbs trail={CRUMBS} />
 
-        <div className="max-w-[54rem]">
+        <div className="max-w-[52rem]">
           <header className="mb-8">
             <p className="m-0 mb-2 font-sans text-[0.83rem] font-semibold tracking-wider text-copper-deep uppercase">
               Video overview
@@ -113,7 +113,7 @@ export default function WatchPage() {
             aria-labelledby="chapters-title"
             className="mb-10 rounded-md border border-border bg-paper-raised p-5"
           >
-            <h2 id="chapters-title" className="mt-0 mb-3 text-[1.18rem]">
+            <h2 id="chapters-title" className="mt-0 mb-3 text-[1.12rem]">
               Chapters
             </h2>
             <ol className="m-0 list-none space-y-3 p-0">
@@ -205,6 +205,7 @@ export default function WatchPage() {
                     target="_blank"
                   >
                     Open this moment on YouTube
+                    <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 </p>
               </section>
@@ -215,7 +216,7 @@ export default function WatchPage() {
             aria-labelledby="video-sources-title"
             className="mb-10 border-t border-border pt-6"
           >
-            <h2 id="video-sources-title" className="mt-0 mb-3 text-[1.18rem]">
+            <h2 id="video-sources-title" className="mt-0 mb-3 text-[1.12rem]">
               Sources mentioned in the video
             </h2>
             <p className="m-0 mb-3 font-sans text-[0.92rem] text-ink-muted">
@@ -232,6 +233,7 @@ export default function WatchPage() {
                       {' '}
                       <a href={source.url} rel="noopener noreferrer" target="_blank">
                         Open {hostLabel(source.url)}
+                        <span className="sr-only"> (opens in a new tab)</span>
                       </a>
                     </>
                   ) : null}{' '}

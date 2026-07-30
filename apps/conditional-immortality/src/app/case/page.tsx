@@ -7,6 +7,7 @@ import {
 } from '@ci/content/case'
 import type { CaseGroup, CaseSection } from '@ci/content-schema'
 import { buttonVariants } from '@ci/ui'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   Breadcrumbs,
@@ -36,7 +37,7 @@ const CRUMBS: readonly Crumb[] = [
   { href: '/case/', label: 'The Case' },
 ]
 
-export const metadata = pageMetadata({
+export const metadata: Metadata = pageMetadata({
   title: 'The Case',
   description:
     'A map of the cumulative biblical case for conditional immortality: the method, the six principal claims, a twelve page essential path, and all forty parts grouped by the work they do.',

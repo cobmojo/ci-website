@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { siteConfig } from '@/lib/site-config'
@@ -141,8 +142,8 @@ export default function PrivacyPage() {
               <p className="m-0 mb-3">
                 The case index offers an optional record of which parts you have opened from it. It
                 is stored in your browser’s local storage under a single key,{' '}
-                <code className="break-all font-sans text-[0.95em]">ci:case-reading-progress</code>,
-                and it holds nothing but a list of permanent part identifiers such as S04.
+                <code className="break-all text-[0.95em]">ci:case-reading-progress</code>, and it
+                holds nothing but a list of permanent part identifiers such as S04.
               </p>
               <p className="m-0 mb-3">
                 It never leaves your device. It is not sent to this site, it is not synchronised
@@ -258,24 +259,19 @@ export default function PrivacyPage() {
             </section>
           </div>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/corrections/">Send a correction</Link>
-              </li>
-              <li>
-                <Link href="/accessibility/">What has been tested for accessibility</Link>
-              </li>
-              <li>
-                <Link href="/original-document/">
-                  What is published from the source, and what is not
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/corrections/">Send a correction</Link>
+            </li>
+            <li>
+              <Link href="/accessibility/">What has been tested for accessibility</Link>
+            </li>
+            <li>
+              <Link href="/original-document/">
+                What is published from the source, and what is not
+              </Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

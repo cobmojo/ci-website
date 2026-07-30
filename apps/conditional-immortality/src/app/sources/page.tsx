@@ -1,10 +1,11 @@
 import { getSection } from '@ci/content/case'
 import { formatCitation, sources } from '@ci/content/sources'
 import {
-  type LinkStatus,
+  LINK_STATUS_LABELS,
   PERSPECTIVE_LABELS,
+  PERSPECTIVE_UNSTATED_LABEL,
   type Perspective,
-  type RightsStatus,
+  RIGHTS_STATUS_LABELS,
   SOURCE_TYPE_LABELS,
   type SourceType,
 } from '@ci/content-schema'
@@ -36,27 +37,6 @@ export const metadata = pageMetadata({
   route: '/sources/',
 })
 
-/**
- * Rights and link vocabularies are defined in the content schema but carry no
- * label map there, so the human-readable wording lives here.
- */
-const RIGHTS_STATUS_LABELS: Record<RightsStatus, string> = {
-  'public-domain': 'Public domain',
-  cleared: 'Cleared for use',
-  'permission-needed': 'Permission needed before quoting',
-  'quoted-briefly': 'Quoted briefly with attribution',
-  paraphrased: 'Paraphrased rather than quoted',
-  'link-only': 'Linked rather than quoted',
-}
-
-const LINK_STATUS_LABELS: Record<LinkStatus, string> = {
-  live: 'Link checked and live',
-  redirected: 'Link redirects to a new location',
-  'archived-only': 'Available through an archive only',
-  dead: 'Link no longer resolves',
-  'not-checked': 'Link not checked',
-}
-
 const UNSTATED_PERSPECTIVE = 'unstated'
 
 function perspectiveValue(perspective?: Perspective): string {
@@ -64,7 +44,7 @@ function perspectiveValue(perspective?: Perspective): string {
 }
 
 function perspectiveLabel(perspective?: Perspective): string {
-  return perspective ? PERSPECTIVE_LABELS[perspective] : 'Perspective not stated'
+  return perspective ? PERSPECTIVE_LABELS[perspective] : PERSPECTIVE_UNSTATED_LABEL
 }
 
 /** Only the facets that actually occur in the library are offered. */
@@ -87,7 +67,7 @@ const PERSPECTIVE_OPTIONS: readonly FilterOption[] = (() => {
       value,
       label: `${
         value === UNSTATED_PERSPECTIVE
-          ? 'Perspective not stated'
+          ? PERSPECTIVE_UNSTATED_LABEL
           : PERSPECTIVE_LABELS[value as Perspective]
       } (${count})`,
     }))
@@ -162,7 +142,7 @@ export default function SourcesPage() {
                   data-source-perspective={perspectiveValue(source.perspective)}
                   className="rounded-md border border-border bg-paper-raised p-5"
                 >
-                  <h3 className="mt-0 mb-1 text-[1.08rem] leading-snug">
+                  <h3 className="mt-0 mb-1 text-[1.1rem] leading-snug">
                     {source.author ? (
                       <span className="text-ink-muted">{source.author}. </span>
                     ) : null}
@@ -253,6 +233,7 @@ export default function SourcesPage() {
                         <dd className="m-0 break-words text-ink">
                           <a href={source.url} rel="noopener noreferrer" target="_blank">
                             {source.url}
+                            <span className="sr-only"> (opens in a new tab)</span>
                           </a>
                         </dd>
                       </div>
@@ -263,6 +244,7 @@ export default function SourcesPage() {
                         <dd className="m-0 break-words text-ink">
                           <a href={source.archiveUrl} rel="noopener noreferrer" target="_blank">
                             {source.archiveUrl}
+                            <span className="sr-only"> (opens in a new tab)</span>
                           </a>
                         </dd>
                       </div>
@@ -277,6 +259,7 @@ export default function SourcesPage() {
                             target="_blank"
                           >
                             {source.sourceDocumentUrl}
+                            <span className="sr-only"> (opens in a new tab)</span>
                           </a>
                         </dd>
                       </div>

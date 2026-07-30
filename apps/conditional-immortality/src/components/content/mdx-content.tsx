@@ -14,6 +14,7 @@ import {
   Hebrew,
 } from '@/components/content/language'
 import { Scripture, TranslationNote } from '@/components/content/scripture'
+import { rehypeDemoteHeadings } from '@/lib/rehype-demote-headings'
 import { rehypePrefixIds } from '@/lib/rehype-prefix-ids'
 import { rehypeScrollableTables } from '@/lib/rehype-scrollable-tables'
 
@@ -102,6 +103,7 @@ const components = {
 export function MdxContent({
   source,
   idPrefix,
+  demoteHeadings = false,
 }: {
   source: string
   /**
@@ -110,23 +112,29 @@ export function MdxContent({
    * sections deliberately reuse heading text.
    */
   idPrefix?: string
+  /**
+   * Push every heading in the body down one level. Needed only where the
+   * rendering page has already used the body's top level for its own section
+   * titles, as on the continuous edition.
+   */
+  demoteHeadings?: boolean
 }) {
+  // Unified calls a plugin with its options and uses the return value as the
+  // transformer, so options go in a tuple. Passing an already-applied factory
+  // hands it the transformer instead, which it then calls with no tree.
+  const rehypePlugins: NonNullable<
+    NonNullable<Parameters<typeof MDXRemote>[0]['options']>['mdxOptions']
+  >['rehypePlugins'] = [rehypeSlug, rehypeScrollableTables]
+  if (idPrefix) rehypePlugins.push([rehypePrefixIds, idPrefix])
+  if (demoteHeadings) rehypePlugins.push(rehypeDemoteHeadings)
+
   return (
     <MDXRemote
       source={source}
       components={components}
       options={{
         parseFrontmatter: false,
-        mdxOptions: {
-          remarkPlugins: [remarkGfm],
-          // Unified calls a plugin with its options and uses the return value
-          // as the transformer, so options go in a tuple. Passing an
-          // already-applied factory hands it the transformer instead, which it
-          // then calls with no tree.
-          rehypePlugins: idPrefix
-            ? [rehypeSlug, rehypeScrollableTables, [rehypePrefixIds, idPrefix]]
-            : [rehypeSlug, rehypeScrollableTables],
-        },
+        mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins },
       }}
     />
   )

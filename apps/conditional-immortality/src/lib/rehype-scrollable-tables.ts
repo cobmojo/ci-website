@@ -89,7 +89,10 @@ export function rehypeScrollableTables() {
           dataTableScroll: '',
           className: ['table-scroll'],
           tabIndex: 0,
-          role: 'region',
+          // `group`, not `region`: a labelled group conveys the same grouping
+          // without adding a landmark, and the Scripture index alone renders
+          // dozens of these. Matches `ScrollRegion` for hand-written wrappers.
+          role: 'group',
           'aria-label': captionText(node) ?? 'Table',
         },
         // The table keeps whichever node shape it already had.

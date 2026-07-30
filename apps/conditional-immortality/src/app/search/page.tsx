@@ -117,8 +117,10 @@ export default async function SearchPage({
           10:28, Matt 10 28 and Mt. 10:28.
         </p>
 
-        {/* A plain GET form: no JavaScript required, and the URL carries state. */}
-        <form action="/search/" method="get" className="mb-8">
+        {/* A plain GET form: no JavaScript required, and the URL carries state.
+            Hidden in print: a paper copy of a results page is the results, not
+            the controls that produced them. */}
+        <form action="/search/" method="get" className="mb-8 print:hidden">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[16rem] flex-1">
               <label
@@ -165,7 +167,9 @@ export default async function SearchPage({
           </fieldset>
 
           <details className="mt-4">
-            <summary className="cursor-pointer font-sans text-[0.9rem] text-navy">
+            {/* The negative margin keeps the disclosure's visual position while
+                the padding gives the summary itself a 44px hit area. */}
+            <summary className="-my-2 cursor-pointer py-2.5 font-sans text-[0.9rem] font-medium text-navy">
               More filters
             </summary>
             <div className="mt-3 grid gap-5 sm:grid-cols-2">
@@ -177,7 +181,7 @@ export default async function SearchPage({
                   {caseGroups.map(group => (
                     <label
                       key={group}
-                      className="inline-flex items-center gap-2 font-sans text-[0.88rem] text-ink-muted"
+                      className="inline-flex items-center gap-2 font-sans text-[0.9rem] text-ink-muted"
                     >
                       <input
                         type="checkbox"
@@ -203,7 +207,7 @@ export default async function SearchPage({
                   id="search-book"
                   name="book"
                   defaultValue={selectedBooks[0] ?? ''}
-                  className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[0.95rem]"
+                  className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
                 >
                   <option value="">Any book</option>
                   {referencedBooks.map(book => (
@@ -242,7 +246,10 @@ export default async function SearchPage({
         </section>
 
         {totalPages > 1 ? (
-          <nav aria-label="Search result pages" className="mt-8 flex items-center gap-3">
+          <nav
+            aria-label="Search result pages"
+            className="mt-8 flex items-center gap-3 print:hidden"
+          >
             {page > 1 ? (
               <Link
                 href={buildHref({ page: String(page - 1) })}

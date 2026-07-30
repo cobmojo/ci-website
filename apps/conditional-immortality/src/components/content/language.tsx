@@ -95,7 +95,10 @@ export function CIReading({ children }: { children: ReactNode }) {
 export function Details({ summary, children }: { summary: string; children: ReactNode }) {
   return (
     <details className="my-5 rounded-md border border-border bg-paper-raised px-4 py-3">
-      <summary className="cursor-pointer font-sans text-[0.95rem] font-medium text-navy">
+      {/* The negative margin swallows the container padding the summary's own
+          padding restores, so the visible layout is unchanged while the
+          summary's hit area reaches the 44px floor. */}
+      <summary className="-my-3 cursor-pointer py-3 font-sans text-[0.95rem] font-medium text-navy">
         {summary}
       </summary>
       <div className="mt-3 [&>*+*]:mt-3">{children}</div>

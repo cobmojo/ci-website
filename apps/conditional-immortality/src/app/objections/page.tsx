@@ -22,8 +22,7 @@ const CRUMBS: readonly Crumb[] = [
 
 export const metadata = pageMetadata({
   title: 'Objections',
-  description:
-    'Seven serious objections to conditional immortality, each stated at its strongest as a question before it is answered, with a short summary of the response.',
+  description: `${objectionSections.length} serious objections to conditional immortality, each stated at its strongest as a question before it is answered, with a short summary of the response.`,
   route: '/objections/',
 })
 
@@ -60,7 +59,7 @@ export default function ObjectionsIndexPage() {
                 id={section.id}
                 className="rounded-md border border-border bg-paper-raised p-5"
               >
-                <h3 className="mt-0 mb-2 text-[1.14rem] leading-snug">
+                <h3 className="mt-0 mb-2 text-[1.1rem] leading-snug">
                   <Link href={section.route} className="font-sans">
                     {section.question ?? section.title}
                   </Link>

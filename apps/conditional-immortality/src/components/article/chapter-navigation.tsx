@@ -60,7 +60,9 @@ export function CaseChapterNavigation({
 export function CaseChapterDisclosure({ currentId }: { currentId?: string }) {
   return (
     <details className="mb-6 rounded-md border border-border bg-paper-raised px-4 py-3 lg:hidden print:hidden">
-      <summary className="cursor-pointer font-sans text-[0.92rem] font-medium text-navy">
+      {/* Negative margin + matching padding: the visible layout is unchanged
+          while the summary's hit area reaches the 44px floor. */}
+      <summary className="-my-3 cursor-pointer py-3 font-sans text-[0.92rem] font-medium text-navy">
         Case contents
       </summary>
       <div className="mt-3 max-h-[60vh] overflow-y-auto">
