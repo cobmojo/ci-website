@@ -13,7 +13,7 @@ import type { ScriptureQuotation } from '@ci/content-schema'
  * of this size quotes Scripture far beyond what incidental-quotation
  * allowances for copyrighted modern translations would permit.
  *
- * Retrieved 2026-07-29. Regenerate with
+ * GENERATED FILE — do not edit by hand. Retrieved 2026-07-29. Regenerate with
  * `bun run scripts/conditional-immortality/fetch-scripture.ts`.
  */
 
@@ -3432,9 +3432,23 @@ const PASSAGES: Record<string, ScripturePassage> = {
   },
 }
 
-/** Look up a passage by its normalised reference. */
+/**
+ * Look up a passage by its normalised reference.
+ *
+ * `PASSAGES` is an object literal, so a bare index reaches its prototype:
+ * `getScripture('constructor')` returned `Object` itself, and `hasScripture`
+ * agreed that it existed. `requireScripture` therefore did not throw for it
+ * either, and `<Scripture reference="constructor">` would have rendered a
+ * passage with no reference and no text — quietly defeating the one guarantee
+ * this module exists to make. Every lookup goes through an own-property check.
+ */
+function ownPassage(reference: string): ScripturePassage | undefined {
+  const key = reference.trim()
+  return Object.hasOwn(PASSAGES, key) ? PASSAGES[key] : undefined
+}
+
 export function getScripture(reference: string): ScripturePassage | undefined {
-  return PASSAGES[reference.trim()]
+  return ownPassage(reference)
 }
 
 /**
@@ -3445,19 +3459,19 @@ export function getScripture(reference: string): ScripturePassage | undefined {
  * rendering nothing.
  */
 export function requireScripture(reference: string): ScripturePassage {
-  const passage = PASSAGES[reference.trim()]
+  const passage = ownPassage(reference)
   if (!passage) {
     throw new Error(
       `No verified Scripture text for "${reference}". Add it to ` +
-        'scripts/conditional-immortality/fetch-scripture.ts and re-run that script. ' +
-        'Never hand-write Scripture text.',
+        'ADDITIONAL_REFERENCES in scripts/conditional-immortality/fetch-scripture.ts ' +
+        'and re-run that script. Never hand-write Scripture text.',
     )
   }
   return passage
 }
 
 export function hasScripture(reference: string): boolean {
-  return reference.trim() in PASSAGES
+  return ownPassage(reference) !== undefined
 }
 
 export const scriptureReferences: readonly string[] = Object.keys(PASSAGES)

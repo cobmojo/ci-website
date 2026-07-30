@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./bible": "./src/bible.ts"
+    "./bible": "./src/bible.ts",
+    "./feedback": "./src/feedback-vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

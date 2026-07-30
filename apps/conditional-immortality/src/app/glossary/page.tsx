@@ -194,7 +194,7 @@ export default function GlossaryPage() {
           <h2 id="language-notes-title" className="mt-0 mb-3 text-[1.3rem]">
             Original-language notes
           </h2>
-          <p className="m-0 mb-6 max-w-[var(--spacing-measure)] text-[1.05rem] text-ink-muted">
+          <p className="m-0 mb-6 text-[1.05rem] text-ink-muted">
             A note exists here only where the case makes an argument from a Greek or Hebrew word.
             Each gives the standard range of meaning first, then the argument made from the word in
             its context, then how other interpreters read the same word. None of them treats a root

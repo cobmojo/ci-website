@@ -11,6 +11,12 @@
  * repository ever containing the thing it is protecting.
  *
  * Run after `next build`. Exits non-zero on any hit.
+ *
+ * Two groups, with different failure semantics. Build output must exist and
+ * yield files, or the scan has proved nothing and says so. The repository group
+ * comes from `git ls-files` rather than a list of directories, so it cannot fall
+ * behind as the repository grows — the migration ledger, which holds 1,034
+ * migrated comment entries, is the likeliest place for a personal detail to sit.
  */
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
@@ -47,14 +53,14 @@ const CANDIDATE_PATTERNS: RegExp[] = [
   /\b\d{10}\b/g,
 ]
 
-const SCAN_DIRECTORIES = [
+/**
+ * The build output: everything a visitor can reach, and so the group whose
+ * absence has to be an error rather than a quiet zero.
+ */
+const BUILD_OUTPUT_ROOTS = [
   join(APP_ROOT, '.next', 'server'),
   join(APP_ROOT, '.next', 'static'),
   join(APP_ROOT, 'public'),
-  join(REPO_ROOT, 'packages', 'ci-content', 'case'),
-  join(REPO_ROOT, 'packages', 'ci-content', 'appendices'),
-  join(REPO_ROOT, 'packages', 'ci-content', 'src'),
-  join(APP_ROOT, 'src'),
 ]
 
 const TEXT_EXTENSIONS = new Set([
@@ -75,33 +81,36 @@ const TEXT_EXTENSIONS = new Set([
   '.map',
   '.svg',
   '.webmanifest',
+  '.csv',
+  '.yml',
+  '.yaml',
   '',
 ])
 
 interface Hit {
   readonly file: string
   readonly what: string
+  readonly where: string
   readonly context: string
 }
 
 const hits: Hit[] = []
-let filesScanned = 0
 
 function digest(value: string): string {
   return createHash('sha256').update(value.toLowerCase()).digest('hex')
 }
 
-function scanFile(path: string) {
+/** Scan one file. Returns whether it was actually read. */
+function scanFile(path: string, where: string): boolean {
   const ext = extname(path).toLowerCase()
-  if (!TEXT_EXTENSIONS.has(ext)) return
+  if (!TEXT_EXTENSIONS.has(ext)) return false
 
   let content: string
   try {
     content = readFileSync(path, 'utf8')
   } catch {
-    return
+    return false
   }
-  filesScanned += 1
 
   for (const pattern of CANDIDATE_PATTERNS) {
     pattern.lastIndex = 0
@@ -115,15 +124,18 @@ function scanFile(path: string) {
       hits.push({
         file: relative(REPO_ROOT, path),
         what,
+        where,
         // The value itself is never echoed, only its surroundings.
         context: `…${before}[REDACTED]…`,
       })
     }
   }
+  return true
 }
 
-function walk(dir: string) {
-  if (!existsSync(dir)) return
+function walk(dir: string, where: string): number {
+  if (!existsSync(dir)) return 0
+  let scanned = 0
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry === '.git' || entry === 'cache') continue
     const path = join(dir, entry)
@@ -133,12 +145,43 @@ function walk(dir: string) {
     } catch {
       continue
     }
-    if (stats.isDirectory()) walk(path)
-    else scanFile(path)
+    if (stats.isDirectory()) scanned += walk(path, where)
+    else if (scanFile(path, where)) scanned += 1
   }
+  return scanned
 }
 
-for (const dir of SCAN_DIRECTORIES) walk(dir)
+/* ------------------------------------------------------------------ *
+ * Group 1: build output. Must exist, must be non-empty.
+ * ------------------------------------------------------------------ */
+
+let outputFiles = 0
+const missingOutputRoots: string[] = []
+for (const root of BUILD_OUTPUT_ROOTS) {
+  if (!existsSync(root)) missingOutputRoots.push(relative(REPO_ROOT, root))
+  outputFiles += walk(root, 'build output')
+}
+
+/* ------------------------------------------------------------------ *
+ * Group 2: everything committed to the repository.
+ * ------------------------------------------------------------------ */
+
+function committedFiles(): string[] | undefined {
+  const result = Bun.spawnSync(['git', 'ls-files', '-z'], { cwd: REPO_ROOT, stdout: 'pipe' })
+  if (result.exitCode !== 0) return undefined
+  return new TextDecoder()
+    .decode(result.stdout)
+    .split('\0')
+    .filter(entry => entry.length > 0)
+}
+
+const tracked = committedFiles()
+let repositoryFiles = 0
+if (tracked) {
+  for (const entry of tracked) {
+    if (scanFile(join(REPO_ROOT, entry), 'repository')) repositoryFiles += 1
+  }
+}
 
 /* ------------------------------------------------------------------ *
  * The private archive must stay out of the published app.
@@ -155,6 +198,7 @@ if (existsSync(privateSource) && existsSync(publicDir)) {
     hits.push({
       file: relative(REPO_ROOT, join(publicDir, entry)),
       what: 'private source artefact inside public/',
+      where: 'build output',
       context: 'The raw source material must not be served publicly.',
     })
   }
@@ -162,25 +206,44 @@ if (existsSync(privateSource) && existsSync(publicDir)) {
 
 console.log('PII scan')
 console.log('========')
-console.log(`  files scanned  ${filesScanned}`)
-console.log(
-  `  directories    ${SCAN_DIRECTORIES.filter(existsSync).length} of ${SCAN_DIRECTORIES.length} present`,
-)
+console.log(`  build output   ${outputFiles} file(s)`)
+console.log(`  repository     ${repositoryFiles} file(s)${tracked ? '' : ' (git unavailable)'}`)
 console.log('')
 
-if (filesScanned === 0) {
-  console.error('No files were scanned. Run `bun run build` before the PII scan.')
+/* Fail closed: without the build output this scan has proved nothing. */
+if (missingOutputRoots.length > 0) {
+  console.error('Build output is missing, so nothing published has been checked:')
+  for (const root of missingOutputRoots) console.error(`  x ${root}`)
+  console.error('Run `bun run build` before the PII scan.')
+  process.exit(1)
+}
+
+if (outputFiles === 0) {
+  console.error('Build output contains no readable files, so nothing published has been checked.')
+  console.error('Run `bun run build` before the PII scan.')
+  process.exit(1)
+}
+
+if (!tracked) {
+  console.error('`git ls-files` failed, so the committed files have not been checked.')
+  process.exit(1)
+}
+
+if (repositoryFiles === 0) {
+  console.error('No committed files were read, which cannot be right. Refusing to report success.')
   process.exit(1)
 }
 
 if (hits.length > 0) {
   console.error(`${hits.length} leak(s) of source contact details:`)
   for (const hit of hits) {
-    console.error(`  x ${hit.file}`)
+    console.error(`  x ${hit.file}  (${hit.where})`)
     console.error(`      ${hit.what}`)
     console.error(`      ${hit.context}`)
   }
   process.exit(1)
 }
 
-console.log('No source contact details found in any scanned output.')
+console.log(
+  `No source contact details in ${outputFiles} built file(s) or ${repositoryFiles} committed file(s).`,
+)

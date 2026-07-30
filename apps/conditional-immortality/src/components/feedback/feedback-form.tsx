@@ -1,11 +1,15 @@
 'use client'
 
+// Deliberately the `/feedback` entry point rather than the package root. The
+// root is where every Zod schema in the project lives, and importing these four
+// values from it put Zod and the whole schema graph into this page's bundle —
+// 369,610 bytes of it, for a form that works with scripting switched off.
 import {
   FEEDBACK_TYPE_LABELS,
   type FeedbackType,
   feedbackTypes,
   type PublicationConsent,
-} from '@ci/content-schema'
+} from '@ci/content-schema/feedback'
 import { useForm } from '@tanstack/react-form'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'

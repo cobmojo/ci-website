@@ -38,8 +38,13 @@ export function ScrollRegion({
   children: ReactNode
 }) {
   return (
+    // Both rules below fire on the technique described above, so both are
+    // suppressed deliberately: a fieldset is a form-control grouping, and the
+    // tabindex is what makes the region keyboard-scrollable at all.
+    // biome-ignore lint/a11y/useSemanticElements: a fieldset is a form grouping
     <div
       className={cn('overflow-x-auto overscroll-x-contain', className)}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1, see above
       tabIndex={0}
       role="group"
       aria-label={label}

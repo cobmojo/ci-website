@@ -30,7 +30,8 @@ incidental-quotation allowances do not cover.
   WEB text from `packages/ci-content/src/scripture/web-text.ts` and labels the
   translation itself. This removes any possibility of a misquoted verse.
 - If a reference is missing from the corpus the build fails with a clear error.
-  Add it to `scripts/conditional-immortality/fetch-scripture.ts` and re-run that
+  Add it to `ADDITIONAL_REFERENCES` in
+  `scripts/conditional-immortality/fetch-scripture.ts` and re-run that
   script. Do not hand-write the text.
 - The source document quotes ESV, NIV and NKJV heavily. **Do not reproduce those
   renderings at length.** Where the argument turns on a specific modern

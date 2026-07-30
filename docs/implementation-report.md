@@ -90,18 +90,21 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-225 tests, all passing.
+455 tests, all passing.
 
 | Suite | Count |
 |---|---|
-| Unit, `@ci/content-schema` | 37 |
-| Unit, `@ci/content` | 59 |
-| Unit, `@ci/search` | 27 |
-| End-to-end, desktop and mobile | 70 |
+| Unit, `@ci/content-schema` | 46 |
+| Unit, `@ci/content` | 64 |
+| Unit, `@ci/search` | 39 |
+| Unit, `conditional-immortality` | 88 |
+| End-to-end, desktop and mobile | 186 |
 | Accessibility, axe plus structural | 32 |
 
-Plus five gates that fail the build: content validation, the content audit, the
-PII scan, the link check and the production build itself.
+Plus six gates that fail the build: content validation, the content audit, the
+PII scan, the link check, the first-load JavaScript budget and the production
+build itself. All of them, and both browser suites, run on every push through
+`.github/workflows/ci.yml`.
 
 Nothing is skipped, no axe rule is disabled, and no assertion was weakened to
 get a pass.

@@ -54,7 +54,7 @@ export default function FullCasePage() {
               Continuous edition
             </p>
             <h1 className="mt-0 mb-4">Full Case</h1>
-            <p className="m-0 max-w-[var(--spacing-measure)] text-[1.13rem] leading-[1.6] text-ink-muted">
+            <p className="m-0 text-[1.13rem] leading-[1.6] text-ink-muted">
               Every part of the case in canonical order on a single page, assembled from the same
               text as the individual pages. About {totalMinutes} {pluralise(totalMinutes, 'minute')}{' '}
               of reading, or roughly two hours at a careful pace.
@@ -76,7 +76,7 @@ export default function FullCasePage() {
             <h2 id="printing-title" className="mt-0 mb-2 text-[1.12rem]">
               Printing or saving as PDF
             </h2>
-            <p className="m-0 mb-3 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+            <p className="m-0 mb-3 text-[1rem] text-ink-muted">
               Use the print command in your browser, Ctrl and P on Windows or Command and P on a
               Mac, then choose Save as PDF. Navigation, the contents panel and every interactive
               control are removed from the printed copy, each section starts on a new page, and the
@@ -140,9 +140,7 @@ export default function FullCasePage() {
               >
                 {item.section.title}
               </h2>
-              <p className="m-0 mb-6 max-w-[var(--spacing-measure)] text-[1.06rem] text-ink-muted">
-                {item.section.thesis}
-              </p>
+              <p className="m-0 mb-6 text-[1.06rem] text-ink-muted">{item.section.thesis}</p>
 
               <article
                 className="prose-article article-body max-w-[var(--spacing-measure)]"
@@ -165,7 +163,7 @@ export default function FullCasePage() {
             <h2 id="bibliography" className="mt-0 mb-3 text-[1.7rem] sm:text-[2.05rem]">
               Bibliography
             </h2>
-            <p className="m-0 mb-5 max-w-[var(--spacing-measure)] text-[1.06rem] text-ink-muted">
+            <p className="m-0 mb-5 text-[1.06rem] text-ink-muted">
               Every source in the library, whether it argues for conditional immortality, against
               it, or neither. Sources are listed by author, or by title where there is no named
               author.

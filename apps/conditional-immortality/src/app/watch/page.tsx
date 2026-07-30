@@ -95,9 +95,7 @@ export default function WatchPage() {
               Video overview
             </p>
             <h1 className="mt-0 mb-4">{video.siteTitle}</h1>
-            <p className="m-0 max-w-[var(--spacing-measure)] text-[1.13rem] leading-[1.6] text-ink-muted">
-              {video.description}
-            </p>
+            <p className="m-0 text-[1.13rem] leading-[1.6] text-ink-muted">{video.description}</p>
           </header>
 
           <figure className="m-0 mb-10">
@@ -161,7 +159,7 @@ export default function WatchPage() {
             <h2 id="transcript-title" className="mt-0 mb-2 text-[1.35rem]">
               Transcript
             </h2>
-            <p className="m-0 mb-6 max-w-[var(--spacing-measure)] font-sans text-[0.92rem] text-ink-muted">
+            <p className="m-0 mb-6 font-sans text-[0.92rem] text-ink-muted">
               {video.transcriptSource} Retrieved{' '}
               <time dateTime={video.transcriptRetrievedAt}>
                 {formatLongDate(video.transcriptRetrievedAt)}
@@ -195,10 +193,7 @@ export default function WatchPage() {
                 ) : null}
 
                 {cuesToParagraphs(segment.cues).map(paragraph => (
-                  <p
-                    key={`${segment.id}-${paragraph.slice(0, 24)}`}
-                    className="mt-3 mb-0 max-w-[var(--spacing-measure)]"
-                  >
+                  <p key={`${segment.id}-${paragraph.slice(0, 24)}`} className="mt-3 mb-0">
                     {paragraph}
                   </p>
                 ))}
@@ -223,7 +218,7 @@ export default function WatchPage() {
             <h2 id="video-sources-title" className="mt-0 mb-3 text-[1.18rem]">
               Sources mentioned in the video
             </h2>
-            <p className="m-0 mb-3 max-w-[var(--spacing-measure)] font-sans text-[0.92rem] text-ink-muted">
+            <p className="m-0 mb-3 font-sans text-[0.92rem] text-ink-muted">
               The closing seconds point viewers to two places for further reading. Both are
               conditionalist or multi-view sources, and both are listed in full in the source
               library.
@@ -255,7 +250,7 @@ export default function WatchPage() {
             <h2 id="transcript-download-title" className="mt-0 mb-2 text-[1.12rem]">
               Take the transcript with you
             </h2>
-            <p className="m-0 mb-3 max-w-[var(--spacing-measure)] text-[1rem] text-ink-muted">
+            <p className="m-0 mb-3 text-[1rem] text-ink-muted">
               The whole transcript is also available as a plain text file with the chapter headings
               and timestamps kept in place.
             </p>

@@ -7,6 +7,7 @@ import {
   referenceSlug,
   referenceSortKey,
 } from '../bible'
+import { LONGEST_CHAPTER, VERSE_COUNTS } from '../versification'
 
 describe('the canon', () => {
   it('has all sixty-six books in order', () => {
@@ -33,6 +34,38 @@ describe('the canon', () => {
         seen.set(alias, book.name)
       }
     }
+  })
+})
+
+describe('the versification table', () => {
+  it('covers every book, with the chapter count the canon declares', () => {
+    for (const book of BIBLE_BOOKS) {
+      const counts = VERSE_COUNTS[book.name]
+      expect(counts, `${book.name} is missing from the table`).toBeDefined()
+      expect(counts, book.name).toHaveLength(book.chapters)
+    }
+    expect(Object.keys(VERSE_COUNTS)).toHaveLength(66)
+  })
+
+  it('gives every chapter a positive verse count', () => {
+    for (const [book, counts] of Object.entries(VERSE_COUNTS)) {
+      counts.forEach((count, index) => {
+        expect(Number.isInteger(count), `${book} ${index + 1}`).toBe(true)
+        expect(count, `${book} ${index + 1}`).toBeGreaterThan(0)
+      })
+    }
+  })
+
+  it('totals the 1,189 chapters of the Protestant canon', () => {
+    const chapters = Object.values(VERSE_COUNTS).reduce((sum, c) => sum + c.length, 0)
+    expect(chapters).toBe(1189)
+  })
+
+  it('names Psalm 119 as the longest chapter', () => {
+    const longest = Math.max(...Object.values(VERSE_COUNTS).flatMap(counts => [...counts]))
+    expect(longest).toBe(LONGEST_CHAPTER)
+    expect(LONGEST_CHAPTER).toBe(176)
+    expect(VERSE_COUNTS.Psalms?.[118]).toBe(176)
   })
 })
 
@@ -103,6 +136,51 @@ describe('reference parsing', () => {
     expect(parseReference('Matthew 10:28-20')).toBeUndefined()
   })
 
+  it('reads a range with no colon as a range of chapters', () => {
+    const range = parseReference('Revelation 20-22')
+    expect(range?.chapter).toBe(20)
+    expect(range?.chapterEnd).toBe(22)
+    expect(range?.verseStart).toBeUndefined()
+    expect(range?.verseEnd).toBeUndefined()
+    expect(range?.normalized).toBe('Revelation 20-22')
+  })
+
+  it('keeps a chapter range and a verse distinct when the numbers match', () => {
+    // "Genesis 1-3" used to normalise to "Genesis 1" — dropping the 3
+    // entirely — and slug to "genesis-1-3", which is the slug for Genesis 1:3.
+    // Two different passages, one identity.
+    const chapters = parseReference('Genesis 1-3')
+    const verse = parseReference('Genesis 1:3')
+    expect(chapters?.normalized).toBe('Genesis 1-3')
+    expect(verse?.normalized).toBe('Genesis 1:3')
+    expect(chapters?.slug).not.toBe(verse?.slug)
+    expect(verse?.slug).toBe('genesis-1-3')
+  })
+
+  it('rejects a verse beyond the end of its own chapter', () => {
+    // The bound used to be the length of the longest chapter in the Bible
+    // (Psalm 119), so any verse number up to 176 passed in any chapter.
+    expect(parseReference('Matthew 10:100')).toBeUndefined()
+    expect(parseReference('Genesis 1:32')).toBeUndefined()
+    expect(parseReference('Psalm 23:7')).toBeUndefined()
+    expect(parseReference('Revelation 22:22')).toBeUndefined()
+    expect(parseReference('Jude 26')).toBeUndefined()
+  })
+
+  it('accepts the last verse of a chapter', () => {
+    expect(parseReference('Matthew 10:42')?.normalized).toBe('Matthew 10:42')
+    expect(parseReference('Genesis 1:31')?.normalized).toBe('Genesis 1:31')
+    expect(parseReference('Psalm 23:6')?.normalized).toBe('Psalms 23:6')
+    expect(parseReference('Psalm 119:176')?.normalized).toBe('Psalms 119:176')
+    expect(parseReference('Revelation 22:21')?.normalized).toBe('Revelation 22:21')
+    expect(parseReference('Jude 25')?.normalized).toBe('Jude 1:25')
+  })
+
+  it('bounds the end of a verse range by the chapter too', () => {
+    expect(parseReference('Psalm 23:1-6')?.normalized).toBe('Psalms 23:1-6')
+    expect(parseReference('Psalm 23:1-7')).toBeUndefined()
+  })
+
   it('rejects prose that is not a reference', () => {
     expect(parseReference('destroy soul and body')).toBeUndefined()
     expect(parseReference('unquenchable fire')).toBeUndefined()
@@ -123,14 +201,22 @@ describe('reference parsing', () => {
 
 describe('formatting and sorting', () => {
   it('formats chapter, verse and range forms', () => {
-    expect(formatReference('Mark', 9)).toBe('Mark 9')
-    expect(formatReference('Mark', 9, 48)).toBe('Mark 9:48')
-    expect(formatReference('Mark', 9, 42, 48)).toBe('Mark 9:42-48')
+    expect(formatReference({ book: 'Mark', chapter: 9 })).toBe('Mark 9')
+    expect(formatReference({ book: 'Mark', chapter: 9, verseStart: 48 })).toBe('Mark 9:48')
+    expect(formatReference({ book: 'Mark', chapter: 9, verseStart: 42, verseEnd: 48 })).toBe(
+      'Mark 9:42-48',
+    )
+    expect(formatReference({ book: 'Mark', chapter: 9, chapterEnd: 11 })).toBe('Mark 9-11')
   })
 
   it('builds url-safe slugs', () => {
-    expect(referenceSlug('1 Corinthians', 15, 42, 44)).toBe('1-corinthians-15-42-44')
-    expect(referenceSlug('Song of Solomon', 8, 6)).toBe('song-of-solomon-8-6')
+    expect(
+      referenceSlug({ book: '1 Corinthians', chapter: 15, verseStart: 42, verseEnd: 44 }),
+    ).toBe('1-corinthians-15-42-44')
+    expect(referenceSlug({ book: 'Song of Solomon', chapter: 8, verseStart: 6 })).toBe(
+      'song-of-solomon-8-6',
+    )
+    expect(referenceSlug({ book: 'Mark', chapter: 9, chapterEnd: 11 })).toBe('mark-9-to-11')
   })
 
   it('sorts canonically across books', () => {

@@ -264,7 +264,8 @@ for (const section of caseSections) {
     if (!hasScripture(reference)) {
       fail(
         `${section.id} renders <Scripture reference="${reference}" />, which is not in the ` +
-          'verified corpus. Add it to scripts/conditional-immortality/fetch-scripture.ts.',
+          'verified corpus. Add it to ADDITIONAL_REFERENCES in ' +
+          'scripts/conditional-immortality/fetch-scripture.ts.',
       )
     }
   }

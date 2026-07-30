@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { buildSearchIndex } from '../build-index'
 import {
   expandQuery,
   expandTerm,
@@ -6,6 +7,7 @@ import {
   scriptureQueryVariants,
   search,
 } from '../index'
+import { normalise, normaliseWithMap } from '../query'
 import type { SearchDoc } from '../types'
 
 function doc(overrides: Partial<SearchDoc> & Pick<SearchDoc, 'id' | 'title'>): SearchDoc {
@@ -219,6 +221,40 @@ describe('excerpts and highlighting', () => {
     const segments = highlightSegments('nothing here', ['absent'])
     expect(segments).toEqual([{ text: 'nothing here', matched: false }])
   })
+
+  // The run is located in the normalised text but marked in the original, so
+  // anything that changes the length between the two shifts every later match.
+  const marked = (text: string, terms: string[]) =>
+    highlightSegments(text, terms)
+      .filter(segment => segment.matched)
+      .map(segment => segment.text)
+
+  it('marks the term itself when a run of spaces precedes it', () => {
+    expect(marked('The  fire   is unquenchable', ['unquenchable'])).toEqual(['unquenchable'])
+  })
+
+  it('marks the term itself when the text has leading whitespace', () => {
+    expect(marked('  leading space then unquenchable', ['unquenchable'])).toEqual(['unquenchable'])
+  })
+
+  it('marks the term itself when an accented word precedes it', () => {
+    // ή decomposes to η + a combining accent, so the normalised text is one
+    // character longer than the original from this point on.
+    expect(marked('the Greek word ψυχή means soul', ['soul'])).toEqual(['soul'])
+    expect(marked('αἰώνιος is rendered eternal', ['eternal'])).toEqual(['eternal'])
+    expect(marked('Fudge’s café — the second death', ['death'])).toEqual(['death'])
+  })
+
+  it('marks a term that is itself accented', () => {
+    expect(marked('the Greek ψυχή is the soul', ['ψυχή'])).toEqual(['ψυχή'])
+  })
+
+  it('keeps every character when whitespace and accents are both present', () => {
+    const text = '  Sheol,  the  grave — ψυχή  and  destruction.  '
+    const segments = highlightSegments(text, ['destruction', 'grave'])
+    expect(segments.map(s => s.text).join('')).toBe(text)
+    expect(segments.filter(s => s.matched).map(s => s.text)).toEqual(['grave', 'destruction'])
+  })
 })
 
 describe('transcript results', () => {
@@ -234,5 +270,210 @@ describe('transcript results', () => {
     // The transcript should appear, but authored pages carry more weight when
     // both match, because the transcript is a secondary surface.
     expect(results.length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * Two implementations of one rule: ranking uses `normalise`, highlighting uses
+ * `normaliseWithMap`, so a disagreement puts a highlight where the ranker never
+ * matched.
+ */
+describe('the two normalisers agree', () => {
+  const SAMPLES = [
+    '',
+    '   ',
+    '\t\n\r ',
+    'plain ascii text',
+    '  leading and trailing  ',
+    'runs   of    spaces',
+    'line\nbreak\tand\ttabs',
+    'non\u00a0breaking\u00a0space',
+    'en\u2002quad\u2003em\u2004three\u3000ideographic',
+    'curly \u2018single\u2019 and \u201cdouble\u201d quotes',
+    'reversed \u201bquote',
+    'dashes \u2010 \u2011 \u2012 \u2013 \u2014 \u2015 \u2212 done',
+    'caf\u00e9 na\u00efve r\u00e9sum\u00e9',
+    'cafe\u0301 already decomposed',
+    '\u00c4\u00d6\u00dc \u00e4\u00f6\u00fc \u00df',
+    '\u03c8\u03c5\u03c7\u03ae is soul',
+    '\u03b1\u1f30\u03ce\u03bd\u03b9\u03bf\u03c2 is age-long',
+    '\u0398\u0395\u039f\u03a3 \u039b\u039f\u0393\u039f\u03a3',
+    '\u039f \u039b\u039f\u0393\u039f\u03a3 final sigma',
+    '\u05e0\u05b6\u05e4\u05b6\u05e9\u05c1 \u05e9\u05c1\u05b0\u05d0\u05d5\u05b9\u05dc',
+    'ligature \ufb01re and \ufb02ame',
+    'spacing marks \u00a8 \u00b4 \u00af \u00b8 here',
+    'a \u00a8 b',
+    'a  \u00a8  b',
+    'Turkish \u0130stanbul and \u0131',
+    'super\u00b2script and \u00bd fraction',
+    'astral \ud835\udd0a symbol',
+    'emoji \ud83d\udd25 fire',
+    'Roman \u2168 numeral',
+    'mixed \u2018quote\u2019\u00a0\u2014\u00a0and dash',
+  ]
+
+  it('produce the same string for every awkward sample', () => {
+    for (const sample of SAMPLES) {
+      expect(normaliseWithMap(sample).value, JSON.stringify(sample)).toBe(normalise(sample))
+    }
+  })
+
+  it('produce the same string for every field of every document in the index', () => {
+    const { docs } = buildSearchIndex()
+    expect(docs.length).toBeGreaterThan(0)
+    for (const doc of docs) {
+      const fields = [
+        doc.title,
+        doc.summary,
+        doc.body,
+        doc.notes,
+        doc.headings.join(' \u00b7 '),
+        doc.scriptureRefs.join(' \u00b7 '),
+      ]
+      for (const field of fields) {
+        expect(normaliseWithMap(field).value, `${doc.id}: ${field.slice(0, 60)}`).toBe(
+          normalise(field),
+        )
+      }
+    }
+  })
+
+  it('index one source position per character of the normalised text', () => {
+    for (const sample of SAMPLES) {
+      const map = normaliseWithMap(sample)
+      expect(map.start, JSON.stringify(sample)).toHaveLength(map.value.length)
+      expect(map.end, JSON.stringify(sample)).toHaveLength(map.value.length)
+      for (let i = 0; i < map.value.length; i += 1) {
+        const start = map.start[i] ?? -1
+        const end = map.end[i] ?? -1
+        expect(start).toBeGreaterThanOrEqual(0)
+        expect(end).toBeGreaterThan(start)
+        expect(end).toBeLessThanOrEqual(sample.length)
+        // Positions only ever move forward, so a matched run maps to one span.
+        if (i > 0) expect(start).toBeGreaterThanOrEqual(map.start[i - 1] ?? 0)
+      }
+    }
+  })
+})
+
+/**
+ * Random strings over every character class that can make the two disagree:
+ * combining marks, compatibility forms, cased Greek, spacing accents, exotic
+ * whitespace and astral planes. Fixed-seed, so a failure reproduces exactly.
+ */
+describe('the two normalisers agree under fuzzing', () => {
+  const POOL = [
+    ...'abcXYZ019 ',
+    '\t',
+    '\n',
+    '\u00a0',
+    '\u2003',
+    '\u3000',
+    '\u2018',
+    '\u2019',
+    '\u201c',
+    '\u201d',
+    '\u2010',
+    '\u2013',
+    '\u2014',
+    '\u2212',
+    '\u00e9',
+    '\u00c9',
+    '\u0301',
+    '\u0308',
+    '\u0327',
+    '\u00a8',
+    '\u00b4',
+    '\u03a3',
+    '\u03c3',
+    '\u03c2',
+    '\u03b1',
+    '\u1f00',
+    '\u0399',
+    '\u05d0',
+    '\u05b0',
+    '\u05c1',
+    '\u05bc',
+    '\ufb01',
+    '\ufb02',
+    '\u00bd',
+    '\u2168',
+    '\u2160',
+    '\u0130',
+    '\u0131',
+    '\u00df',
+    '\u1e9e',
+    '\u0323',
+    '\u00af',
+    '\u00b8',
+    '\u201b',
+    '\u2011',
+    '\u2015',
+    '\u1f76',
+    '\u03ae',
+    '\u05b8',
+    '\u200b',
+    '\ufeff',
+    '\u2028',
+    '\u2029',
+    '\uff21',
+    '\uff41',
+    '\u212b',
+    '\u00c5',
+    '\ud835\udd0a',
+    '\ud83d\udd25',
+  ]
+
+  it('produce the same string for five thousand random strings', () => {
+    let seed = 0x5eed
+    const next = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0
+      return seed / 0x100000000
+    }
+
+    for (let iteration = 0; iteration < 5000; iteration += 1) {
+      const length = 1 + Math.floor(next() * 24)
+      let sample = ''
+      for (let i = 0; i < length; i += 1) {
+        sample += POOL[Math.floor(next() * POOL.length)] ?? ''
+      }
+      expect(normaliseWithMap(sample).value, JSON.stringify(sample)).toBe(normalise(sample))
+    }
+  })
+})
+
+/** Anything the ranker caches per document has to be independent of the query. */
+describe('caching does not change what search returns', () => {
+  it('returns identical results when the same query is run again', () => {
+    const first = search(CORPUS, 'destroy soul and body')
+    const second = search(CORPUS, 'destroy soul and body')
+    expect(second.total).toBe(first.total)
+    expect(second.usedTerms).toEqual(first.usedTerms)
+    expect(second.results.map(r => [r.doc.id, r.score, r.excerpt])).toEqual(
+      first.results.map(r => [r.doc.id, r.score, r.excerpt]),
+    )
+  })
+
+  it('gives each query its own excerpt, not the one cached for the last', () => {
+    const body =
+      'The worm that does not die is one image. The fire that is not quenched is another, ' +
+      'and the two belong together in Isaiah 66 exactly as they do in Mark 9. ' +
+      'Destruction is the outcome in both.'
+    const corpus = [doc({ id: 'both', title: 'Both images', body })]
+
+    const worm = search(corpus, 'worm').results[0]?.excerpt ?? ''
+    const destruction = search(corpus, 'destruction').results[0]?.excerpt ?? ''
+    const wormAgain = search(corpus, 'worm').results[0]?.excerpt ?? ''
+
+    expect(worm.toLowerCase()).toContain('worm')
+    expect(destruction.toLowerCase()).toContain('destruction')
+    expect(worm).not.toBe(destruction)
+    expect(wormAgain).toBe(worm)
+  })
+
+  it('builds an excerpt for every result on the requested page', () => {
+    const { results } = search(CORPUS, 'destroy', { limit: 2, offset: 1 })
+    expect(results.length).toBeGreaterThan(0)
+    for (const result of results) expect(result.excerpt.length).toBeGreaterThan(0)
   })
 })
