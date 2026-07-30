@@ -149,6 +149,47 @@ describe('SmoothAnchorScroll', () => {
     expect(root().style.scrollBehavior).toBe('')
   })
 
+  it('releases the behaviour when a route link is clicked inside the window', () => {
+    // The ordering the release window cannot cover on its own: anchor click,
+    // then a route click before `scrollend` or the timer. Carrying `smooth`
+    // into the router's scroll-to-top strands the reader mid-article.
+    render(<SmoothAnchorScroll />)
+    clickLink('#in-brief')
+    expect(root().style.scrollBehavior).toBe('smooth')
+
+    clickLink('/case/key-texts/lake-of-fire/')
+    expect(root().style.scrollBehavior).toBe('')
+  })
+
+  it('releases on a route click even when the router prevented it', () => {
+    // The router's links call preventDefault before the event bubbles to the
+    // document, so a prevented click is the normal shape of a client
+    // navigation — it must still release.
+    render(<SmoothAnchorScroll />)
+    clickLink('#in-brief')
+    expect(root().style.scrollBehavior).toBe('smooth')
+
+    const link = document.createElement('a')
+    link.href = '/glossary/'
+    link.textContent = 'route'
+    link.addEventListener('click', event => event.preventDefault())
+    document.body.append(link)
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, cancelable: true }))
+    expect(root().style.scrollBehavior).toBe('')
+  })
+
+  it('does not release for a click that is not on a link', () => {
+    render(<SmoothAnchorScroll />)
+    clickLink('#in-brief')
+    expect(root().style.scrollBehavior).toBe('smooth')
+
+    const button = document.createElement('button')
+    button.textContent = 'not a link'
+    document.body.append(button)
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
+    expect(root().style.scrollBehavior).toBe('smooth')
+  })
+
   it('releases the behaviour when the scroll ends', () => {
     render(<SmoothAnchorScroll />)
     clickLink('#in-brief')

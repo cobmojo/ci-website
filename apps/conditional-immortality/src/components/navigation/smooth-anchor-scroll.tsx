@@ -62,23 +62,37 @@ export function SmoothAnchorScroll() {
     }
 
     function onClick(event: MouseEvent) {
-      // Anything but a plain primary click is the browser's business: a
-      // modified click opens a tab, and a prevented one has been handled.
-      if (event.defaultPrevented || event.button !== 0) return
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-
       const target = event.target
       const link = target instanceof Element ? target.closest('a[href]') : null
       if (!(link instanceof HTMLAnchorElement)) return
+
+      if (!isSameDocumentFragment(link)) {
+        // Any click on any other link hands the behaviour back *now*. A reader
+        // who clicks an anchor and then a route link inside the release window
+        // would otherwise carry `smooth` into the router's scroll-to-top, which
+        // is exactly the stranded-mid-article regression this component exists
+        // to prevent. This runs before the guards below on purpose: the router
+        // calls `preventDefault` on its links before the event reaches this
+        // listener, so a prevented click is the *normal* shape of a route
+        // navigation here. Releasing is idempotent, only affects how a future
+        // scroll starts, and never touches the navigation itself.
+        release()
+        return
+      }
+
+      // A fragment click sets the behaviour only when the browser is about to
+      // perform it: a prevented click has been handled by a component, and a
+      // modified or non-primary click opens a tab instead of scrolling.
+      if (event.defaultPrevented || event.button !== 0) return
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
       if (link.target && link.target !== '_self') return
-      if (!isSameDocumentFragment(link)) return
 
       if (!window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return
 
       root.style.scrollBehavior = 'smooth'
       // Released on `scrollend` where the browser has it, and on the timer
-      // regardless, so the behaviour is never still switched on when a later
-      // route change asks the document to scroll.
+      // regardless, so the behaviour cannot stay switched on if neither the
+      // event nor a later navigation click arrives.
       timer = window.setTimeout(release, RELEASE_AFTER_MS)
     }
 

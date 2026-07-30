@@ -135,6 +135,13 @@ test.describe('with no motion preference', () => {
       .poll(async () => Math.round(await page.evaluate(() => window.scrollY)))
       .toBeGreaterThan(200)
 
+    // Wait for the hand-back before reading the log: the release arrives on
+    // `scrollend` or a one-second timer, so sampling immediately after the
+    // scroll starts reads a log that legitimately still ends in `smooth`.
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.style.scrollBehavior))
+      .toBe('')
+
     const seen = await page.evaluate(() => (window as unknown as { __seen: string[] }).__seen)
     expect(seen, 'the behaviour was never switched on').toContain('smooth')
     expect(seen.at(-1), 'the behaviour was never handed back').toBe('unset')
@@ -153,6 +160,24 @@ test.describe('with no motion preference', () => {
 
     await page.locator('.previous-next a').filter({ visible: true }).first().click()
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0)
+  })
+
+  test('returns to the top even when a route click lands mid-anchor-scroll', async ({ page }) => {
+    // The ordering the release window cannot cover on its own: a reader clicks
+    // an in-page anchor and, while the smooth scroll is still in flight,
+    // follows "Next section". The behaviour must be handed back at the route
+    // click itself, or the router's scroll-to-top inherits `smooth` and the
+    // reader is stranded mid-article.
+    await gotoWith(page, '/case/key-texts/eternal-punishment/', 'no-preference')
+
+    const anchor = page.locator('.on-this-page a[href^="#"]').filter({ visible: true }).last()
+    await anchor.click()
+    // No settling wait: the route click must interrupt the fragment scroll.
+    await page.locator('.previous-next a').filter({ visible: true }).first().click()
+
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'auto')
     await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0)
   })
 

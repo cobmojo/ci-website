@@ -90,15 +90,15 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-532 tests, all passing.
+537 tests, all passing.
 
 | Suite | Count |
 |---|---|
 | Unit, `@ci/content-schema` | 46 |
 | Unit, `@ci/content` | 64 |
 | Unit, `@ci/search` | 39 |
-| Unit, `conditional-immortality` | 129 |
-| End-to-end, desktop and mobile | 222 |
+| Unit, `conditional-immortality` | 132 |
+| End-to-end, desktop and mobile | 224 |
 | Accessibility, axe plus structural | 32 |
 
 Plus six gates that fail the build: content validation, the content audit, the

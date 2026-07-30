@@ -29,13 +29,13 @@ function HeadingAnchor({ id }: { id?: string }) {
   return (
     <a
       href={`#${id}`}
-      // Visibility is `heading-anchor` in globals.css rather than a
-      // `group-hover` utility. The utility hid the anchor unconditionally and
-      // revealed it on hover, which meant it was permanently invisible on a
-      // touch device: there was no hover available to reveal it with. The class
-      // inverts that, showing it by default and hiding it only where hovering
-      // is possible.
-      className="heading-anchor ml-2 align-middle text-[0.62em] text-border-strong no-underline print:hidden"
+      // Visibility and colour both live in `heading-anchor` in globals.css
+      // rather than in utilities here. A `group-hover` utility hid the anchor
+      // unconditionally and revealed it on hover, which meant it was
+      // permanently invisible on a touch device; a colour utility here would
+      // sit on the resting state too, and the resting anchor has to clear the
+      // contrast requirement, not just the hovered one.
+      className="heading-anchor ml-2 align-middle text-[0.62em] no-underline print:hidden"
       aria-label="Link to this section"
     >
       #
