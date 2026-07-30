@@ -50,13 +50,10 @@ function collectIds(html: string): Set<string> {
 /**
  * Ids used more than once in one document.
  *
- * A duplicate id is invalid HTML, and here it has a specific consequence: the
- * browser scrolls to the first match, so every link into a later copy silently
- * lands on the earlier one. The continuous edition renders all forty sections
- * into a single page and they deliberately share heading text — nearly every
- * section has an "In brief" — so `rehypePrefixIds` namespaces each body. This
- * is the check that the namespacing actually reached every anchor, rather than
- * a unit test asserting that a plugin was called.
+ * The browser scrolls to the first match, so every link into a later copy lands
+ * on the earlier one. The continuous edition renders forty sections that
+ * deliberately share heading text, which is what `rehypePrefixIds` namespaces;
+ * this checks the namespacing reached every anchor.
  */
 function duplicateIds(html: string): string[] {
   const seen = new Map<string, number>()

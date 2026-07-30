@@ -3,15 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { rehypeScrollableTables } from '../rehype-scrollable-tables'
 
 /**
- * A wide table has to scroll on a narrow screen, and WCAG 2.1.1 requires that
- * a keyboard be able to scroll it. Setting `display: block` on the table would
- * strip its implicit ARIA table role and lose every row and column
- * relationship, so the scrolling has to belong to a wrapper.
- *
- * The wrapping is done here rather than in the MDX components map because that
- * map only sees elements produced by *markdown* syntax. A hand-written
- * `<table>` in an `.mdx` file is literal JSX and never passes through it — and
- * the corpus contains seven of those.
+ * A wide table has to scroll on a narrow screen and WCAG 2.1.1 requires a
+ * keyboard be able to scroll it, so the scrolling belongs to a wrapper rather
+ * than to the table itself.
  */
 
 function markdownTable(children: unknown[] = []) {

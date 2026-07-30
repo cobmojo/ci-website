@@ -222,12 +222,8 @@ describe('excerpts and highlighting', () => {
     expect(segments).toEqual([{ text: 'nothing here', matched: false }])
   })
 
-  /**
-   * The matched run is located in the normalised text but marked in the
-   * original. Anything that changes the length between the two — collapsing a
-   * run of spaces, trimming, or an accent decomposing under NFKD — used to
-   * shift every highlight after it by exactly that difference.
-   */
+  // The run is located in the normalised text but marked in the original, so
+  // anything that changes the length between the two shifts every later match.
   const marked = (text: string, terms: string[]) =>
     highlightSegments(text, terms)
       .filter(segment => segment.matched)
@@ -278,11 +274,9 @@ describe('transcript results', () => {
 })
 
 /**
- * `normalise` and `normaliseWithMap` are two implementations of one rule: the
- * first is a handful of native string operations for the ranking loop, the
- * second walks character by character so each output position can be traced
- * back to the input. Ranking uses one and highlighting the other, so if they
- * ever disagree a highlight lands somewhere the ranker never matched.
+ * Two implementations of one rule: ranking uses `normalise`, highlighting uses
+ * `normaliseWithMap`, so a disagreement puts a highlight where the ranker never
+ * matched.
  */
 describe('the two normalisers agree', () => {
   const SAMPLES = [
@@ -363,12 +357,9 @@ describe('the two normalisers agree', () => {
 })
 
 /**
- * The samples above are the cases I thought of. This is the check for the ones
- * I did not: random strings drawn from every character class that has ever
- * made the two implementations disagree — combining marks, compatibility
- * forms, cased Greek, spacing accents, exotic whitespace and astral planes.
- *
- * The generator is a fixed-seed LCG, so a failure reproduces exactly.
+ * Random strings over every character class that can make the two disagree:
+ * combining marks, compatibility forms, cased Greek, spacing accents, exotic
+ * whitespace and astral planes. Fixed-seed, so a failure reproduces exactly.
  */
 describe('the two normalisers agree under fuzzing', () => {
   const POOL = [
@@ -451,11 +442,7 @@ describe('the two normalisers agree under fuzzing', () => {
   })
 })
 
-/**
- * The ranker keeps normalised fields and excerpt offset maps in a WeakMap
- * keyed by document, so the second query over the same index does far less
- * work than the first. Anything cached has to be independent of the query.
- */
+/** Anything the ranker caches per document has to be independent of the query. */
 describe('caching does not change what search returns', () => {
   it('returns identical results when the same query is run again', () => {
     const first = search(CORPUS, 'destroy soul and body')

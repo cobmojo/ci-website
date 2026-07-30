@@ -28,6 +28,11 @@ const DOUBLE_QUOTE = /[“”]/
 const DASH = /[‐-―−]/
 const WHITESPACE = /\s/
 
+/** Global variants of the classes above, for whole-string replacement. */
+const SINGLE_QUOTE_ALL = new RegExp(SINGLE_QUOTE.source, 'g')
+const DOUBLE_QUOTE_ALL = new RegExp(DOUBLE_QUOTE.source, 'g')
+const DASH_ALL = new RegExp(DASH.source, 'g')
+
 export function normalise(value: string): string {
   return (
     value
@@ -42,22 +47,14 @@ export function normalise(value: string): string {
   )
 }
 
-const SINGLE_QUOTE_ALL = /[‘’‛]/g
-const DOUBLE_QUOTE_ALL = /[“”]/g
-const DASH_ALL = /[‐-―−]/g
-
 /**
  * A normalised string, plus where each of its characters came from.
  *
- * Matching happens on normalised text but has to be *displayed* on the
- * original, and the two are not the same length. Collapsing a run of spaces
- * shortens it, trimming shifts it, and NFKD lengthens it — `ή` decomposes into
- * `η` plus a combining accent, so one Greek word early in a paragraph moved
- * every highlight after it by one character. Highlights landed mid-word.
- *
- * `start[i]` and `end[i]` bound, in the original string, the character that
- * produced `value[i]`. There is one entry per UTF-16 unit of `value`, so an
- * index returned by `value.indexOf()` can be used directly.
+ * Matching happens on normalised text but is displayed on the original, and the
+ * two differ in length: collapsing spaces shortens, trimming shifts, and NFKD
+ * lengthens. `start[i]` and `end[i]` bound the original character that produced
+ * `value[i]`, one entry per UTF-16 unit, so an index from `value.indexOf()` maps
+ * back directly.
  */
 export interface NormalisedText {
   readonly value: string
@@ -79,16 +76,10 @@ interface Cluster {
 /**
  * Split text into clusters of one base character plus its combining marks.
  *
- * The unit has to be the cluster, not the character. NFKD does not only
- * decompose, it also reorders combining marks into canonical order, and that
- * reordering happens across the marks that follow a base character — Hebrew
- * pointing and Greek breathing marks both trigger it. Normalising one
- * character at a time cannot reorder anything, so it produced a different
- * string from `normalise` wherever the source marks were not already in
- * canonical order.
- *
- * Reordering never crosses a base character, so normalising cluster by cluster
- * gives exactly the same result as normalising the whole string at once.
+ * The unit has to be the cluster: NFKD reorders combining marks into canonical
+ * order, which Hebrew pointing triggers, and a per-character walk cannot
+ * reorder anything. Reordering never crosses a base character, so cluster by
+ * cluster gives the same result as the whole string at once.
  */
 function toClusters(text: string): Cluster[] {
   const clusters: Cluster[] = []
@@ -112,15 +103,10 @@ function toClusters(text: string): Cluster[] {
 /**
  * Does this capital sigma end a word?
  *
- * Greek is the one place where lowercasing depends on context: Σ becomes ς at
- * the end of a word and σ everywhere else, so `ΛΟΓΟΣ` lowercases to `λογος`.
- * `String.prototype.toLowerCase` applies this to a whole string, but a walk
- * that lowercases one character at a time cannot see the neighbours and always
- * produced σ — the one thing that made the two normalisers disagree, on a site
- * that quotes Greek throughout.
- *
- * This is the Unicode `Final_Sigma` condition: preceded by a cased letter,
- * ignoring case-ignorable characters, and not followed by one.
+ * Σ lowercases to ς at the end of a word and σ elsewhere, so `ΛΟΓΟΣ` becomes
+ * `λογος`. `toLowerCase` applies that to a whole string; a per-cluster walk has
+ * to apply the Unicode `Final_Sigma` condition itself — preceded by a cased
+ * letter, ignoring case-ignorable characters, and not followed by one.
  */
 function isFinalSigma(clusters: readonly Cluster[], position: number): boolean {
   const base = (cluster: Cluster | undefined) => (cluster ? [...cluster.text][0] : undefined)
@@ -147,9 +133,8 @@ function normaliseCluster(clusters: readonly Cluster[], position: number): strin
   const text = clusters[position]?.text ?? ''
   const base = [...text][0] ?? ''
 
-  // Only the base character is substituted. Any combining marks it carries
-  // still have to come through, or a cedilla trailing a curly quote is
-  // silently dropped and the two normalisers part company.
+  // Only the base character is substituted; marks it carries still come
+  // through, or a cedilla trailing a curly quote would be dropped.
   const marks = text.slice(base.length).toLowerCase().normalize('NFKD')
   if (SINGLE_QUOTE.test(base)) return `'${marks}`
   if (DOUBLE_QUOTE.test(base)) return `"${marks}`
@@ -163,22 +148,20 @@ function normaliseCluster(clusters: readonly Cluster[], position: number): strin
 }
 
 /**
- * `normalise`, done character by character so each output position can be
- * traced back to the input.
+ * `normalise`, cluster by cluster, so each output position can be traced back to
+ * the input.
  *
- * This is the slower of the two and is used only where the mapping is needed —
- * highlighting and excerpting, which run over a page of results rather than
- * the whole corpus. `normalise` stays a handful of native string operations
- * for the ranking loop. A test asserts the two agree on every field of every
- * document in the index, so they cannot drift apart unnoticed.
+ * An order of magnitude slower, so it is used only where the mapping is needed:
+ * highlighting and excerpting, over a page of results rather than the corpus.
+ * A test asserts it agrees with `normalise` on every field of every document.
  */
 export function normaliseWithMap(text: string): NormalisedText {
   let value = ''
   const start: number[] = []
   const end: number[] = []
 
-  // Whitespace is collapsed to one space, and only once a non-space has been
-  // seen — which is what `.trim()` did to the leading run.
+  // Collapsed to one space, and only once a non-space has been seen, which is
+  // what `.trim()` did to the leading run.
   let spaceStart = -1
   let spaceEnd = -1
   let seenNonSpace = false
@@ -189,9 +172,8 @@ export function normaliseWithMap(text: string): NormalisedText {
     const cluster = clusters[position]
     if (!cluster) continue
 
-    // A cluster can normalise to several characters — `ﬁ` to `fi`, `¨` to a
-    // space and a combining diaeresis — so the whitespace check is on the
-    // output, not the input, exactly as it is in `normalise`.
+    // A cluster can normalise to several characters (`ﬁ` to `fi`, `¨` to a space
+    // plus a combining diaeresis), so the whitespace check is on the output.
     for (const unit of normaliseCluster(clusters, position)) {
       if (WHITESPACE.test(unit)) {
         if (spaceStart === -1) spaceStart = cluster.start
@@ -215,8 +197,7 @@ export function normaliseWithMap(text: string): NormalisedText {
     }
   }
 
-  // A trailing run of whitespace is simply never emitted, which is the other
-  // half of `.trim()`.
+  // A trailing run of whitespace is never emitted, the other half of `.trim()`.
   return { value, start, end }
 }
 
@@ -308,15 +289,9 @@ interface DocFields {
 /**
  * Normalised fields for one document.
  *
- * The index is static for the life of the page, so normalising it once and
- * keeping the result is safe. Doing it per query was not cheap: the ranker
- * walked every field of every document on each keystroke, which is around half
- * a megabyte of text through a lowercase, an NFKD and five regexes — and the
- * search dialog runs a query per keystroke, so typing a short phrase paid for
- * it seventeen times over.
- *
- * A `WeakMap` rather than a `Map` so that replacing the index — or navigating
- * away from it — does not pin the old documents in memory.
+ * The index is static for the life of the page, so normalising it once is safe.
+ * A `WeakMap` rather than a `Map` so replacing the index does not pin the old
+ * documents in memory.
  */
 const FIELD_CACHE = new WeakMap<SearchDoc, DocFields>()
 
@@ -368,12 +343,8 @@ function matchesFilters(doc: SearchDoc, filters: SearchFilters): boolean {
 const EXCERPT_RADIUS = 110
 
 /**
- * Cached offset maps for excerpting.
- *
- * `normaliseWithMap` walks cluster by cluster and is an order of magnitude
- * slower than `normalise`. Excerpts are only built for the page of results
- * actually returned, and the same documents come back on every keystroke, so
- * the map is worth keeping.
+ * Cached offset maps for excerpting. `normaliseWithMap` is an order of magnitude
+ * slower than `normalise`, and the same documents come back on every keystroke.
  */
 const EXCERPT_MAP_CACHE = new WeakMap<SearchDoc, NormalisedText>()
 
@@ -502,10 +473,9 @@ export function search(
 
   scored.sort((a, b) => b.score - a.score || a.doc.title.localeCompare(b.doc.title))
 
-  // Excerpts are built last, for the page being returned rather than for every
-  // document that matched. A one-letter query matches nearly the whole index
-  // and shows twenty-five of them, so building all of them threw away most of
-  // the work — and excerpting is the most expensive step per document.
+  // Built last, for the page being returned rather than every match. Excerpting
+  // is the most expensive step per document, and a one-letter query matches
+  // nearly the whole index while showing twenty-five of it.
   const results = scored.slice(offset, offset + limit).map(result => {
     const body = result.doc.body || result.doc.summary
     return {

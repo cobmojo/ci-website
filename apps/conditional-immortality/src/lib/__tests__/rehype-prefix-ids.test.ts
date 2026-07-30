@@ -3,15 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { rehypePrefixIds } from '../rehype-prefix-ids'
 
 /**
- * MDX leaves two different node shapes in the tree by the time a rehype plugin
- * runs, and they are easy to confuse.
- *
- * Markdown syntax — a `## Heading`, a `[link](#target)` — becomes a hast
- * `element` with its attributes in `properties`. Literal JSX written in the
- * `.mdx` file stays an `mdxJsxFlowElement` or `mdxJsxTextElement` with its
- * attributes in an `attributes` array. A plugin that visits only the first
- * kind silently ignores the second, which is exactly how the sibling
- * `rehypeScrollableTables` was broken once already.
+ * MDX leaves two node shapes in the tree by the time a rehype plugin runs:
+ * markdown syntax becomes a hast `element` with its attributes in `properties`,
+ * literal JSX stays an `mdxJsxFlowElement` with an `attributes` array.
  */
 
 function element(tagName: string, properties: Record<string, unknown>, children: unknown[] = []) {
@@ -89,16 +83,8 @@ describe('rehypePrefixIds on literal JSX', () => {
     expect(attributesOf(nested).id).toBe('S04-comparison')
   })
 
-  /**
-   * The one that makes this delicate. `<Cite id="dear-bible-teaches-...">` is
-   * a source identifier, not an HTML id — the component looks it up in the
-   * registry and renders a link to `/sources/#dear-...`. There are over forty
-   * of them in the corpus, and prefixing any of them breaks the citation.
-   *
-   * The rule is the JSX rule: a lower-case tag name is an HTML element and its
-   * `id` is an HTML id; a capitalised one is a React component and its props
-   * are its own business.
-   */
+  // `<Cite id="…">` is a source identifier, not an HTML id: the component looks
+  // it up in the registry, so prefixing it breaks the citation.
   it('leaves a component prop alone, even when it is called id', () => {
     const tree = run([
       jsx('Cite', { id: 'dear-bible-teaches-annihilationism', locator: 'page 76' }),

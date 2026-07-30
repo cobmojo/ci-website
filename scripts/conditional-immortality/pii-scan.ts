@@ -12,24 +12,11 @@
  *
  * Run after `next build`. Exits non-zero on any hit.
  *
- * Two things this scan must get right, both of which it previously did not:
- *
- * 1. It has to prove it looked at the build output. The guard used to be
- *    `if (filesScanned === 0)`, but the same list also held four directories
- *    that are committed and therefore always present, so the counter was never
- *    zero. With `.next/` absent — a fresh clone, a failed build, a build made
- *    somewhere else — the scan read 149 source files, found nothing, and
- *    printed "No source contact details found in any scanned output". A gate
- *    that cannot fail is not a gate. Build output is now its own group and an
- *    empty one is a failure.
- *
- * 2. It has to cover everything committed. The old list named four source
- *    directories, which left out `docs/`, `scripts/`, the root files, and —
- *    most importantly — `packages/ci-content/migration/`, which holds the
- *    1,034 migrated comment entries from the source document. That is the
- *    likeliest place in the repository for a personal detail to be sitting.
- *    The repository group is now taken from `git ls-files`, so it cannot fall
- *    behind as the repository grows.
+ * Two groups, with different failure semantics. Build output must exist and
+ * yield files, or the scan has proved nothing and says so. The repository group
+ * comes from `git ls-files` rather than a list of directories, so it cannot fall
+ * behind as the repository grows — the migration ledger, which holds 1,034
+ * migrated comment entries, is the likeliest place for a personal detail to sit.
  */
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
@@ -67,9 +54,8 @@ const CANDIDATE_PATTERNS: RegExp[] = [
 ]
 
 /**
- * The build output. Everything a visitor can actually reach comes from here,
- * so this is the group the scan exists for — and the group whose absence has
- * to be an error rather than a quiet zero.
+ * The build output: everything a visitor can reach, and so the group whose
+ * absence has to be an error rather than a quiet zero.
  */
 const BUILD_OUTPUT_ROOTS = [
   join(APP_ROOT, '.next', 'server'),
@@ -178,10 +164,6 @@ for (const root of BUILD_OUTPUT_ROOTS) {
 
 /* ------------------------------------------------------------------ *
  * Group 2: everything committed to the repository.
- *
- * Taken from git rather than from a hand-kept list of directories, so a new
- * directory is covered the day it is added instead of the day someone
- * remembers to add it here.
  * ------------------------------------------------------------------ */
 
 function committedFiles(): string[] | undefined {
@@ -228,10 +210,7 @@ console.log(`  build output   ${outputFiles} file(s)`)
 console.log(`  repository     ${repositoryFiles} file(s)${tracked ? '' : ' (git unavailable)'}`)
 console.log('')
 
-/**
- * Fail closed. Anything that stops this scan seeing the build output means it
- * has proved nothing, and it must say so rather than report a clean run.
- */
+/* Fail closed: without the build output this scan has proved nothing. */
 if (missingOutputRoots.length > 0) {
   console.error('Build output is missing, so nothing published has been checked:')
   for (const root of missingOutputRoots) console.error(`  x ${root}`)

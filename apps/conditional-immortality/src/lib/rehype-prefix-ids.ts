@@ -17,13 +17,10 @@ import { visit } from 'unist-util-visit'
  * Only same-document fragment links are rewritten. A link to another page,
  * with or without a fragment, is left exactly as it is.
  *
- * MDX leaves two different node shapes in the tree, and both have to be
- * handled. Markdown syntax becomes a hast `element` carrying its attributes in
- * `properties`; literal JSX written in the `.mdx` file stays an
- * `mdxJsxFlowElement` or `mdxJsxTextElement` carrying an `attributes` array.
- * Visiting only the first kind leaves hand-written anchors unprefixed, which
- * is the duplicate-id problem this plugin exists to prevent — and is the same
- * mistake `rehypeScrollableTables` documents in its own header.
+ * MDX leaves two node shapes in the tree and both have to be handled. Markdown
+ * syntax becomes a hast `element` with its attributes in `properties`; literal
+ * JSX stays an `mdxJsxFlowElement` or `mdxJsxTextElement` with an `attributes`
+ * array, as `rehypeScrollableTables` documents in its own header.
  */
 
 /** A literal-JSX node, in either of the two shapes MDX produces. */
@@ -48,15 +45,10 @@ function isJsxElement(node: unknown): node is JsxElement {
 /**
  * Is this JSX node a plain HTML element rather than a React component?
  *
- * The distinction matters more than it looks. `<Cite id="dear-bible-teaches-
- * annihilationism">` appears over forty times in the corpus, and that `id` is
- * a key into the source registry, not an HTML id — the component resolves it
- * and renders a link to `/sources/#dear-…`. Prefixing it would break every one
- * of those citations.
- *
- * JSX already draws exactly the line needed: a lower-case tag name is an
- * intrinsic HTML element, a capitalised one is a component. So `id` on `<h2>`
- * is an HTML id and `id` on `<Cite>` is that component's own prop.
+ * JSX draws the line already: a lower-case tag name is an intrinsic element, a
+ * capitalised one is a component. It matters here because `<Cite id="…">` is a
+ * key into the source registry rather than an HTML id, and prefixing it would
+ * break the citation.
  */
 function isIntrinsicElement(node: JsxElement): boolean {
   const name = node.name
@@ -88,8 +80,7 @@ export function rehypePrefixIds(prefix: string) {
       if (isJsxElement(node)) {
         if (!isIntrinsicElement(node)) return
         for (const attribute of node.attributes ?? []) {
-          // Only literal string attributes. An expression value is code, and
-          // rewriting it would be guesswork.
+          // An expression value is code; rewriting it would be guesswork.
           if (attribute.type !== 'mdxJsxAttribute' || typeof attribute.value !== 'string') continue
 
           if (attribute.name === 'id' && attribute.value.length > 0) {

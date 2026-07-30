@@ -530,12 +530,7 @@ export const RevisionRecordSchema = z
 
 export type RevisionRecord = z.infer<typeof RevisionRecordSchema>
 
-/**
- * The vocabularies themselves live in `./feedback-vocabulary`, which imports
- * nothing. The correction form is a client component and needs them to render;
- * taking them from here instead pulled Zod and every schema below into its
- * bundle. See that file for the measurement.
- */
+/** The vocabularies live in `./feedback-vocabulary`, which imports nothing. */
 export const FeedbackTypeSchema = z.enum(feedbackTypes)
 export const PublicationConsentSchema = z.enum(publicationConsents)
 export const FeedbackStatusSchema = z.enum(feedbackStatuses)

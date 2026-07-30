@@ -1,28 +1,19 @@
 #!/usr/bin/env bun
 /**
- * Regenerate the video transcript cues.
- *
- * `docs/maintenance-guide.md` and `transcript.ts` both told a maintainer to run
- * this script. It did not exist.
- *
- * Source
- * ------
- * The author's own published English caption track. Note that the plain
- * timed-text endpoint no longer works: `api/timedtext?v=…&lang=en` answers 200
- * with an empty body, because YouTube now requires a signed request for it.
- * That is why this shells out to `youtube-transcript-api`, which is what the
- * committed cues were actually retrieved with — the previous description of the
- * provenance was accurate about the caption track and misleading about how it
- * was fetched.
+ * Regenerate the video transcript cues from the author's published caption
+ * track.
  *
  *     python -m pip install youtube-transcript-api
  *     bun run scripts/conditional-immortality/import-transcript.ts
  *
- * Nothing is written unless the fetched captions are checked against what is
- * committed first. All 279 committed cues and all 279 timings match the
- * published track exactly once whitespace is normalised, so a difference means
- * the video's captions have genuinely changed and the chapter boundaries in
- * `packages/ci-content/src/video/index.ts` need looking at too.
+ * The plain timed-text endpoint no longer serves captions — it answers 200 with
+ * an empty body — hence `youtube-transcript-api`, the only Python dependency in
+ * the repository and needed for this script alone.
+ *
+ * The fetched cues are compared against the committed ones before writing. A
+ * difference means the captions genuinely changed, and the chapter boundaries
+ * in `packages/ci-content/src/video/index.ts` are expressed in seconds, so they
+ * need checking too.
  */
 import { writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -41,12 +32,11 @@ interface RawCue {
 
 /**
  * Caption text arrives with non-breaking spaces and hard line breaks from the
- * caption renderer. They are presentation, not content, and the committed cues
- * have always been normalised.
+ * renderer. They are presentation, not content. U+00A0 is spelled out rather
+ * than written literally, since an invisible character in a regex invites an
+ * accidental change.
  */
 function normalise(text: string): string {
-  // The class spells out U+00A0 rather than relying on a literal one: an
-  // invisible character in a regex is a change waiting to be made by accident.
   return text.replace(/[\u00a0\s]+/g, ' ').trim()
 }
 

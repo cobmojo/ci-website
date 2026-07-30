@@ -2,17 +2,11 @@
 /**
  * First-load JavaScript budget.
  *
- * This is a reading site. Every page is prerendered, and the JavaScript exists
- * only to enhance what is already there — the search dialog, the video
- * embed, the correction form. A page that ships materially more script than
- * its neighbours is almost always an accident of module structure rather than
- * a decision, because nothing here needs it.
- *
- * The check is relative rather than absolute. The shared framework baseline
- * moves whenever React or Next is upgraded, and pinning a byte count would
- * either fail on every upgrade or be raised until it meant nothing. What
- * should stay true is that no single route is an outlier: the routes differ in
- * content, not in machinery.
+ * Every page is prerendered and the script only enhances what is already there,
+ * so a route shipping materially more than its neighbours is usually an accident
+ * of module structure. Relative rather than absolute: the framework baseline
+ * moves on every React or Next upgrade, but the routes should differ in content,
+ * not in machinery.
  *
  * Run after `next build`.
  */
@@ -38,19 +32,15 @@ const STATS_FILE = join(
 const ALLOWED_EXCESS = 0.03
 
 /**
- * Routes allowed to carry more, each with the reason and a cap of its own.
- *
- * An allowance is a decision, so it is written down as one. Raising the global
- * threshold instead would let every other route drift up to meet it, which is
- * how a budget stops meaning anything.
+ * Routes allowed to carry more, each with a reason and a cap of its own. Raising
+ * the global threshold instead would let every route drift up to meet it.
  */
 const ALLOWANCES: Record<string, { readonly maxBytes: number; readonly reason: string }> = {
   '/corrections': {
     maxBytes: 680_000,
     reason:
-      'TanStack Form: per-field validators, touched state and submit handling for nine fields. ' +
-      'The form is progressively enhanced and works with scripting disabled, so this is the ' +
-      'enhancement only. Was 926.6 kB until the Zod schema graph was split out.',
+      'TanStack Form: per-field validators, touched state and submit handling for nine fields, ' +
+      'on a form that is progressively enhanced and works with scripting disabled.',
   },
 }
 

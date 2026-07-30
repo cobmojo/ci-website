@@ -20,19 +20,14 @@ private/source/*.doc
 .feedback-store/
 reports/
 
-# Next.js regenerates this per-command and its contents differ between
-# `next dev` and `next build`. The stable half lives in
-# apps/conditional-immortality/types/next-env.d.ts, which is committed.
-#
-# Anchored to the one path Next generates. Written bare as `next-env.d.ts` it
-# matched at every depth, which silently ignored the committed replacement too.
+# Regenerated per-command with different contents each time. The stable half is
+# committed as apps/conditional-immortality/types/next-env.d.ts, so this is
+# anchored: written bare it would match that file too.
 /apps/conditional-immortality/next-env.d.ts
 
-# The animations.dev installer writes the same twelve skills into a directory
-# for every agent it finds on the machine. Claude Code's copy is committed, in
-# .claude/skills/, because that is what this repository is developed with. The
-# rest stay local: they work exactly the same from disk, and four more copies of
-# the same files would be noise in a repository about theology.
+# The animations.dev installer writes the same skills into a directory for every
+# agent on the machine. Only Claude Code's copy is committed, in .claude/skills/;
+# the rest work the same from disk.
 /.cursor/
 /.codex/
 /.opencode/

@@ -195,17 +195,10 @@ writeFileSync(
 )
 
 /*
- * Hand the two committed JSON exports to the formatter.
- *
- * They are generated here but checked in, and `JSON.stringify` does not
- * produce what biome considers formatted — `migration-ledger.json` is written
- * with one-space indent, which biome rewrites to two. Since `content:audit`
- * runs *after* `lint` in the validate chain, the effect was that a clean run of
- * `bun run validate` left the working tree dirty and the next `bun run lint`
- * red, with no indication of why.
- *
- * The CSV is not formatted: biome does not handle CSV, and it is excluded in
- * biome.json for that reason.
+ * Hand the two committed JSON exports to the formatter. `JSON.stringify` does
+ * not produce what biome considers formatted, and this step runs after `lint`,
+ * so without it a clean `validate` left the tree dirty and the next `lint` red.
+ * The CSV is skipped: biome does not handle CSV and excludes it.
  */
 const formatted = [
   join(migrationDir, 'migration-ledger.json'),

@@ -1,10 +1,6 @@
 name: CI
 
-# Every gate this repository has, run on the code as pushed. Until this
-# existed, all of them — formatting, lint, types, content validation, the PII
-# scan, the link check, the bundle budget, 237 unit tests, 186 end-to-end tests
-# and 32 accessibility checks — only ever ran when someone remembered to run
-# them locally.
+# Every gate this repository has, run on the code as pushed.
 on:
   push:
     branches: [main]
@@ -28,8 +24,7 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
-    # A cold build of 121 pages plus the full browser suite. Generous, but
-    # finite: a hung run should fail rather than sit for six hours.
+    # A cold build of 121 pages plus the full browser suite.
     timeout-minutes: 30
 
     steps:
@@ -38,15 +33,13 @@ jobs:
       - name: Install bun
         uses: oven-sh/setup-bun@v2
         with:
-          # Pinned to the version in package.json's packageManager field, so CI
-          # and a developer's machine cannot silently diverge.
+          # Matches the packageManager field in package.json.
           bun-version: 1.3.14
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # Cached against the lockfile: the browser is ~150 MB and changes only
-      # when @playwright/test does.
+      # ~150 MB, and only changes when @playwright/test does.
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@v6
@@ -57,19 +50,13 @@ jobs:
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
 
-      # Formatting, lint, types, content validation, unit tests, the production
-      # build, the PII scan, the link check and the bundle budget. Each of
-      # these fails the job on its own; `validate` chains them in dependency
-      # order, since the last four need the build to exist.
+      # `validate` chains every gate in dependency order; the last few read the
+      # build output, so they run after it.
       - name: Validate
         run: bun run validate
 
-      # Several steps in `validate` regenerate committed files — the ledger
-      # exports, the audit report. If any of them writes something different
-      # from what is checked in, the checkout is out of date with its own
-      # generators and nothing else would say so. This is also how a generator
-      # that disagrees with the formatter gets caught: `content:audit` runs
-      # after `lint`, so it could dirty the tree and leave the *next* run red.
+      # `validate` regenerates committed files. If any of them differs from what
+      # is checked in, the checkout is out of date with its own generators.
       - name: No generated file drifted
         run: |
           if ! git diff --exit-code; then
@@ -83,8 +70,7 @@ jobs:
       - name: Accessibility tests
         run: bun run test:a11y
 
-      # Traces and screenshots are retained on failure, and are the only way to
-      # see what a headless browser saw.
+      # The only way to see what a headless browser saw.
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7

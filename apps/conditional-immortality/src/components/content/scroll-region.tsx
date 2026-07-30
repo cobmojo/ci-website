@@ -38,25 +38,13 @@ export function ScrollRegion({
   children: ReactNode
 }) {
   return (
-    // Both suppressions below are the point of this component, not an oversight.
-    //
-    // `noNoninteractiveTabindex` assumes a non-interactive element has no
-    // reason to take focus. A region with `overflow-x: auto` does: WCAG 2.1.1
-    // requires that anything a pointer can scroll be scrollable from the
-    // keyboard, and a browser only gives arrow-key scrolling to an element
-    // that can hold focus. Removing `tabIndex` here is the fix Biome offers
-    // and it is the exact defect this component exists to prevent.
-    //
-    // `useSemanticElements` wants `<fieldset>` for `role="group"`. A fieldset
-    // is a form-control grouping; these regions hold tables and reference
-    // lists. `role="group"` is what gives the focusable div an announced
-    // accessible name without adding a landmark — and the Scripture index
-    // alone renders forty-eight of these, so landmarks are not an option.
-    //
-    // biome-ignore lint/a11y/useSemanticElements: a fieldset is a form grouping — see above
+    // Both rules below fire on the technique described above, so both are
+    // suppressed deliberately: a fieldset is a form-control grouping, and the
+    // tabindex is what makes the region keyboard-scrollable at all.
+    // biome-ignore lint/a11y/useSemanticElements: a fieldset is a form grouping
     <div
       className={cn('overflow-x-auto overscroll-x-contain', className)}
-      // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1 — see above
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1, see above
       tabIndex={0}
       role="group"
       aria-label={label}

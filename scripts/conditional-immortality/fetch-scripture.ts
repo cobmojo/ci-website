@@ -2,40 +2,28 @@
 /**
  * Regenerate the verified Scripture corpus.
  *
- * Six places in this repository told an author to run this script, including
- * the error `requireScripture` throws when a reference is missing:
- *
- *     No verified Scripture text for "…". Add it to
- *     scripts/conditional-immortality/fetch-scripture.ts and re-run that
- *     script. Never hand-write Scripture text.
- *
- * The script did not exist. An author who followed that instruction — the one
- * instruction standing between them and typing a verse from memory, which the
- * whole design exists to prevent — had nowhere to go.
- *
- * Adding a passage
- * ----------------
- * Put the reference in `ADDITIONAL_REFERENCES` below and run:
+ * To add a passage, put the reference in `ADDITIONAL_REFERENCES` below and run:
  *
  *     bun run scripts/conditional-immortality/fetch-scripture.ts
  *
- * Everything already in the corpus is re-fetched and *checked*, not
- * overwritten: if the live text no longer matches what is committed, the script
- * reports every difference and writes nothing. Changing verified Scripture is
- * an editorial decision and not a script's to make silently.
+ * Passages already in the corpus are re-fetched and *checked*, not overwritten:
+ * if the live text no longer matches what is committed the script reports every
+ * difference and writes nothing, because changing verified Scripture is an
+ * editorial decision.
  *
- * Source
- * ------
- * The World English Bible as served by getbible.net — the same translation and
- * the same edition the committed corpus holds, which is why the check above is
- * meaningful rather than noise. Verified against the committed text of all 197
- * passages before this script was committed.
+ * The source is the World English Bible as served by getbible.net, the same
+ * edition the committed corpus holds — which is what makes that check
+ * meaningful rather than noise.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { scriptureReferences } from '../../packages/ci-content/src/scripture/web-text'
-import { BIBLE_BOOKS, parseReference } from '../../packages/ci-content-schema/src/bible'
+import { getScripture, scriptureReferences } from '../../packages/ci-content/src/scripture/web-text'
+import {
+  BIBLE_BOOKS,
+  type ParsedReference,
+  parseReference,
+} from '../../packages/ci-content-schema/src/bible'
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..')
 const OUT_FILE = join(REPO_ROOT, 'packages', 'ci-content', 'src', 'scripture', 'web-text.ts')
@@ -54,14 +42,10 @@ const CACHE_DIR = join(tmpdir(), 'ci-scripture-cache')
 /**
  * Places where the committed text is right and the feed is wrong.
  *
- * getbible strips footnote markers from the WEB text, and in Mark 9:47 it does
- * so without leaving the space behind: the verse arrives as "cast into the
- * Gehennaof fire". The committed corpus has "Gehenna of fire", which is what
- * the World English Bible actually reads, so it stands.
- *
- * The exception is deliberately narrow. A listed reference is still compared
- * word for word — only the whitespace is allowed to differ — so a future change
- * to the wording of one of these verses fails like any other.
+ * getbible strips footnote markers, and in Mark 9:47 it does so without leaving
+ * the space: the verse arrives as "cast into the Gehennaof fire". A listed
+ * reference is still compared word for word, only the whitespace may differ, so
+ * a change to the wording still fails.
  */
 const KNOWN_SOURCE_DEFECTS: Record<string, string> = {
   'Mark 9:42-48': 'v47: footnote marker stripped without its space ("Gehennaof fire")',
@@ -96,6 +80,16 @@ interface Verse {
   readonly text: string
 }
 
+/**
+ * A reference to fetch. The corpus key is kept verbatim: two of them are not
+ * their own normalised form (`Jude 7` normalises to `Jude 1:7`), and rekeying
+ * the corpus would break every citation of them.
+ */
+interface Wanted {
+  readonly reference: string
+  readonly parsed: ParsedReference
+}
+
 interface Passage {
   readonly reference: string
   readonly book: string
@@ -121,16 +115,15 @@ async function fetchBook(order: number, name: string): Promise<GetBibleBook> {
 }
 
 /**
- * The verses a reference covers.
- *
- * `Mark 9:42-48` is a verse range, `Mark 9:48` a single verse, and `Psalms 23`
- * a whole chapter. All three shapes appear in the corpus. Chapter ranges do
- * not, and are refused rather than guessed at: a passage record carries one
- * chapter number.
+ * The verses a reference covers: a verse range, a single verse, or a whole
+ * chapter. Chapter ranges are refused rather than guessed at, since a passage
+ * record carries one chapter number.
  */
-function versesFor(reference: string, book: GetBibleBook): readonly Verse[] {
-  const parsed = parseReference(reference)
-  if (!parsed) throw new Error(`${reference}: not a reference this parser recognises`)
+function versesFor(
+  reference: string,
+  parsed: ParsedReference,
+  book: GetBibleBook,
+): readonly Verse[] {
   if (parsed.chapterEnd !== undefined) {
     throw new Error(`${reference}: chapter ranges are not supported in the corpus`)
   }
@@ -269,10 +262,8 @@ export function scriptureQuotation(reference: string): ScriptureQuotation {
 `
 
 async function main(): Promise<void> {
-  const { getScripture } = await import('../../packages/ci-content/src/scripture/web-text')
-
   const wanted = [...new Set([...scriptureReferences, ...ADDITIONAL_REFERENCES])]
-  const byBook = new Map<string, string[]>()
+  const byBook = new Map<string, Wanted[]>()
   const problems: string[] = []
 
   for (const reference of wanted) {
@@ -282,7 +273,7 @@ async function main(): Promise<void> {
       continue
     }
     const list = byBook.get(parsed.book) ?? []
-    list.push(reference)
+    list.push({ reference, parsed })
     byBook.set(parsed.book, list)
   }
 
@@ -306,11 +297,9 @@ async function main(): Promise<void> {
       continue
     }
 
-    for (const reference of references) {
+    for (const { reference, parsed } of references) {
       try {
-        const verses = versesFor(reference, book)
-        const parsed = parseReference(reference)
-        if (!parsed) continue
+        const verses = versesFor(reference, parsed, book)
         const passage: Passage = {
           reference,
           book: parsed.book,
@@ -319,9 +308,8 @@ async function main(): Promise<void> {
           text: verses.map(verse => verse.text).join(' '),
         }
 
-        // Never rewrite text that is already committed and verified. A
-        // difference here means the source has changed under us, and that is
-        // for a person to look at.
+        // A difference means the source changed under us, which is for a
+        // person to look at rather than a script to apply.
         const existing = getScripture(reference)
         if (existing) {
           if (existing.text !== passage.text) {
@@ -365,14 +353,9 @@ async function main(): Promise<void> {
   }
 
   /*
-   * Sorted by reference so the file is stable across runs and a diff shows only
-   * what actually changed.
-   *
-   * Plain code-point order, deliberately not `localeCompare`. That is the order
-   * the committed corpus is already in, and the two disagree: a locale-aware
-   * comparison treats the punctuation in "Genesis 1:26-27" differently and
-   * files it after "Genesis 19:24-28". Using it would have rewritten 81 lines
-   * of a verified file to say exactly the same thing.
+   * Sorted so the file is stable across runs. Plain code-point order, not
+   * `localeCompare`, which orders the punctuation in "Genesis 1:26-27"
+   * differently and would reshuffle the committed corpus to no effect.
    */
   passages.sort((a, b) => (a.reference < b.reference ? -1 : a.reference > b.reference ? 1 : 0))
 

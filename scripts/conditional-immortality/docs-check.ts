@@ -1,16 +1,14 @@
 #!/usr/bin/env bun
 /**
- * Every file path the documentation names must exist.
+ * Every repository path the documentation names must be tracked in git.
  *
- * This gate exists because of a specific failure. Six places — three of them
- * runtime error messages an author would actually see — told the reader to run
- * `scripts/conditional-immortality/fetch-scripture.ts`, and two more pointed at
- * `import-transcript.ts`. Neither file existed. The instruction standing between
- * an author and typing a verse from memory led nowhere, and nothing noticed,
- * because prose is not compiled.
+ * Prose is not compiled, so a documented command can rot into a file that no
+ * longer exists — including the runtime error messages that tell an author what
+ * to run. Any repo-relative path with a file extension, in Markdown or a
+ * TypeScript comment or string, has to resolve.
  *
- * Now it is checked. Any repository-relative path with a file extension, in a
- * Markdown document or a TypeScript comment or string, has to resolve.
+ * Tracked rather than merely present on disk: a gitignored file exists on the
+ * machine that wrote it and in no clone.
  */
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -53,15 +51,7 @@ function tracked(): string[] {
 
 const SEARCHED_EXTENSIONS = ['.md', '.ts', '.tsx', '.json', '.yml', '.yaml']
 
-/**
- * Config files that carry no extension, matched by name.
- *
- * Filtering on extension alone let a real bug through. `.gitignore` named
- * `apps/conditional-immortality/types/next-env.d.ts` in a comment and claimed
- * it was committed, while an unanchored pattern two lines below was quietly
- * ignoring that very file. The claim was wrong and nothing checked it, because
- * `.gitignore` has no extension to match.
- */
+/** Config files that carry no extension, matched by name. */
 const SEARCHED_NAMES = ['.gitignore', '.gitattributes', '.npmrc', 'Dockerfile']
 
 /** Files whose non-comment lines are patterns, not prose. */
@@ -87,20 +77,11 @@ let mentions = 0
 for (const entry of trackedPaths) {
   if (!isSearched(entry)) continue
 
-  let content: string
-  try {
-    content = readFileSync(join(REPO_ROOT, entry), 'utf8')
-  } catch {
-    continue
-  }
+  const content = readFileSync(join(REPO_ROOT, entry), 'utf8')
   filesSearched += 1
 
-  /*
-   * In an ignore file, only the comments are prose. A pattern line names a path
-   * precisely because it is *not* meant to be tracked, so asking whether it is
-   * tracked is a category error and would report every rule as a broken
-   * reference.
-   */
+  // In an ignore file only the comments are prose; a pattern names an untracked
+  // path by definition.
   const commentsOnly = IGNORE_FILES.includes(entry.split('/').pop() ?? '')
 
   const lines = content.split(/\r?\n/)
@@ -110,13 +91,6 @@ for (const entry of trackedPaths) {
       const candidate = match[0].replace(/[.,;:)]+$/, '')
       mentions += 1
       if (NOT_REPOSITORY_FILES.has(candidate)) continue
-      /*
-       * Tracked, not merely present. Checking the filesystem passes for a file
-       * that exists on one machine and is gitignored — which is exactly how a
-       * reference to `types/next-env.d.ts` survived here while an unanchored
-       * ignore pattern kept that file out of the repository entirely. What a
-       * document promises has to be what a clone receives.
-       */
       if (trackedPaths.has(candidate)) continue
       missing.push({ file: entry, line: index + 1, path: candidate })
     }

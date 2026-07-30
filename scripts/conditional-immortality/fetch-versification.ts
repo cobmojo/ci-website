@@ -1,21 +1,15 @@
 #!/usr/bin/env bun
 /**
- * Regenerate the versification table.
+ * Regenerate the versification table `parseReference` bounds verses against.
+ * 1,189 chapters, so it is derived rather than typed.
  *
- * `parseReference` has to know how long each chapter is, or it accepts
- * references to verses that do not exist — `Matthew 10:100` parsed cleanly
- * when the only bound was the length of the longest chapter in the Bible.
- * There are 1,189 chapters, so the table is derived rather than typed.
+ * The source is the World English Bible as served by getbible.net — the same
+ * versification the Scripture corpus uses, which matters because another
+ * edition could disagree about whether 3 John has fourteen verses or fifteen
+ * and make the parser reject a reference the corpus can satisfy.
  *
- * The source is the World English Bible as served by getbible.net, which is
- * the same translation and the same versification the rendered Scripture
- * corpus uses. Reading the counts from the text the site actually quotes is
- * the point: a table taken from some other edition could disagree about, say,
- * whether 3 John has fourteen verses or fifteen, and then the parser would
- * reject a reference the corpus can satisfy.
- *
- * Writes `packages/ci-content-schema/src/versification.ts`. Nothing calls this
- * at build or request time; run it by hand only if the table needs rebuilding:
+ * Writes `packages/ci-content-schema/src/versification.ts`. Nothing calls it at
+ * build or request time; run it by hand when the table needs rebuilding:
  *
  *     bun run scripts/conditional-immortality/fetch-versification.ts
  */
@@ -57,10 +51,9 @@ async function fetchBook(order: number): Promise<GetBibleBook> {
 /**
  * Verse counts for one book, one entry per chapter.
  *
- * Read from the highest verse *number* present rather than from the length of
- * the verses array. They agree in this edition, but a numbering gap would make
- * the array length silently too small, and too small is the dangerous
- * direction: it would reject a real reference.
+ * Taken from the highest verse *number* rather than the array length: a
+ * numbering gap would make the length too small, which is the dangerous
+ * direction, since it would reject a real reference.
  */
 function verseCounts(book: GetBibleBook): number[] {
   const counts: number[] = []
@@ -88,10 +81,8 @@ async function main(): Promise<void> {
         const fetched = await fetchBook(expected.order)
         const counts = verseCounts(fetched)
 
-        // Cross-check the fetched book against the canon we already declare.
         // A mismatch means the two sources disagree about the shape of the
-        // Bible, and guessing which is right is exactly what this script must
-        // not do.
+        // Bible, and guessing which is right is not this script's business.
         if (counts.length !== expected.chapters) {
           failures.push(
             `${expected.name}: canon says ${expected.chapters} chapters, source has ${counts.length}`,
@@ -155,10 +146,8 @@ export const LONGEST_CHAPTER = ${Math.max(...[...table.values()].flat())}
 
   writeFileSync(OUT_FILE, source, 'utf8')
 
-  // Hand the file to the formatter rather than trying to emit its exact
-  // output. Without this the generator is not idempotent: `bun run lint:fix`
-  // rewraps the long arrays, and the next run of this script would undo that
-  // and dirty the tree again.
+  // Hand the file to the formatter rather than trying to emit its exact output,
+  // or the generator and `lint:fix` fight over it on every run.
   const format = Bun.spawnSync(['bunx', 'biome', 'check', '--write', OUT_FILE], {
     cwd: REPO_ROOT,
     stdout: 'pipe',

@@ -14,16 +14,7 @@ import { defineConfig, devices } from '@playwright/test'
  * `--project=accessibility` for `test:a11y`.
  */
 
-/**
- * A port of this suite's own, deliberately not the 3210 that `next dev` and
- * `next start` use.
- *
- * Sharing 3210 with the dev server quietly broke the guarantee in the
- * paragraph above. With `reuseExistingServer` on, a dev server left running on
- * 3210 was simply adopted, so the suite that documents itself as production
- * only — including all thirty-two axe checks — ran against development
- * markup instead, and said nothing about it.
- */
+/** Deliberately not the 3210 `next dev` uses, or a dev server gets adopted. */
 const PORT = 3211
 const BASE_URL = `http://localhost:${PORT}`
 
@@ -44,18 +35,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  /**
-   * Capped, because the bottleneck is the single `next start` process, not the
-   * CPU. Playwright's default is half the cores, which on a twenty-core
-   * machine is ten browsers pulling whole pages — `/full-case/` alone is
-   * 1.86 MB — from one Node server.
-   *
-   * Measured on this suite: at ten workers the whole-site sweeps, which take
-   * 5.3–6.0s uncontended, blew through their 90s budget and six tests failed;
-   * the run took 7m24s. At four workers all 186 passed in 1m41s. Over-
-   * subscription was making it slower *and* flakier, so this is not a
-   * tolerance being loosened — it is the queue being sized correctly.
-   */
+  // Capped: the bottleneck is the single `next start` process, not the CPU, and
+  // over-subscribing it made the run both slower and flakier.
   workers: process.env.CI ? 2 : Math.min(4, Math.max(1, Math.floor(os.cpus().length / 2))),
   reporter: [['list'], ['html', { open: 'never' }]],
   timeout: 90_000,
@@ -87,23 +68,12 @@ export default defineConfig({
   ],
 
   webServer: {
-    /**
-     * Serve only. The build is turbo's job — `test:e2e` and `test:a11y` both
-     * declare `dependsOn: ["build"]` — and doing it here as well meant
-     * `next build` ran twice per invocation, at about twenty-six seconds each.
-     *
-     * Running `playwright test` directly, without turbo, therefore needs a
-     * build first. `next start` says so plainly if one is missing.
-     */
+    // Serve only: both tasks declare `dependsOn: ["build"]`, so building here as
+    // well ran `next build` twice. Running playwright directly needs a build.
     command: `bunx next start --port ${PORT}`,
     url: BASE_URL,
-    /**
-     * Never adopt a server that is already listening. A surviving `next start`
-     * loads its manifest at boot, so reusing one serves whatever was built
-     * when it started — which, after a rebuild, is not the code under test.
-     * Booting a fresh server costs a second or two; silently testing stale
-     * output costs a great deal more.
-     */
+    // `next start` loads its manifest at boot, so a reused server would serve
+    // whatever was built when it started rather than the code under test.
     reuseExistingServer: false,
     timeout: 2 * 60 * 1000,
     stdout: 'pipe',

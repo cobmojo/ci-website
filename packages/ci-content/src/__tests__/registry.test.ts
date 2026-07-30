@@ -137,10 +137,8 @@ describe('cross-references', () => {
   })
 
   it('normalises every reference in the Scripture corpus and index', () => {
-    // `parseReference` bounds a verse by the length of its own chapter. If the
-    // versification table and the corpus ever disagree, the parser starts
-    // rejecting text the site can actually render, and it fails here rather
-    // than on the page.
+    // If the versification table and the corpus disagree, the parser rejects
+    // text the site can render. Fail here rather than on the page.
     for (const reference of scriptureReferences) {
       expect(parseReference(reference), `corpus: ${reference}`).toBeDefined()
     }
@@ -391,12 +389,8 @@ describe('rights metadata', () => {
 })
 
 /**
- * The Scripture corpus is a plain object literal, so a bare `in` check or a
- * bare index reaches its prototype. `hasScripture('constructor')` answered
- * true and `getScripture('constructor')` handed back `Object` itself — which
- * meant `requireScripture` did not throw for it either, and the component that
- * exists to make misquotation impossible would have rendered a passage with no
- * reference and no text.
+ * The corpus is a plain object literal, so a bare `in` check or index reaches
+ * its prototype and every accessor has to guard against it.
  */
 describe('the Scripture corpus does not answer for its prototype', () => {
   const INHERITED = [

@@ -285,23 +285,16 @@ export function findBook(token: string): BibleBook | undefined {
  * The parts of a reference, independent of how it is rendered.
  *
  * `chapterEnd` and the verse fields are mutually exclusive: a reference spans
- * either a range of whole chapters or a range of verses within one chapter.
- * This is expressed as an object rather than positional arguments because the
- * two ranges are both "a second number" and were trivially confusable.
+ * either whole chapters or verses within one chapter. An object rather than
+ * positional arguments, because both ranges are "a second number".
  */
 /**
  * Is `verse` a verse that exists in this chapter?
  *
- * The bound used to be a flat 176 — the length of Psalm 119, the longest
- * chapter in the Bible — which meant `Matthew 10:100` parsed as happily as
- * `Matthew 10:28`, and a typo in a citation reached the page.
- *
- * `VERSE_COUNTS` is generated from the same World English Bible edition the
- * Scripture corpus quotes, so the parser and the text it will be rendered
- * beside agree about where each chapter ends. A book missing from the table
- * falls back to the old bound rather than rejecting everything: failing open
- * on absent data keeps a real reference working, and the table's completeness
- * is asserted by its own test.
+ * `VERSE_COUNTS` comes from the same World English Bible edition the Scripture
+ * corpus quotes, so the parser and the text agree about where a chapter ends. A
+ * book missing from the table falls back to the longest chapter rather than
+ * rejecting everything; its completeness is asserted by its own test.
  */
 function isVerseInChapter(book: BibleBook, chapter: number, verse: number): boolean {
   if (verse < 1) return false
@@ -359,24 +352,17 @@ export function parseReference(input: string): ParsedReference | undefined {
   const trailing = numbers[3] ? Number(numbers[3]) : undefined
   let verseEnd = verseStart === undefined ? undefined : trailing
 
-  /**
-   * The trailing number after a hyphen means one of two different things, and
-   * which one depends on whether a verse was given.
-   *
-   * With a verse — `Isaiah 66:15-24` — it closes a verse range. Without one —
-   * `Revelation 20-22` — it closes a range of whole chapters. Reading the
-   * second case as a verse range dropped the 20 from the display form and made
-   * the slug collide with `Revelation 20:22`, so the two references were
-   * indistinguishable once slugged.
+  /*
+   * The trailing number after a hyphen closes a verse range when a verse was
+   * given (`Isaiah 66:15-24`) and a chapter range when one was not
+   * (`Revelation 20-22`).
    */
   let chapterEnd = verseStart === undefined ? trailing : undefined
 
-  /**
-   * Single-chapter books are cited without a chapter: `Jude 7` means Jude 1:7,
-   * and `Jude 12-13` means Jude 1:12-13. Without this, the leading number is
-   * read as a chapter and rejected as out of range. There is no chapter range
-   * to be had in a one-chapter book, so the trailing number is a verse after
-   * all.
+  /*
+   * Single-chapter books are cited without a chapter: `Jude 7` means Jude 1:7.
+   * There is no chapter range to be had in one chapter, so a trailing number is
+   * a verse after all.
    */
   if (book.chapters === 1 && verseStart === undefined) {
     verseStart = chapter
@@ -422,11 +408,9 @@ export function formatReference({
 /**
  * URL-safe identity for a reference.
  *
- * The verse forms are positional — `mark-9`, `mark-9-48`, `mark-9-42-48` — so
- * a chapter range written the same way would be indistinguishable from a
- * single verse: `revelation-20-22` would mean both `Revelation 20-22` and
- * `Revelation 20:22`. Chapter ranges therefore spell the join out, which
- * cannot be mistaken for a number and leaves every existing slug unchanged.
+ * The verse forms are positional (`mark-9`, `mark-9-48`, `mark-9-42-48`), so a
+ * chapter range written the same way would be indistinguishable from a verse.
+ * Chapter ranges spell the join out instead, leaving existing slugs unchanged.
  */
 export function referenceSlug({
   book,
