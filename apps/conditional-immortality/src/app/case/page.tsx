@@ -321,13 +321,13 @@ export default function CaseHubPage() {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/full-case/"
-              className="inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
+              className="pressable inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
             >
               Read the full case on one page
             </Link>
             <Link
               href="/download/"
-              className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.95rem] font-medium text-navy no-underline hover:bg-panel-strong"
+              className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.95rem] font-medium text-navy no-underline hover:bg-panel-strong"
             >
               Download a copy
             </Link>

@@ -41,7 +41,7 @@ export function SiteHeader() {
           <SearchDialogTrigger />
           <Link
             href="/watch/"
-            className="hidden rounded-md border border-copper/40 bg-copper/10 px-3 py-2 font-sans text-[0.88rem] font-medium text-copper-deep no-underline hover:bg-copper/15 sm:inline-flex"
+            className="pressable hidden rounded-md border border-copper/40 bg-copper/10 px-3 py-2 font-sans text-[0.88rem] font-medium text-copper-deep no-underline hover:bg-copper/15 sm:inline-flex"
           >
             Watch the Overview
           </Link>

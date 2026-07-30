@@ -90,7 +90,7 @@ export function SearchDialogTrigger() {
         href="/search/"
         aria-haspopup={mounted ? 'dialog' : undefined}
         aria-controls={mounted ? dialogId : undefined}
-        className="search-trigger inline-flex min-h-11 items-center gap-2 rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[0.88rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
+        className="search-trigger pressable inline-flex min-h-11 items-center gap-2 rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[0.88rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
         onClick={event => {
           if (!mounted) return
           event.preventDefault()
@@ -116,7 +116,10 @@ export function SearchDialogTrigger() {
           onClick={event => {
             if (event.target === dialogRef.current) closeDialog()
           }}
-          className="m-0 mx-auto mt-[6vh] w-[min(42rem,calc(100vw-2rem))] max-w-none rounded-lg border border-border bg-paper p-0 backdrop:bg-ink/40"
+          // `overlay-panel` carries the enter and exit, and the backdrop wash
+          // that used to be a utility class here: the panel and its backdrop
+          // have to share one duration and one curve to read as one object.
+          className="overlay-panel m-0 mx-auto mt-[6vh] w-[min(42rem,calc(100vw-2rem))] max-w-none rounded-lg border border-border bg-paper p-0"
         >
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
             <h2 id={`${dialogId}-title`} className="sr-only">
@@ -138,7 +141,7 @@ export function SearchDialogTrigger() {
             <button
               type="button"
               onClick={closeDialog}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-ink-muted hover:bg-panel"
+              className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-ink-muted hover:bg-panel"
             >
               <span className="sr-only">Close search</span>
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">

@@ -195,19 +195,19 @@ export default function HomePage() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/start/what-is-conditional-immortality/"
-                className="inline-flex min-h-12 items-center rounded-md bg-navy px-5 font-sans text-[1rem] font-medium text-white no-underline hover:bg-navy-deep"
+                className="pressable inline-flex min-h-12 items-center rounded-md bg-navy px-5 font-sans text-[1rem] font-medium text-white no-underline hover:bg-navy-deep"
               >
                 Read the 3-minute summary
               </Link>
               <Link
                 href="/case/"
-                className="inline-flex min-h-12 items-center rounded-md border border-navy px-5 font-sans text-[1rem] font-medium text-navy no-underline hover:bg-panel"
+                className="pressable inline-flex min-h-12 items-center rounded-md border border-navy px-5 font-sans text-[1rem] font-medium text-navy no-underline hover:bg-panel"
               >
                 Start the full case
               </Link>
               <Link
                 href="/watch/"
-                className="inline-flex min-h-12 items-center rounded-md border border-copper/45 bg-copper/10 px-5 font-sans text-[1rem] font-medium text-copper-deep no-underline hover:bg-copper/15"
+                className="pressable inline-flex min-h-12 items-center rounded-md border border-copper/45 bg-copper/10 px-5 font-sans text-[1rem] font-medium text-copper-deep no-underline hover:bg-copper/15"
               >
                 Watch the 28-minute overview
               </Link>
@@ -401,7 +401,7 @@ export default function HomePage() {
               <li key={topic.id}>
                 <Link
                   href={`/topics/${topic.slug}/`}
-                  className="inline-flex min-h-11 items-center rounded-md border border-border bg-paper-raised px-3 font-sans text-[0.9rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
+                  className="pressable inline-flex min-h-11 items-center rounded-md border border-border bg-paper-raised px-3 font-sans text-[0.9rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
                 >
                   {topic.title}
                 </Link>
@@ -462,7 +462,7 @@ export default function HomePage() {
             </p>
             <Link
               href="/corrections/"
-              className="inline-flex min-h-12 items-center rounded-md bg-navy px-5 font-sans text-[1rem] font-medium text-white no-underline hover:bg-navy-deep"
+              className="pressable inline-flex min-h-12 items-center rounded-md bg-navy px-5 font-sans text-[1rem] font-medium text-white no-underline hover:bg-navy-deep"
             >
               Submit a correction or counterargument
             </Link>

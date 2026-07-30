@@ -67,7 +67,10 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
   return (
     <section
       aria-labelledby="scripture-filter-title"
-      className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
+      // Fades in on mount rather than popping: these controls only exist once
+      // scripting has run. The status line below is deliberately not animated —
+      // it changes on every keystroke.
+      className="mount-reveal mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
     >
       {css ? <style>{css}</style> : null}
 
@@ -125,7 +128,7 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
             setBook('')
             setQuery('')
           }}
-          className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.92rem] font-medium text-navy hover:bg-panel-strong"
+          className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.92rem] font-medium text-navy hover:bg-panel-strong"
         >
           Show every reference
         </button>

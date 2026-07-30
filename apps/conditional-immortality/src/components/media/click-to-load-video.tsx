@@ -78,7 +78,10 @@ export function ClickToLoadVideo({
             title={frameTitle}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
             allowFullScreen
-            className="absolute inset-0 h-full w-full border-0"
+            // `video-frame` fades the player in over the poster it replaced.
+            // The container already carries the 16:9 ratio, so nothing moves;
+            // this only softens the swap to black.
+            className="video-frame absolute inset-0 h-full w-full border-0"
           />
         ) : (
           <button
@@ -88,11 +91,14 @@ export function ClickToLoadVideo({
               setStart(resolveStart())
               setActivated(true)
             }}
-            className="group absolute inset-0 flex min-h-11 w-full cursor-pointer flex-col items-center justify-center gap-3 p-5 text-center text-navy hover:bg-panel-strong sm:p-8"
+            // `video-play` moves the glyph rather than the poster on hover and
+            // press. Scaling a 16:9 panel would drag its border across the page
+            // and shift everything below it.
+            className="video-play absolute inset-0 flex min-h-11 w-full cursor-pointer flex-col items-center justify-center gap-3 p-5 text-center text-navy hover:bg-panel-strong sm:p-8"
           >
             <svg
               viewBox="0 0 64 64"
-              className="h-12 w-12 sm:h-16 sm:w-16"
+              className="video-play__glyph h-12 w-12 sm:h-16 sm:w-16"
               aria-hidden="true"
               focusable="false"
             >

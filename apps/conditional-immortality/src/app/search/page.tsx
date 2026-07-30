@@ -137,7 +137,7 @@ export default async function SearchPage({
             </div>
             <button
               type="submit"
-              className="inline-flex min-h-11 items-center rounded-md bg-navy px-5 font-sans text-[0.95rem] font-medium text-white"
+              className="pressable inline-flex min-h-11 items-center rounded-md bg-navy px-5 font-sans text-[0.95rem] font-medium text-white hover:bg-navy-deep"
             >
               Search
             </button>
@@ -249,7 +249,7 @@ export default async function SearchPage({
               <Link
                 href={buildHref({ page: String(page - 1) })}
                 rel="prev"
-                className="inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline"
+                className="pressable inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline hover:bg-panel"
               >
                 <span aria-hidden="true">←</span> Previous
               </Link>
@@ -261,7 +261,7 @@ export default async function SearchPage({
               <Link
                 href={buildHref({ page: String(page + 1) })}
                 rel="next"
-                className="inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline"
+                className="pressable inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline hover:bg-panel"
               >
                 Next <span aria-hidden="true">→</span>
               </Link>

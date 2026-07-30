@@ -77,7 +77,8 @@ export function SourceFilter({
   return (
     <section
       aria-labelledby="source-filter-title"
-      className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
+      // Fades in on mount, for the same reason as the Scripture index filter.
+      className="mount-reveal mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
     >
       {css ? <style>{css}</style> : null}
 
@@ -139,7 +140,7 @@ export function SourceFilter({
             setType('')
             setPerspective('')
           }}
-          className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.92rem] font-medium text-navy hover:bg-panel-strong"
+          className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-sans text-[0.92rem] font-medium text-navy hover:bg-panel-strong"
         >
           Show every source
         </button>

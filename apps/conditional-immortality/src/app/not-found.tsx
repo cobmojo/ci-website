@@ -77,7 +77,7 @@ export default function NotFound() {
           </p>
           <Link
             href="/search/"
-            className="inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
+            className="pressable inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-sans text-[0.95rem] font-medium text-white no-underline hover:bg-navy-deep"
           >
             Go to search
           </Link>

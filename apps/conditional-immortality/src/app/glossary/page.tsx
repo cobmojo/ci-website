@@ -105,7 +105,7 @@ export default function GlossaryPage() {
               <li key={group.letter}>
                 <a
                   href={`#letter-${group.letter.toLowerCase()}`}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-border px-2 no-underline hover:bg-panel hover:underline"
+                  className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-border px-2 no-underline hover:bg-panel hover:underline"
                 >
                   {group.letter}
                 </a>
@@ -114,7 +114,7 @@ export default function GlossaryPage() {
             <li>
               <a
                 href="#language-notes"
-                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-3 no-underline hover:bg-panel hover:underline"
+                className="pressable inline-flex min-h-11 items-center justify-center rounded-md border border-border px-3 no-underline hover:bg-panel hover:underline"
               >
                 Language notes
               </a>

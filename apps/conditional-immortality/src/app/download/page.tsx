@@ -60,7 +60,7 @@ export default function DownloadPage() {
                 <p className="m-0 font-sans text-[0.95rem]">
                   <Link
                     href="/full-case/"
-                    className="inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-medium text-white no-underline hover:bg-navy-deep"
+                    className="pressable inline-flex min-h-11 items-center rounded-md bg-navy px-4 font-medium text-white no-underline hover:bg-navy-deep"
                   >
                     Open the full case
                   </Link>
@@ -85,7 +85,7 @@ export default function DownloadPage() {
                   <a
                     href="/download/transcript.txt"
                     download
-                    className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
                   >
                     Download transcript.txt
                   </a>
@@ -114,7 +114,7 @@ export default function DownloadPage() {
                   <a
                     href="/download/bibliography.txt"
                     download
-                    className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
                   >
                     Download bibliography.txt
                   </a>
@@ -143,7 +143,7 @@ export default function DownloadPage() {
                 <p className="m-0 font-sans text-[0.95rem]">
                   <a
                     href="/download/handout.html"
-                    className="inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
+                    className="pressable inline-flex min-h-11 items-center rounded-md border border-border-strong bg-panel px-4 font-medium text-navy no-underline hover:bg-panel-strong"
                   >
                     Open the printable handout
                   </a>
@@ -169,7 +169,7 @@ export default function DownloadPage() {
                 <p className="m-0 font-sans text-[0.95rem]">
                   <Link
                     href="/original-document/"
-                    className="inline-flex min-h-11 items-center rounded-md border border-navy px-4 font-medium text-navy no-underline hover:bg-panel"
+                    className="pressable inline-flex min-h-11 items-center rounded-md border border-navy px-4 font-medium text-navy no-underline hover:bg-panel"
                   >
                     Read about the original document
                   </Link>
