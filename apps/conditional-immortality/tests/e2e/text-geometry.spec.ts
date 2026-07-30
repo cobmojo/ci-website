@@ -611,14 +611,12 @@ test.describe('text the contract declines', () => {
   test('still renders as ordinary semantic text on the page', async ({ page }) => {
     // Greek and Hebrew keep their language and direction metadata and are laid
     // out by the browser, exactly as before this integration existed.
+    //
+    // Asserted unconditionally. The glossary is a static page with known
+    // content, so a `count() > 0` guard would buy nothing except the ability to
+    // report pass having asserted nothing the day the markup disappears.
     await page.goto('/glossary/')
-    const greek = page.locator('[lang="grc"]').first()
-    if ((await greek.count()) > 0) {
-      await expect(greek).toBeVisible()
-    }
-    const hebrew = page.locator('[lang="he"]').first()
-    if ((await hebrew.count()) > 0) {
-      await expect(hebrew).toHaveAttribute('dir', 'rtl')
-    }
+    await expect(page.locator('[lang="grc"]').first()).toBeVisible()
+    await expect(page.locator('[lang="he"]').first()).toHaveAttribute('dir', 'rtl')
   })
 })

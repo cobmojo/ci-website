@@ -44,6 +44,17 @@ export const CANDIDATE_MAX_LENGTH = 600
 /** How far from a cut point a sentence boundary may be and still be preferred. */
 const SENTENCE_SEARCH_WINDOW = 90
 
+/**
+ * How far from a cut point a word boundary may be and still be preferred.
+ *
+ * The sentence cut is bounded; the word cut has to be too. `indexOf` and
+ * `lastIndexOf` will happily walk to the far end of the text when the window
+ * holds no space at all, and in the no-match head path — where the anchor is
+ * the empty range at offset zero — an unbounded backwards walk collapses the
+ * window to nothing and leaves an excerpt of one ellipsis.
+ */
+const WORD_SEARCH_WINDOW = 30
+
 const ELLIPSIS = '…'
 
 export interface ExcerptSource {
@@ -100,6 +111,24 @@ function isCollapsibleCluster(cluster: string): boolean {
 }
 
 /**
+ * The cluster with any leading collapsible run removed.
+ *
+ * A space followed by a combining mark is one grapheme cluster, so it is not
+ * wholly collapsible and cannot simply be dropped. CSS still collapses the
+ * space; it just keeps the mark on whichever space survives. Splitting the
+ * cluster here lets the leading run go through the same pending-space logic as
+ * any other whitespace, and only the remainder is emitted.
+ */
+function withoutLeadingCollapsible(cluster: string): string {
+  let at = 0
+  for (const character of cluster) {
+    if (!isCollapsible(character)) break
+    at += character.length
+  }
+  return at === 0 ? cluster : cluster.slice(at)
+}
+
+/**
  * A collapsible space immediately followed by a combining mark: the only shape
  * for which collapsing by cluster differs from collapsing by character.
  */
@@ -127,9 +156,14 @@ export function collapseWhitespace(text: string): string {
       pendingSpace = true
       continue
     }
+    // A cluster can *begin* with collapsible whitespace and still carry a
+    // combining mark, which is what keeps it out of the branch above. The
+    // leading run collapses like any other; only the rest is text.
+    const rest = withoutLeadingCollapsible(unit)
+    if (rest !== unit) pendingSpace = true
     if (pendingSpace && out.length > 0) out += ' '
     pendingSpace = false
-    out += unit
+    out += rest
   }
   return out
 }
@@ -226,7 +260,9 @@ function chooseWindow(
       start = sentence
     } else {
       const space = text.indexOf(' ', start)
-      if (space !== -1 && space + 1 <= anchor.start) start = space + 1
+      if (space !== -1 && space + 1 <= anchor.start && space - start <= WORD_SEARCH_WINDOW) {
+        start = space + 1
+      }
     }
   }
 
@@ -240,16 +276,19 @@ function chooseWindow(
       end = sentence
     } else {
       const space = text.lastIndexOf(' ', end)
-      if (space !== -1 && space >= anchor.end) end = space
+      if (space !== -1 && space >= anchor.end && end - space <= WORD_SEARCH_WINDOW) end = space
     }
   }
 
   start = snapBack(start, boundaries)
   end = snapForward(end, boundaries, text.length)
 
-  // Trim spaces the cut left dangling, without ever crossing the anchor.
-  while (start < anchor.start && text[start] === ' ') start += 1
-  while (end > anchor.end && text[end - 1] === ' ') end -= 1
+  // Trim spaces the cut left dangling, without ever crossing the anchor and
+  // without stepping off a grapheme boundary: a space that carries a combining
+  // mark is one cluster, and moving into it would strand the mark on the
+  // ellipsis. The snap above is only sound if what follows it respects it too.
+  while (start < anchor.start && text[start] === ' ' && boundaries.has(start + 1)) start += 1
+  while (end > anchor.end && text[end - 1] === ' ' && boundaries.has(end - 1)) end -= 1
 
   return { start, end }
 }

@@ -70,6 +70,22 @@ export interface UseFittedSearchExcerptsOptions {
 export type FittedExcerpts = ReadonlyMap<string, FittedExcerpt>
 
 const EMPTY: FittedExcerpts = new Map()
+const NO_RESULTS: readonly SearchResult[] = []
+
+/**
+ * Fits, and the exact result set they were computed for.
+ *
+ * The pairing is the point. Fits are keyed by document id, and consecutive
+ * queries routinely return the same document, so a bare map would happily hand
+ * the previous query's excerpt — and its highlight — to the new query's row.
+ * Carrying the identity alongside lets that be *derived* away on read instead
+ * of corrected a task later by an effect, which is too late: an effect runs
+ * after the commit that already painted it.
+ */
+interface FittedState {
+  readonly forResults: readonly SearchResult[]
+  readonly map: FittedExcerpts
+}
 
 /** The attribute the coordinator finds a representative excerpt element by. */
 export const EXCERPT_PROBE_ATTRIBUTE = 'data-search-excerpt'
@@ -81,7 +97,7 @@ export function useFittedSearchExcerpts({
   locale = 'en',
   runtime = DEFAULT_RUNTIME,
 }: UseFittedSearchExcerptsOptions): FittedExcerpts {
-  const [fitted, setFitted] = useState<FittedExcerpts>(EMPTY)
+  const [fitted, setFitted] = useState<FittedState>({ forResults: NO_RESULTS, map: EMPTY })
 
   /** Monotonic: only the newest batch may apply its results. */
   const tokenRef = useRef(0)
@@ -93,7 +109,9 @@ export function useFittedSearchExcerpts({
     if (!enabled || !container || results.length === 0) {
       tokenRef.current += 1
       geometryRef.current = null
-      setFitted(previous => (previous === EMPTY ? previous : EMPTY))
+      setFitted(previous =>
+        previous.map === EMPTY ? previous : { forResults: NO_RESULTS, map: EMPTY },
+      )
       return
     }
 
@@ -151,7 +169,11 @@ export function useFittedSearchExcerpts({
         // Replacing an excerpt is a refinement, never something the reader is
         // waiting on, so it goes in as a transition.
         startTransition(() => {
-          setFitted(previous => (sameFits(previous, next) ? previous : next))
+          setFitted(previous =>
+            previous.forResults === results && sameFits(previous.map, next)
+              ? previous
+              : { forResults: results, map: next },
+          )
         })
       } catch {
         // Nothing to report and nothing to retry: the fallback is already right.
@@ -172,15 +194,14 @@ export function useFittedSearchExcerpts({
     }
 
     /*
-     * A new result set invalidates anything in flight, and anything already
-     * applied. Two queries often return the same document, so keeping the map
-     * would render the previous query's excerpt — and its highlight — under
-     * the new query until the batch lands. Dropping it puts every row back on
-     * its own fallback, which is always right for the query being shown.
+     * A new result set invalidates anything in flight. What is already applied
+     * needs no invalidating here: the hook's return value is derived from the
+     * result identity, so a map computed for the previous query is never
+     * readable under this one. Resetting it in this effect would be a task too
+     * late — the commit that rendered the new results has already painted.
      */
     tokenRef.current += 1
     geometryRef.current = null
-    setFitted(previous => (previous === EMPTY ? previous : EMPTY))
     schedule()
 
     const observer =
@@ -196,7 +217,8 @@ export function useFittedSearchExcerpts({
     }
   }, [results, containerRef, enabled, locale, runtime])
 
-  return fitted
+  // Fits belong to the result set they were measured for, and to no other.
+  return fitted.forResults === results ? fitted.map : EMPTY
 }
 
 function sameGeometry(a: ExcerptGeometry | null, b: ExcerptGeometry | null): boolean {

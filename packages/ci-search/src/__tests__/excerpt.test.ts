@@ -63,6 +63,24 @@ describe('collapseWhitespace', () => {
   it('returns an empty string for whitespace only', () => {
     expect(collapseWhitespace('   \n\t ')).toBe('')
   })
+
+  /*
+   * A space carrying a combining mark is a single grapheme cluster, so it is
+   * not wholly collapsible and cannot be dropped. CSS still collapses the run
+   * it belongs to down to one space, keeping the mark on the survivor — and
+   * the candidate this produces is measured character for character, so an
+   * extra space is a line the browser will not draw where we predicted it.
+   */
+  it('collapses a run that ends in a space carrying a combining mark', () => {
+    expect(collapseWhitespace('alpha  ̈beta')).toBe('alpha ̈beta')
+    expect(collapseWhitespace('alpha ̈beta')).toBe('alpha ̈beta')
+  })
+
+  it('drops a leading space even when it carries a combining mark', () => {
+    // Left in place it becomes a leading space in the excerpt, which the
+    // window logic then reads as a word boundary at offset zero.
+    expect(collapseWhitespace(' ́word')).toBe('́word')
+  })
 })
 
 describe('buildExcerpt', () => {
@@ -183,6 +201,35 @@ describe('buildExcerpt', () => {
     // A split family emoji would leave a lone surrogate or a bare ZWJ.
     expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(excerpt.text)).toBe(false)
     expect(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(excerpt.text)).toBe(false)
+  })
+
+  /*
+   * The whole-word cut is a refinement, not a mandate. When the window holds
+   * no space, `lastIndexOf` walks all the way back to offset zero — and in the
+   * no-match head path, where the anchor is the empty range at zero, that
+   * collapses the window to nothing and leaves an excerpt of one ellipsis.
+   */
+  it('keeps a head excerpt when the text holds no word boundary to cut on', () => {
+    const excerpt = buildExcerpt(body(`A ${'x'.repeat(400)}`), ['nomatchhere'])
+    expect(excerpt.text).not.toBe('…')
+    expect(excerpt.text.length).toBeGreaterThan(100)
+  })
+
+  it('keeps a head excerpt when a leading cluster survives collapsing', () => {
+    const excerpt = buildExcerpt(body(` ́${'x'.repeat(400)}`), ['nomatchhere'])
+    expect(excerpt.text.length).toBeGreaterThan(100)
+  })
+
+  /*
+   * The dangling-space trim runs after the grapheme snap, so it has to respect
+   * boundaries itself. A space carrying a combining mark is one cluster, and
+   * stepping into it strands the mark on the leading ellipsis.
+   */
+  it('never leaves a combining mark stranded on the leading ellipsis', () => {
+    const text = `${'x'.repeat(104)} ́word target-here rest of the sentence continues on`
+    const excerpt = buildExcerpt(body(text), ['target-here'])
+    expect(excerpt.text).toContain('target-here')
+    expect(/^…\p{M}/u.test(excerpt.text)).toBe(false)
   })
 
   it('single-spaces a source that carries newlines', () => {

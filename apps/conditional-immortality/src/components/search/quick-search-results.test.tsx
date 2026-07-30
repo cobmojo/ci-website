@@ -1,5 +1,6 @@
 import type { SearchDoc, SearchResult } from '@ci/search'
 import { render, waitFor } from '@testing-library/react'
+import { flushSync } from 'react-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
 import type { TextLayoutEngine } from '@/lib/text-layout/engine'
@@ -369,7 +370,16 @@ describe('coordination across the list', () => {
     expect(fontLoads).toBe(1)
   })
 
-  it('reuses prepared candidates when only the width changed', async () => {
+  /*
+   * This pins the coordinator's half of the bargain: one batch per resize.
+   *
+   * It deliberately does *not* claim to cover the preparation cache. That lives
+   * in `withPreparationCache`, which `loadTextLayoutEngine` applies and which
+   * this test replaces wholesale with a bare counting engine — so the memo is
+   * pinned where it actually is, in `pretext-client.test.ts`. Naming it here
+   * would mean deleting the wrapper left the suite green.
+   */
+  it('runs one batch per resize, not one per row', async () => {
     const engine = createTestLayoutEngine()
     let width = 100
     const { container } = renderList({
@@ -383,16 +393,17 @@ describe('coordination across the list', () => {
     const afterFirstPass = engine.prepareCount()
     expect(afterFirstPass).toBeGreaterThan(0)
 
-    // A resize to a new width: layout re-runs, preparation must not balloon.
+    // A resize to a new width: layout re-runs for the same three rows.
     width = 140
     for (const callback of observerCallbacks) {
       callback([], {} as ResizeObserver)
     }
     await new Promise(resolve => setTimeout(resolve, 30))
 
-    // Three rows share one candidate string, so a second width costs at most a
-    // handful of new preparations, not a fresh pass for every row.
-    expect(engine.prepareCount() - afterFirstPass).toBeLessThanOrEqual(afterFirstPass)
+    // Exactly one more pass over the same rows. A double-scheduled batch or a
+    // per-row observer would push this over, which is the regression that
+    // matters here.
+    expect(engine.prepareCount() - afterFirstPass).toBe(afterFirstPass)
   })
 
   it('does no work at all while the dialog is closed', async () => {
@@ -455,6 +466,39 @@ describe('stale results', () => {
     await new Promise(resolve => setTimeout(resolve, 30))
     expect(excerptElements(container)[0]?.textContent).toBe('…eee fff ggg hhh')
     expect(unhandled).toEqual([])
+  })
+
+  /*
+   * The frame-accurate half of the same rule.
+   *
+   * Consecutive queries routinely return the same document, and fits are keyed
+   * by document id. If the previous query's map is still readable on the commit
+   * that renders the new results, the row paints the old query's excerpt with
+   * the old query's highlight under the new query's title — and only an effect,
+   * a task later, takes it back. So this asserts synchronously, with no timers
+   * and no act() flush: the moment new results are committed, the row is on its
+   * own fallback.
+   */
+  it('never paints a previous query fit, even for one frame', async () => {
+    const first = [result('shared')]
+    const { container, rerender } = render(
+      <QuickSearchResults results={first} open onNavigate={() => {}} runtime={runtimeWith()} />,
+    )
+    await waitForFitted(container)
+    expect(excerptElements(container)[0]?.textContent).toBe('…eee fff ggg hhh')
+
+    // A new query that happens to return the same document. Its fallback text
+    // differs, so what is on screen says which query the row is showing.
+    const second = [result('shared', { excerpt: 'a different fallback for the newer query' })]
+    flushSync(() => {
+      rerender(
+        <QuickSearchResults results={second} open onNavigate={() => {}} runtime={runtimeWith()} />,
+      )
+    })
+
+    const element = excerptElements(container)[0]
+    expect(element?.dataset.pretextState).toBe('fallback')
+    expect(element?.textContent).toBe('a different fallback for the newer query')
   })
 })
 

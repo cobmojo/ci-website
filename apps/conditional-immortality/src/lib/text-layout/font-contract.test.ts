@@ -134,6 +134,18 @@ describe('the preparation cache key', () => {
     expect(preparedCacheKey(base, 'one')).not.toBe(preparedCacheKey(base, 'two'))
   })
 
+  /*
+   * The separator is NUL because no candidate text can contain one, which is
+   * what makes the concatenation collision-proof. It is pinned here because it
+   * is exactly the kind of character a text-mode round trip — an editor that
+   * strips control characters, a patch through a pipeline — eats silently,
+   * leaving a key that two different inputs could share.
+   */
+  it('separates its parts with a character no candidate can contain', () => {
+    if (!base) return
+    expect(preparedCacheKey(base, 'one')).toContain('\0')
+  })
+
   it.each([
     ['font size', { fontSize: '16px' }],
     ['weight', { fontWeight: '600' }],

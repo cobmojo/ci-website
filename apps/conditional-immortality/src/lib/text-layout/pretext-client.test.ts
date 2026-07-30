@@ -1,7 +1,33 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { FontContract } from './font-contract'
 import { MEASURED_FONT_FAMILY } from './font-contract'
-import { ensureMeasuredFont, resetTextLayoutRuntimeForTests } from './pretext-client'
+import {
+  ensureMeasuredFont,
+  loadTextLayoutEngine,
+  resetTextLayoutRuntimeForTests,
+} from './pretext-client'
+import type { CountingTextLayoutEngine } from './test-engine'
+
+/**
+ * The runtime module is the only thing standing between this file and Pretext
+ * itself, so it is replaced with the deterministic counting engine the rest of
+ * the unit tests use. Capturing the instance is what lets a test see how many
+ * preparations actually reached the engine, rather than how many were asked
+ * for — which is the whole point of the cache under test.
+ */
+const runtimeModule = vi.hoisted(() => ({
+  engine: null as CountingTextLayoutEngine | null,
+}))
+
+vi.mock('./pretext-runtime', async () => {
+  const { createTestLayoutEngine } = await import('./test-engine')
+  return {
+    createPretextEngine: () => {
+      runtimeModule.engine = createTestLayoutEngine()
+      return runtimeModule.engine
+    },
+  }
+})
 
 /**
  * Font readiness, which is the gate that decides whether Pretext is allowed to
@@ -45,8 +71,82 @@ function stubFontFaceSet(): StubbedFonts {
 
 afterEach(() => {
   resetTextLayoutRuntimeForTests()
+  runtimeModule.engine = null
   Reflect.deleteProperty(document, 'fonts')
   vi.restoreAllMocks()
+})
+
+/**
+ * The preparation cache, pinned where it actually lives.
+ *
+ * `withPreparationCache` is applied inside `loadTextLayoutEngine` and nowhere
+ * else, so a test that injects its own engine — as every component test does —
+ * cannot see it. Without this block, deleting the wrapper leaves the whole
+ * suite green while a resize silently re-measures every row.
+ */
+describe('loadTextLayoutEngine', () => {
+  const SAMPLE = 'The wages of sin is death, and the gift of God is eternal life.'
+
+  function withCanvas() {
+    // jsdom has no 2D context. The support probe only asks whether one exists.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    )
+  }
+
+  it('prepares once for repeated calls with the same text and contract', async () => {
+    withCanvas()
+    const engine = await loadTextLayoutEngine()
+    expect(engine).not.toBeNull()
+
+    engine?.prepare(SAMPLE, CONTRACT)
+    engine?.prepare(SAMPLE, CONTRACT)
+    engine?.prepare(SAMPLE, CONTRACT)
+
+    // This is what makes a resize cheap: width is not part of preparation, so
+    // laying the same text out at a second width must reach the engine zero
+    // extra times.
+    expect(runtimeModule.engine?.prepareCount()).toBe(1)
+  })
+
+  it('does not reuse a preparation for different text', async () => {
+    withCanvas()
+    const engine = await loadTextLayoutEngine()
+    engine?.prepare(SAMPLE, CONTRACT)
+    engine?.prepare(`${SAMPLE} And the second death has no power.`, CONTRACT)
+    expect(runtimeModule.engine?.prepareCount()).toBe(2)
+  })
+
+  it('does not reuse a preparation across anything that changes measurement', async () => {
+    withCanvas()
+    const engine = await loadTextLayoutEngine()
+    engine?.prepare(SAMPLE, CONTRACT)
+    engine?.prepare(SAMPLE, { ...CONTRACT, letterSpacing: 0.4 })
+    engine?.prepare(SAMPLE, { ...CONTRACT, font: '400 1.5rem/1.5 "Source Serif 4", serif' })
+    expect(runtimeModule.engine?.prepareCount()).toBe(3)
+  })
+
+  it('reuses a preparation when only the line budget and height changed', async () => {
+    withCanvas()
+    const engine = await loadTextLayoutEngine()
+    engine?.prepare(SAMPLE, CONTRACT)
+    // Line height and budget are layout, not preparation. Keying on them would
+    // throw the expensive work away every time the container query flipped.
+    engine?.prepare(SAMPLE, { ...CONTRACT, lineHeight: 36, lineBudget: 3 })
+    expect(runtimeModule.engine?.prepareCount()).toBe(1)
+  })
+
+  it('loads the runtime once however many callers ask at once', async () => {
+    withCanvas()
+    const [first, second] = await Promise.all([loadTextLayoutEngine(), loadTextLayoutEngine()])
+    expect(first).toBe(second)
+    expect(first).not.toBeNull()
+  })
+
+  it('answers null rather than throwing where there is no canvas', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    await expect(loadTextLayoutEngine()).resolves.toBeNull()
+  })
 })
 
 describe('ensureMeasuredFont', () => {

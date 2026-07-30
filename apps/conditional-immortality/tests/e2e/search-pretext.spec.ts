@@ -543,17 +543,27 @@ test.describe('failing open', () => {
     expect(errors).toEqual([])
   })
 
-  test('an unsupported script keeps its ordinary excerpt', async ({ page }) => {
+  /*
+   * A transliterated lemma reaches rows whose *titles* carry real Greek.
+   *
+   * Deliberately not named as a test of the eligibility gate. `excerptSources`
+   * reads summary, body, heading, scripture and notes; the Greek in this corpus
+   * lives in titles and aliases, so no excerpt candidate here contains any, and
+   * a test claiming to exercise the uncovered-script path through this route
+   * would never reach it. The gate itself is pinned where it can be: on
+   * `excerptTextEligibility` directly in `supported-text.test.ts`, on the real
+   * hook with a Greek candidate in `quick-search-results.test.tsx`, and against
+   * a live browser in `text-geometry.spec.ts`.
+   */
+  test('a query answered by Greek-titled rows still renders every row', async ({ page }) => {
     await page.goto('/')
-    // A Greek lemma: the glossary and language notes carry real Greek, which
-    // the eligibility gate declines because the self-hosted subsets do not
-    // cover it.
     const dialog = await search(page, 'aionios')
     await expect(dialog.getByRole('listitem').first()).toBeVisible()
 
     const states = await excerptStates(page)
+    expect(states.length).toBeGreaterThan(0)
     for (const state of states) {
-      // Whatever the state, the row is readable and marked.
+      // Whatever the state, the row is readable, and a fitted one is marked.
       expect(state.text.length).toBeGreaterThan(0)
       if (state.state === 'fitted') expect(state.marks.length).toBeGreaterThan(0)
     }
