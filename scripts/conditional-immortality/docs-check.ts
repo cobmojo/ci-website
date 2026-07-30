@@ -12,7 +12,7 @@
  * Now it is checked. Any repository-relative path with a file extension, in a
  * Markdown document or a TypeScript comment or string, has to resolve.
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..')
@@ -53,18 +53,39 @@ function tracked(): string[] {
 
 const SEARCHED_EXTENSIONS = ['.md', '.ts', '.tsx', '.json', '.yml', '.yaml']
 
+/**
+ * Config files that carry no extension, matched by name.
+ *
+ * Filtering on extension alone let a real bug through. `.gitignore` named
+ * `apps/conditional-immortality/types/next-env.d.ts` in a comment and claimed
+ * it was committed, while an unanchored pattern two lines below was quietly
+ * ignoring that very file. The claim was wrong and nothing checked it, because
+ * `.gitignore` has no extension to match.
+ */
+const SEARCHED_NAMES = ['.gitignore', '.gitattributes', '.npmrc', 'Dockerfile']
+
+/** Files whose non-comment lines are patterns, not prose. */
+const IGNORE_FILES = ['.gitignore', '.gitattributes']
+
+function isSearched(entry: string): boolean {
+  if (SEARCHED_EXTENSIONS.some(extension => entry.endsWith(extension))) return true
+  const name = entry.split('/').pop() ?? ''
+  return SEARCHED_NAMES.includes(name)
+}
+
 interface Missing {
   readonly file: string
   readonly line: number
   readonly path: string
 }
 
+const trackedPaths = new Set(tracked())
 const missing: Missing[] = []
 let filesSearched = 0
 let mentions = 0
 
-for (const entry of tracked()) {
-  if (!SEARCHED_EXTENSIONS.some(extension => entry.endsWith(extension))) continue
+for (const entry of trackedPaths) {
+  if (!isSearched(entry)) continue
 
   let content: string
   try {
@@ -74,13 +95,29 @@ for (const entry of tracked()) {
   }
   filesSearched += 1
 
+  /*
+   * In an ignore file, only the comments are prose. A pattern line names a path
+   * precisely because it is *not* meant to be tracked, so asking whether it is
+   * tracked is a category error and would report every rule as a broken
+   * reference.
+   */
+  const commentsOnly = IGNORE_FILES.includes(entry.split('/').pop() ?? '')
+
   const lines = content.split(/\r?\n/)
   for (const [index, line] of lines.entries()) {
+    if (commentsOnly && !line.trimStart().startsWith('#')) continue
     for (const match of line.matchAll(PATH_PATTERN)) {
       const candidate = match[0].replace(/[.,;:)]+$/, '')
       mentions += 1
       if (NOT_REPOSITORY_FILES.has(candidate)) continue
-      if (existsSync(join(REPO_ROOT, candidate))) continue
+      /*
+       * Tracked, not merely present. Checking the filesystem passes for a file
+       * that exists on one machine and is gitignored — which is exactly how a
+       * reference to `types/next-env.d.ts` survived here while an unanchored
+       * ignore pattern kept that file out of the repository entirely. What a
+       * document promises has to be what a clone receives.
+       */
+      if (trackedPaths.has(candidate)) continue
       missing.push({ file: entry, line: index + 1, path: candidate })
     }
   }

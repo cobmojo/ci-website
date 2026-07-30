@@ -47,7 +47,7 @@ interface RawCue {
 function normalise(text: string): string {
   // The class spells out U+00A0 rather than relying on a literal one: an
   // invisible character in a regex is a change waiting to be made by accident.
-  return text.replace(/[ \s]+/g, ' ').trim()
+  return text.replace(/[\u00a0\s]+/g, ' ').trim()
 }
 
 function fetchCues(): RawCue[] {
