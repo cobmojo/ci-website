@@ -7,6 +7,31 @@ import type { NextConfig } from 'next'
  * origin ever contacted is YouTube's privacy-enhanced domain, and only after a
  * visitor deliberately presses play on the watch page or the homepage poster.
  */
+/**
+ * Whether this build is served over HTTPS.
+ *
+ * `upgrade-insecure-requests` rewrites every `http://` subresource to `https://`.
+ * On an HTTPS origin that is exactly what we want. On a plain-HTTP origin there
+ * is nothing to upgrade *to*, and the directive is not harmless: Chromium and
+ * Firefox exempt loopback from it, WebKit does not, so on a local HTTP server
+ * WebKit upgrades the site's own scripts and fonts to a port with no TLS and
+ * fails every one of them.
+ *
+ * So it is emitted when, and only when, the canonical origin is HTTPS —
+ * resolved exactly as `site-config.ts` resolves it, including the Vercel
+ * fallbacks, so a deployment that sets no `NEXT_PUBLIC_SITE_URL` still gets
+ * the production policy. The local production server the browser suites run
+ * against resolves to none of them, and is testable in all three engines.
+ */
+const canonicalOrigin =
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : '') ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+
+const servedOverHttps = canonicalOrigin.startsWith('https://')
+
 const CSP_DIRECTIVES: Record<string, string[]> = {
   'default-src': ["'self'"],
   'script-src': ["'self'", "'unsafe-inline'"],
@@ -20,7 +45,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
   'base-uri': ["'self'"],
   'form-action': ["'self'"],
   'frame-ancestors': ["'none'"],
-  'upgrade-insecure-requests': [],
+  ...(servedOverHttps ? { 'upgrade-insecure-requests': [] } : {}),
 }
 
 const csp = Object.entries(CSP_DIRECTIVES)

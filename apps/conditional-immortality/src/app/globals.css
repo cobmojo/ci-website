@@ -618,6 +618,117 @@
     font-style: italic;
   }
 
+  /* ---------------------------------------------------------------- *
+   * The measured quick-search excerpt.
+   *
+   * This is the one place on the site where a JavaScript layout engine
+   * predicts where the browser will break a line, so it is the one place
+   * where the typography has to be stated outright rather than inherited.
+   * Every declaration below is read back from the rendered element at
+   * runtime and handed to Pretext; if any of them stops matching what
+   * Pretext models, the contract is refused and the reader keeps the
+   * ordinary excerpt.
+   *
+   * Nothing here leaks: it is scoped to this class, and article, print and
+   * original-language typography are untouched.
+   * ---------------------------------------------------------------- */
+
+  .quick-search-results {
+    container-type: inline-size;
+  }
+
+  .quick-search-excerpt {
+    /*
+     * Two lines on a phone, three once the result column is wide enough to
+     * make a third worth reading.
+     *
+     * 26rem is the container width the dialog reaches at a 480px viewport:
+     * min(42rem, 100vw - 2rem) less the 2rem of dialog padding. Every phone
+     * width the responsive suite covers (320, 375, 414) lands below it; every
+     * tablet and desktop width lands well above.
+     */
+    --search-excerpt-lines: 2;
+    --search-excerpt-line-height: 1.375;
+
+    /* `display` is set with the clamp below, which needs -webkit-box. */
+    font-family: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 0.9rem;
+    line-height: var(--search-excerpt-line-height);
+    letter-spacing: normal;
+    color: var(--color-ink-muted);
+
+    /* The wrapping mode Pretext models, stated rather than inherited. */
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    /* The base layer gives every `p` text-wrap: pretty. Pretext does not model
+       it, and this element is measured, so it opts out explicitly. */
+    text-wrap: wrap;
+
+    /* Measured width must be the text's width, so nothing may pad it. */
+    padding: 0;
+    border: 0;
+
+    /*
+     * A fixed block for the excerpt, so replacing the fallback with the fitted
+     * substring cannot move the rows below it. Two declarations, the same
+     * value: `em` resolves against this element's own font-size everywhere,
+     * and `lh` says it directly where it is supported.
+     *
+     * The clipping is a safety net for a fit that was somehow never applied,
+     * not a substitute for fitting correctly.
+     */
+    block-size: calc(var(--search-excerpt-lines) * var(--search-excerpt-line-height) * 1em);
+
+    /*
+     * A clamp rather than a plain clip.
+     *
+     * A fitted excerpt is measured to fit and never reaches this. A fallback is
+     * not measured at all — it is whatever the ranker quoted — so at a phone
+     * width it can run past the reserved block. Clipping that silently loses
+     * the last words with nothing to show for it; clamping ends the visible
+     * text with an ellipsis, which is the truth. The fallback also keeps its
+     * match within the first line, so what a clamp removes is trailing context
+     * rather than the reason the row is there.
+     */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--search-excerpt-lines);
+    overflow: hidden;
+  }
+
+  /* `lh` says the same thing directly, where it is understood. The geometry
+     suite asserts the two agree to the pixel. */
+  @supports (block-size: 1lh) {
+    .quick-search-excerpt {
+      block-size: calc(var(--search-excerpt-lines) * 1lh);
+    }
+  }
+
+  @container (min-width: 26rem) {
+    .quick-search-excerpt {
+      --search-excerpt-lines: 3;
+    }
+  }
+
+  /*
+   * Highlighting inside the measured excerpt must not change its width.
+   *
+   * The horizontal padding the other result lists use would add a pixel on
+   * each side of every mark, which Pretext has no way to know about. Colour and
+   * a radius cost nothing; padding and weight are removed.
+   */
+  .quick-search-excerpt mark {
+    padding: 0;
+    border-radius: 2px;
+    background: var(--color-ochre-soft);
+    color: var(--color-ink);
+    font-weight: inherit;
+    font-style: inherit;
+  }
+
   /* Original-language text. Marked up with lang attributes in the DOM. */
   .lang-grc,
   .lang-he {

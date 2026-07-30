@@ -44,7 +44,9 @@ progress and every cross-reference key off the id.
 its prose. The only client components are the mobile navigation sheet, the
 search dialog, the click-to-load video, the feedback form, reading progress, the
 print button and two progressive-enhancement filters. Every one degrades to
-working markup with scripting disabled.
+working markup with scripting disabled. The text-layout runtime the search
+dialog uses is in a chunk of its own that an article page never requests; an
+end-to-end test finds that chunk in the production output and proves it.
 
 **Scripture is rendered, never typed.** This is the decision I would defend
 hardest. 197 passages of the public-domain World English Bible are stored in a
@@ -58,6 +60,20 @@ time and served as a static asset. No query leaves the reader's machine and
 there is no hosted search service to depend on. Ranking is a plain weighted
 scorer over title, id, summary, headings, Scripture references, body,
 transcript and notes, with synonym expansion at reduced weight.
+
+**Matches are mapped back to the source, not guessed at.** Search normalises
+text — lowercasing, NFKD, quote and dash folding, whitespace collapsing — and
+then has to show the reader the original. An offset into one is not an offset
+into the other, so `@ci/search` carries a chunk map between the two and
+guarantees every highlight boundary lands on a grapheme cluster boundary.
+
+**The search dialog fits its excerpts, and can decline to.** Pretext predicts
+where lines will break so a quick-search excerpt lands on an exact two- or
+three-line budget. It is loaded only after a reader shows search intent, it
+never delays a result, and it switches itself off whenever the font, the browser
+or the text is outside a deliberately narrow supported contract. The reader then
+sees the ordinary excerpt and no error. The full decision, the supported
+contract and the browser evidence are in `docs/pretext-text-geometry.md`.
 
 ## Routes
 
@@ -90,21 +106,25 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-537 tests, all passing.
+1,154 tests, all passing.
 
 | Suite | Count |
 |---|---|
 | Unit, `@ci/content-schema` | 46 |
 | Unit, `@ci/content` | 64 |
-| Unit, `@ci/search` | 39 |
-| Unit, `conditional-immortality` | 132 |
-| End-to-end, desktop and mobile | 224 |
+| Unit, `@ci/search` | 329 |
+| Unit and component, `conditional-immortality` | 326 |
+| End-to-end, desktop and mobile | 288 |
 | Accessibility, axe plus structural | 32 |
+| Text geometry, Chromium, Firefox and WebKit | 69 |
 
-Plus six gates that fail the build: content validation, the content audit, the
-PII scan, the link check, the first-load JavaScript budget and the production
-build itself. All of them, and both browser suites, run on every push through
-`.github/workflows/ci.yml`.
+Plus seven gates that fail the build: content validation, the content audit,
+the documentation path check, the PII scan, the link check, the first-load
+JavaScript budget and the production build itself. All of them, and all three
+browser suites, run on every push through `.github/workflows/ci.yml`.
+
+`bun run validate` is the non-browser gate. `bun run ci` runs it and then every
+browser suite, accessibility and text geometry included.
 
 Nothing is skipped, no axe rule is disabled, and no assertion was weakened to
 get a pass.
@@ -151,14 +171,20 @@ because Escape is handled by the platform. Both dialogs have Escape, a visible
 Close button, focus trapping and focus restoration, and the end-to-end suite
 asserts all of it.
 
+Fitted search excerpts change none of this: the excerpt is ordinary DOM text,
+matches stay semantic `<mark>` elements, and replacing an excerpt is never
+announced — a refinement of wording is not news a screen-reader user needs
+interrupting for. axe runs over the open dialog after fitting.
+
 **Not done:** descriptions of on-screen text in the video. Writing those
 requires watching it, and inventing them was not acceptable. The watch page and
 the accessibility statement both say so.
 
 ## Performance
 
-Static generation throughout. No third-party script, font or stylesheet. Fonts
-are self-hosted and subset. YouTube is not contacted until the reader presses
+Static generation throughout. No third-party-hosted script, font or stylesheet:
+every byte is served from this origin, including the one runtime dependency the
+search dialog loads lazily. Fonts are self-hosted and subset. YouTube is not contacted until the reader presses
 play, and then only on the privacy-enhanced domain. The video container has a
 fixed aspect ratio, so activating it causes no layout shift. The search index
 loads only when a reader first opens search.
@@ -186,4 +212,10 @@ replace `src/lib/rate-limit.ts` with a shared store.
 4. External links are recorded with an access date but are not fetched by CI, so
    link rot is not detected automatically. Archive URLs are recorded where they
    exist and are not yet complete.
-5. No visual regression testing.
+5. No visual regression testing. The text-geometry suite is not one: it compares
+   predicted and actual line counts, and says nothing about appearance.
+6. Firefox does not get fitted search excerpts. Pretext 0.0.8 measures through
+   an `OffscreenCanvas`, which in Firefox does not resolve `@font-face`, so its
+   predictions there are made in the wrong font. The runtime detects this and
+   falls back; the reasoning and the measurements are in
+   `docs/pretext-text-geometry.md`.

@@ -25,8 +25,16 @@ bun run validate
 ```
 
 Formatting, lint, typecheck, content validation, the content audit, unit tests,
-the production build, the PII scan and the link check. `bun run ci` adds the
-end-to-end and accessibility suites.
+the production build, the PII scan and the link check.
+
+```bash
+bun run ci
+```
+
+`validate`, then every browser suite: end-to-end on desktop and mobile,
+accessibility, and the text-geometry contract in Chromium, Firefox and WebKit.
+Each is also available on its own as `test:e2e`, `test:a11y` and
+`test:text-geometry`.
 
 ## What is here
 
@@ -79,13 +87,25 @@ unknown reference fails the build. Do not work around this by typing the verse.
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-537 tests: 281 unit, 224 end-to-end across desktop and mobile, 32 accessibility.
+1,154 tests: 765 unit, 288 end-to-end across desktop and mobile, 32
+accessibility, and 69 text-geometry across Chromium, Firefox and WebKit.
 They run on every push; see `.github/workflows/ci.yml`.
 
 ## Conventions
 
-Bun, not npm or pnpm. Server components by default. No third-party script, font
-or stylesheet. YouTube is not contacted until a reader presses play. Search runs
+Bun, not npm or pnpm. Server components by default. No third-party-hosted
+script, font or stylesheet: everything is served from this origin, including the
+one runtime dependency the search dialog loads lazily after a reader shows
+search intent. YouTube is not contacted until a reader presses play. Search runs
 in the browser and no query is transmitted. The author's personal contact
 details from the source document are never published, and a build-time scanner
 enforces it.
+
+## One more thing that is load-bearing
+
+**The search dialog fits its excerpts, and is allowed to give up.** A text
+layout engine predicts where lines will break so a result's excerpt lands on a
+whole number of lines. It is an optional refinement over an excerpt that is
+already complete and correct, and it switches itself off — silently, for the
+reader — whenever the font, the browser or the text is not one it can be trusted
+with. See [Pretext and text geometry](docs/pretext-text-geometry.md).

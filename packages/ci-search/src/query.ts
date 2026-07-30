@@ -1,4 +1,6 @@
 import { parseReference } from '@ci/content-schema/bible'
+import { buildExcerpts, excerptSources } from './excerpt'
+import { normalize } from './normalize-with-source-map'
 import { expandQuery } from './synonyms'
 import type { MatchField, SearchDoc, SearchFilters, SearchResult } from './types'
 
@@ -22,196 +24,6 @@ const FIELD_WEIGHTS: Record<MatchField, number> = {
 const SYNONYM_FACTOR = 0.45
 /** Whole-phrase hits count for more than individual word hits. */
 const PHRASE_BONUS = 1.9
-
-const SINGLE_QUOTE = /[‘’‛]/
-const DOUBLE_QUOTE = /[“”]/
-const DASH = /[‐-―−]/
-const WHITESPACE = /\s/
-
-/** Global variants of the classes above, for whole-string replacement. */
-const SINGLE_QUOTE_ALL = new RegExp(SINGLE_QUOTE.source, 'g')
-const DOUBLE_QUOTE_ALL = new RegExp(DOUBLE_QUOTE.source, 'g')
-const DASH_ALL = new RegExp(DASH.source, 'g')
-
-export function normalise(value: string): string {
-  return (
-    value
-      .toLowerCase()
-      .normalize('NFKD')
-      // Curly quotes and dashes should match their ASCII equivalents.
-      .replace(SINGLE_QUOTE_ALL, "'")
-      .replace(DOUBLE_QUOTE_ALL, '"')
-      .replace(DASH_ALL, '-')
-      .replace(/\s+/g, ' ')
-      .trim()
-  )
-}
-
-/**
- * A normalised string, plus where each of its characters came from.
- *
- * Matching happens on normalised text but is displayed on the original, and the
- * two differ in length: collapsing spaces shortens, trimming shifts, and NFKD
- * lengthens. `start[i]` and `end[i]` bound the original character that produced
- * `value[i]`, one entry per UTF-16 unit, so an index from `value.indexOf()` maps
- * back directly.
- */
-export interface NormalisedText {
-  readonly value: string
-  readonly start: readonly number[]
-  readonly end: readonly number[]
-}
-
-const CASED = /\p{Cased}/u
-const CASE_IGNORABLE = /\p{Case_Ignorable}/u
-const MARK = /\p{M}/u
-
-/** A base character together with the combining marks that belong to it. */
-interface Cluster {
-  readonly text: string
-  readonly start: number
-  readonly end: number
-}
-
-/**
- * Split text into clusters of one base character plus its combining marks.
- *
- * The unit has to be the cluster: NFKD reorders combining marks into canonical
- * order, which Hebrew pointing triggers, and a per-character walk cannot
- * reorder anything. Reordering never crosses a base character, so cluster by
- * cluster gives the same result as the whole string at once.
- */
-function toClusters(text: string): Cluster[] {
-  const clusters: Cluster[] = []
-  let current = ''
-  let start = 0
-  let offset = 0
-  for (const char of text) {
-    if (current !== '' && MARK.test(char)) {
-      current += char
-    } else {
-      if (current !== '') clusters.push({ text: current, start, end: offset })
-      current = char
-      start = offset
-    }
-    offset += char.length
-  }
-  if (current !== '') clusters.push({ text: current, start, end: offset })
-  return clusters
-}
-
-/**
- * Does this capital sigma end a word?
- *
- * Σ lowercases to ς at the end of a word and σ elsewhere, so `ΛΟΓΟΣ` becomes
- * `λογος`. `toLowerCase` applies that to a whole string; a per-cluster walk has
- * to apply the Unicode `Final_Sigma` condition itself — preceded by a cased
- * letter, ignoring case-ignorable characters, and not followed by one.
- */
-function isFinalSigma(clusters: readonly Cluster[], position: number): boolean {
-  const base = (cluster: Cluster | undefined) => (cluster ? [...cluster.text][0] : undefined)
-
-  let precededByCased = false
-  for (let i = position - 1; i >= 0; i -= 1) {
-    const char = base(clusters[i])
-    if (char === undefined || CASE_IGNORABLE.test(char)) continue
-    precededByCased = CASED.test(char)
-    break
-  }
-  if (!precededByCased) return false
-
-  for (let i = position + 1; i < clusters.length; i += 1) {
-    const char = base(clusters[i])
-    if (char === undefined || CASE_IGNORABLE.test(char)) continue
-    return !CASED.test(char)
-  }
-  return true
-}
-
-/** The normalisation of one cluster, matching `normalise` step for step. */
-function normaliseCluster(clusters: readonly Cluster[], position: number): string {
-  const text = clusters[position]?.text ?? ''
-  const base = [...text][0] ?? ''
-
-  // Only the base character is substituted; marks it carries still come
-  // through, or a cedilla trailing a curly quote would be dropped.
-  const marks = text.slice(base.length).toLowerCase().normalize('NFKD')
-  if (SINGLE_QUOTE.test(base)) return `'${marks}`
-  if (DOUBLE_QUOTE.test(base)) return `"${marks}`
-  if (DASH.test(base)) return `-${marks}`
-
-  const lowered =
-    base === 'Σ'
-      ? (isFinalSigma(clusters, position) ? 'ς' : 'σ') + text.slice(base.length).toLowerCase()
-      : text.toLowerCase()
-  return lowered.normalize('NFKD')
-}
-
-/**
- * `normalise`, cluster by cluster, so each output position can be traced back to
- * the input.
- *
- * An order of magnitude slower, so it is used only where the mapping is needed:
- * highlighting and excerpting, over a page of results rather than the corpus.
- * A test asserts it agrees with `normalise` on every field of every document.
- */
-export function normaliseWithMap(text: string): NormalisedText {
-  let value = ''
-  const start: number[] = []
-  const end: number[] = []
-
-  // Collapsed to one space, and only once a non-space has been seen, which is
-  // what `.trim()` did to the leading run.
-  let spaceStart = -1
-  let spaceEnd = -1
-  let seenNonSpace = false
-
-  const clusters = toClusters(text)
-
-  for (let position = 0; position < clusters.length; position += 1) {
-    const cluster = clusters[position]
-    if (!cluster) continue
-
-    // A cluster can normalise to several characters (`ﬁ` to `fi`, `¨` to a space
-    // plus a combining diaeresis), so the whitespace check is on the output.
-    for (const unit of normaliseCluster(clusters, position)) {
-      if (WHITESPACE.test(unit)) {
-        if (spaceStart === -1) spaceStart = cluster.start
-        spaceEnd = cluster.end
-        continue
-      }
-      if (spaceStart !== -1) {
-        if (seenNonSpace) {
-          value += ' '
-          start.push(spaceStart)
-          end.push(spaceEnd)
-        }
-        spaceStart = -1
-      }
-      seenNonSpace = true
-      value += unit
-      for (let k = 0; k < unit.length; k += 1) {
-        start.push(cluster.start)
-        end.push(cluster.end)
-      }
-    }
-  }
-
-  // A trailing run of whitespace is never emitted, the other half of `.trim()`.
-  return { value, start, end }
-}
-
-/** The span of the original text that produced `value[from]` through `value[to - 1]`. */
-function sourceSpan(
-  map: NormalisedText,
-  from: number,
-  to: number,
-  fallbackEnd: number,
-): { from: number; to: number } | undefined {
-  const last = Math.min(to, map.start.length) - 1
-  if (last < from) return undefined
-  return { from: map.start[from] ?? 0, to: map.end[last] ?? fallbackEnd }
-}
 
 const STOP_WORDS = new Set([
   'the',
@@ -243,7 +55,7 @@ const STOP_WORDS = new Set([
 ])
 
 function tokenise(value: string): string[] {
-  return normalise(value)
+  return normalize(value)
     .split(/[^a-z0-9':]+/)
     .filter(token => token.length > 1 && !STOP_WORDS.has(token))
 }
@@ -267,10 +79,10 @@ function countOccurrences(haystack: string, needle: string): number {
 export function scriptureQueryVariants(query: string): readonly string[] {
   const parsed = parseReference(query)
   if (!parsed) return []
-  const variants = new Set<string>([normalise(parsed.normalized)])
-  variants.add(normalise(`${parsed.book} ${parsed.chapter}`))
+  const variants = new Set<string>([normalize(parsed.normalized)])
+  variants.add(normalize(`${parsed.book} ${parsed.chapter}`))
   if (parsed.verseStart !== undefined) {
-    variants.add(normalise(`${parsed.book} ${parsed.chapter}:${parsed.verseStart}`))
+    variants.add(normalize(`${parsed.book} ${parsed.chapter}:${parsed.verseStart}`))
   }
   return [...variants]
 }
@@ -280,45 +92,41 @@ interface FieldSource {
   readonly text: string
 }
 
-interface DocFields {
-  readonly sources: readonly FieldSource[]
-  readonly title: string
-  readonly sectionId: string
+/**
+ * Normalised fields, computed once per document.
+ *
+ * A search normalises every field of every document, which is 438,000
+ * characters of lowercasing, NFKD and folding — on every keystroke, for a
+ * corpus that was built at deploy time and cannot change while the page is
+ * open. Keyed weakly on the document, so an index that is replaced is
+ * collected with its entries.
+ *
+ * This is a memo, not a behaviour change: the ranking snapshot proves the
+ * scores are identical.
+ */
+const normalisedFields = new WeakMap<SearchDoc, readonly FieldSource[]>()
+
+function fieldsOf(doc: SearchDoc): readonly FieldSource[] {
+  const cached = normalisedFields.get(doc)
+  if (cached) return cached
+  const fields = computeFields(doc)
+  normalisedFields.set(doc, fields)
+  return fields
 }
 
-/**
- * Normalised fields for one document.
- *
- * The index is static for the life of the page, so normalising it once is safe.
- * A `WeakMap` rather than a `Map` so replacing the index does not pin the old
- * documents in memory.
- */
-const FIELD_CACHE = new WeakMap<SearchDoc, DocFields>()
-
-function fieldsOf(doc: SearchDoc): DocFields {
-  const cached = FIELD_CACHE.get(doc)
-  if (cached) return cached
-
-  const title = normalise(doc.title)
-  const fields: DocFields = {
-    title,
-    sectionId: doc.sectionId ? normalise(doc.sectionId) : '',
-    sources: [
-      { field: 'title', text: title },
-      { field: 'id', text: normalise([doc.sectionId ?? '', ...doc.aliases].join(' ')) },
-      { field: 'summary', text: normalise(doc.summary) },
-      { field: 'heading', text: normalise(doc.headings.join(' · ')) },
-      { field: 'scripture', text: normalise(doc.scriptureRefs.join(' · ')) },
-      {
-        field: doc.type === 'transcript' ? 'transcript' : 'body',
-        text: normalise(doc.body),
-      },
-      { field: 'notes', text: normalise(doc.notes) },
-    ],
-  }
-
-  FIELD_CACHE.set(doc, fields)
-  return fields
+function computeFields(doc: SearchDoc): readonly FieldSource[] {
+  return [
+    { field: 'title', text: normalize(doc.title) },
+    { field: 'id', text: normalize([doc.sectionId ?? '', ...doc.aliases].join(' ')) },
+    { field: 'summary', text: normalize(doc.summary) },
+    { field: 'heading', text: normalize(doc.headings.join(' · ')) },
+    { field: 'scripture', text: normalize(doc.scriptureRefs.join(' · ')) },
+    {
+      field: doc.type === 'transcript' ? 'transcript' : 'body',
+      text: normalize(doc.body),
+    },
+    { field: 'notes', text: normalize(doc.notes) },
+  ]
 }
 
 function matchesFilters(doc: SearchDoc, filters: SearchFilters): boolean {
@@ -340,53 +148,24 @@ function matchesFilters(doc: SearchDoc, filters: SearchFilters): boolean {
   )
 }
 
-const EXCERPT_RADIUS = 110
-
-/**
- * Cached offset maps for excerpting. `normaliseWithMap` is an order of magnitude
- * slower than `normalise`, and the same documents come back on every keystroke.
- */
-const EXCERPT_MAP_CACHE = new WeakMap<SearchDoc, NormalisedText>()
-
-function excerptMap(doc: SearchDoc, body: string): NormalisedText {
-  const cached = EXCERPT_MAP_CACHE.get(doc)
-  if (cached) return cached
-  const map = normaliseWithMap(body)
-  EXCERPT_MAP_CACHE.set(doc, map)
-  return map
-}
-
-function buildExcerpt(map: NormalisedText, body: string, terms: readonly string[]): string {
-  let bestIndex = -1
-  let bestTerm = ''
-  for (const term of terms) {
-    const index = map.value.indexOf(term)
-    if (index !== -1 && (bestIndex === -1 || term.length > bestTerm.length)) {
-      bestIndex = index
-      bestTerm = term
-    }
-  }
-
-  if (bestIndex === -1) {
-    const source = body.replace(/\s+/g, ' ').trim()
-    return source.length > EXCERPT_RADIUS * 2
-      ? `${source.slice(0, EXCERPT_RADIUS * 2).trimEnd()}…`
-      : source
-  }
-
-  // The window is measured on the original text, not the normalised one, so
-  // the match sits in the middle of what the reader is actually shown.
-  const span = sourceSpan(map, bestIndex, bestIndex + bestTerm.length, body.length)
-  const start = Math.max(0, (span?.from ?? 0) - EXCERPT_RADIUS)
-  const end = Math.min(body.length, (span?.to ?? body.length) + EXCERPT_RADIUS)
-  const slice = body.slice(start, end).replace(/\s+/g, ' ').trim()
-  return `${start > 0 ? '…' : ''}${slice}${end < body.length ? '…' : ''}`
-}
-
 export interface SearchOptions {
   readonly filters?: SearchFilters
   readonly limit?: number
   readonly offset?: number
+  /**
+   * Also build a larger, ellipsis-free excerpt candidate for each returned row.
+   *
+   * Opt-in because it costs a grapheme-level pass over the quoted field, and
+   * only the browser-side fitter in the quick-search dialog has any use for it.
+   * The server-rendered search page deliberately leaves it off.
+   */
+  readonly includeExcerptCandidate?: boolean
+  /**
+   * The excerpt will be shown in a fixed two- or three-line box, so keep the
+   * match near the start of it rather than centred. The quick dialog reserves
+   * exactly that box; the server-rendered page does not and leaves this off.
+   */
+  readonly compactExcerpt?: boolean
 }
 
 export interface SearchOutcome {
@@ -394,6 +173,20 @@ export interface SearchOutcome {
   readonly total: number
   /** Terms the ranker actually used, for the "why it matched" line. */
   readonly usedTerms: readonly string[]
+}
+
+/**
+ * A document that scored, before any excerpt work has been done.
+ *
+ * Scoring runs over every candidate document; excerpts run over the handful
+ * that are actually returned. Keeping them apart is what stops a twelve-row
+ * dialog from quoting two hundred documents on every keystroke.
+ */
+interface ScoredDoc {
+  readonly doc: SearchDoc
+  readonly score: number
+  readonly matchedFields: readonly MatchField[]
+  readonly matchedTerms: readonly string[]
 }
 
 /**
@@ -412,7 +205,7 @@ export function search(
   const limit = options.limit ?? 25
   const offset = options.offset ?? 0
 
-  const query = normalise(rawQuery)
+  const query = normalize(rawQuery)
   const candidates = docs.filter(doc => matchesFilters(doc, filters))
 
   if (!query) {
@@ -428,8 +221,7 @@ export function search(
   const primary: string[] = [phrase, ...words, ...scriptureVariants]
   const usedTerms = [...new Set([...primary, ...synonyms])].filter(Boolean)
 
-  /** A result before its excerpt is built — see the note by the slice below. */
-  const scored: Omit<SearchResult, 'excerpt'>[] = []
+  const scored: ScoredDoc[] = []
 
   for (const doc of candidates) {
     const fields = fieldsOf(doc)
@@ -448,7 +240,7 @@ export function search(
       matchedTerms.add(term)
     }
 
-    for (const { field, text } of fields.sources) {
+    for (const { field, text } of fields) {
       if (!text) continue
       for (const term of new Set(primary)) {
         applyHit(field, term, countOccurrences(text, term), 1)
@@ -461,8 +253,8 @@ export function search(
     if (score === 0) continue
 
     // Exact whole-title match should always float to the top.
-    if (fields.title === phrase) score += 400
-    if (fields.sectionId && fields.sectionId === phrase) score += 400
+    if (normalize(doc.title) === phrase) score += 400
+    if (doc.sectionId && normalize(doc.sectionId) === phrase) score += 400
 
     const matchedFields = [...matchedByField.entries()]
       .sort((a, b) => b[1] - a[1])
@@ -473,63 +265,26 @@ export function search(
 
   scored.sort((a, b) => b.score - a.score || a.doc.title.localeCompare(b.doc.title))
 
-  // Built last, for the page being returned rather than every match. Excerpting
-  // is the most expensive step per document, and a one-letter query matches
-  // nearly the whole index while showing twenty-five of it.
-  const results = scored.slice(offset, offset + limit).map(result => {
-    const body = result.doc.body || result.doc.summary
+  // Excerpts are built only for the rows that are actually returned. Scoring
+  // touches every document; quoting touches twelve.
+  const page = scored.slice(offset, offset + limit)
+  const results: SearchResult[] = page.map(entry => {
+    const { excerpt, candidate } = buildExcerpts(excerptSources(entry.doc), entry.matchedTerms, {
+      candidate: options.includeExcerptCandidate === true,
+      compact: options.compactExcerpt === true,
+    })
+
     return {
-      ...result,
-      excerpt: buildExcerpt(excerptMap(result.doc, body), body, result.matchedTerms),
+      doc: entry.doc,
+      score: entry.score,
+      matchedFields: entry.matchedFields,
+      matchedTerms: entry.matchedTerms,
+      excerpt: excerpt.text,
+      excerptMatchRanges: excerpt.matchRanges,
+      excerptField: excerpt.sourceField,
+      ...(candidate ? { excerptCandidate: candidate } : {}),
     }
   })
 
   return { results, total: scored.length, usedTerms }
-}
-
-/**
- * Split an excerpt into plain and matched runs so the renderer can mark hits
- * with `<mark>` without ever injecting HTML from content.
- */
-export function highlightSegments(
-  text: string,
-  terms: readonly string[],
-): readonly { text: string; matched: boolean }[] {
-  // The ranker hands back terms it has already normalised, but this is also
-  // called directly with a reader's own wording. Normalising here is
-  // idempotent, and without it a composed `ψυχή` cannot match the decomposed
-  // form that NFKD leaves in the haystack.
-  const usable = [...new Set(terms.map(normalise))]
-    .filter(term => term.length > 1)
-    .sort((a, b) => b.length - a.length)
-  if (usable.length === 0) return [{ text, matched: false }]
-
-  const map = normaliseWithMap(text)
-  const haystack = map.value
-  const marks = new Array<boolean>(text.length).fill(false)
-
-  for (const term of usable) {
-    let index = haystack.indexOf(term)
-    while (index !== -1) {
-      const span = sourceSpan(map, index, index + term.length, text.length)
-      if (span) for (let i = span.from; i < span.to; i += 1) marks[i] = true
-      index = haystack.indexOf(term, index + term.length)
-    }
-  }
-
-  const segments: { text: string; matched: boolean }[] = []
-  let current = ''
-  let currentMatched = marks[0] ?? false
-  for (let i = 0; i < text.length; i += 1) {
-    const matched = marks[i] ?? false
-    if (matched === currentMatched) {
-      current += text[i]
-    } else {
-      if (current) segments.push({ text: current, matched: currentMatched })
-      current = text[i] ?? ''
-      currentMatched = matched
-    }
-  }
-  if (current) segments.push({ text: current, matched: currentMatched })
-  return segments
 }
