@@ -148,8 +148,6 @@ describe('the Scripture index against the pages it indexes', () => {
      * So the count is recorded. Adding or removing a quotation is a content
      * decision and updating this line is part of making it.
      */
-    expect(written, 'the number of Scripture blocks in the corpus changed').toBe(189)
-
     const unparsed: string[] = []
     for (const [id, body] of BODIES) {
       const matched = matchedIn(body).length
@@ -158,5 +156,10 @@ describe('the Scripture index against the pages it indexes', () => {
       }
     }
     expect(unparsed, 'a block the reference pattern no longer matches').toEqual([])
+
+    // Last, not first. A `toBe` aborts the test, so pinning the count above
+    // this loop meant every legitimate corpus change skipped the assertion the
+    // test exists for.
+    expect(written, 'the number of Scripture blocks in the corpus changed').toBe(189)
   })
 })

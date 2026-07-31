@@ -159,8 +159,8 @@ export default async function CorrectionsPage({
                   such as S04 and an anchor such as in-brief, nothing more.
                 </li>
                 <li>
-                  The time it arrived, a reference for it, and its place in the queue, added by the
-                  server, so that a submission can be found, answered and deleted.
+                  The time it arrived and a reference for it, added by the server so that a
+                  submission can be found, answered and deleted, and a status field written once.
                 </li>
                 <li>
                   Your network address is used only to limit how many submissions one connection can

@@ -199,7 +199,24 @@ describe('motion tokens', () => {
       .filter(entry => entry.property.startsWith('--motion-'))
       .map(entry => ({ token: entry.property, ms: Number.parseFloat(entry.value) }))
 
-    expect(durations.length).toBeGreaterThanOrEqual(REQUIRED.length - 2)
+    /*
+     * The exact set, not a floor.
+     *
+     * `>= REQUIRED.length - 2` was 4 against 5 live duration tokens, so
+     * deleting `--motion-reveal` left it green — and nothing else names that
+     * token: `REQUIRED` omits it, and the Tier 3 test matches the *usage*
+     * `var(--motion-reveal)`, which survives the declaration going away. The
+     * file stayed green while three arrival animations resolved to an invalid
+     * duration and never ran. Same "true of 5 and true of 4" shape as the
+     * floors this suite has now had to replace three times elsewhere.
+     */
+    expect(durations.map(entry => entry.token).sort()).toEqual([
+      '--motion-feedback',
+      '--motion-overlay',
+      '--motion-overlay-exit',
+      '--motion-press',
+      '--motion-reveal',
+    ])
     for (const { token, ms } of durations) {
       expect(Number.isFinite(ms), `${token} is not a time`).toBe(true)
       expect(ms, `${token} is above the 300ms ceiling`).toBeLessThanOrEqual(300)
@@ -221,6 +238,20 @@ describe('motion tokens', () => {
  * ------------------------------------------------------------------ */
 
 describe('reduced motion', () => {
+  it('has no reduce block, which is what makes the checks below vacuous today', () => {
+    /*
+     * Movement is opted *into* under `no-preference` rather than out of under
+     * `reduce`, so there is no `reduce` block in the stylesheet — and the two
+     * tests below iterate `reduceBlocks` with every assertion inside the loop,
+     * so they run zero assertions and pass by having nothing to look at.
+     *
+     * That is correct for the current design and invisible without this line.
+     * If a `reduce` block is ever added, this fails and says so, and the two
+     * loops below start meaning something.
+     */
+    expect(reduceBlocks).toEqual([])
+  })
+
   it('opts into movement rather than out of it', () => {
     // The still variant has to be the default, so a browser matching neither
     // query still gets it.

@@ -2048,6 +2048,69 @@ The memo added last sweep is correct, with one caveat recorded: its docblock
 says the ids cannot change without a rebuild, which is false under `next dev`,
 where every other page picks up an MDX edit on the next request.
 
+### Gap sweep 22 (follow-up branch)
+
+Widened: the newest commit, plus a rule-by-rule audit of the one file that had
+produced three unbounded slices across two sweeps. Eight findings, most of them
+verified by mutation rather than by reading. **Not clean.**
+
+Fixed:
+
+- **`status` was described as "its place in the queue" on both pages.** It is a
+  write-once literal: typed `'new'`, written `'new'`, and nothing in the
+  repository ever reads or rewrites the store. It records no place and no
+  ordering, and `id` and `createdAt` do all of the finding, answering and
+  deleting on their own. The sweep before rewrote the second half of that
+  sentence to remove a false claim about `createdAt` and left an untrue
+  description of `status` in the first half of the same sentence.
+- **A submitted field was reaching a log line.** `console.info` carried
+  `submission.type`, which is one of the three required fields on the form,
+  against this route's own stated rule — "log statements carry the generated id
+  and the outcome, nothing else" — and against `/privacy/`'s promise that
+  submission contents are never written to a log. The id alone now.
+- **The corpus pin aborted the check it was added to protect.** `toBe(189)` sat
+  before the per-page matcher loop, and a failing `toBe` ends the test, so every
+  legitimate content change would have skipped the assertion the test exists
+  for. It runs last now.
+- **A floor of the shape this suite has replaced three times.**
+  `durations.length >= REQUIRED.length - 2` was 4 against 5 live duration
+  tokens, so deleting `--motion-reveal` left the whole file green while three
+  arrival animations resolved to an invalid duration and never ran — nothing
+  else names that token, because `REQUIRED` omits it and the Tier 3 test matches
+  the *usage*, which survives the declaration. The exact set is asserted now.
+- **Two tests in that file assert nothing at all.** Both iterate `reduceBlocks`
+  with every expectation inside the loop, and the stylesheet contains no
+  `reduce` block — movement is opted into under `no-preference` rather than out
+  of under `reduce` — so they execute zero assertions and pass by vacuity. That
+  is correct for the design and was invisible. A named test now records it and
+  fails the moment a `reduce` block appears, at which point the two loops start
+  meaning something.
+
+Found, evidenced and left:
+
+- **The Tier 1 feedback-timing test is satisfied by a different rule.** Verified
+  by mutation: deleting `a,` from the Tier 1 selector list leaves all six
+  selector assertions true, because a bare `a {` — the prose-link colour rule
+  twenty-five lines above — sits inside the same slice, as does comment prose
+  containing the letter. Prose links, the most numerous interactive element on
+  the site, would silently lose their transition. The same test's slice is
+  bounded by `indexOf('@layer components')`, which on a rename returns `-1` and
+  grows the scope from 5,477 to 30,833 characters, pulling in the print block.
+- **The press-scale test is rule-bounded but location-blind.** Moving
+  `.pressable:active` out of the `no-preference` block is not caught by it or by
+  the movement-confinement test, which inspects only `transition` declarations
+  and the moved rule has none. A reader who asked for reduced motion would get
+  an instant jump to 97% on every press, which is exactly what the comment
+  beside that rule says its placement prevents.
+- **`toBe(189)` is outside the authoring loop.** The maintenance guide's
+  procedure for adding a quotation enumerates every other file to touch and ends
+  at `bun run content:validate`, which does not run vitest. An author follows the
+  documented loop, sees green, and meets the pin only in CI, with the
+  explanation living in a comment in a test file the guide never names.
+- **Four tests read the un-stripped stylesheet**, so a declaration deleted and
+  left quoted in the comment explaining its removal keeps them green. Not
+  currently exploited, but that is this file's documented authoring habit.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

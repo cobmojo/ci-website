@@ -60,7 +60,7 @@ export default function PrivacyPage() {
                 <li>
                   The correction form is the only thing the site keeps on purpose. It keeps what you
                   type, the part and heading you arrived from, and the arrival time, reference and
-                  status listed below.
+                  status field listed below.
                 </li>
               </ul>
             </section>
@@ -201,9 +201,10 @@ export default function PrivacyPage() {
                   read only when the address also names a part it belongs to.
                 </li>
                 <li>
-                  <strong>Added by the server:</strong> the time the submission arrived, a reference
-                  for it, and its place in the queue. Nothing about you is derived from any of the
-                  three; they exist so that a submission can be found, answered and deleted.
+                  <strong>Added by the server:</strong> the time the submission arrived and a
+                  reference for it, so that a submission can be found, answered and deleted, and a
+                  status field which is written once and is the same on every record. Nothing about
+                  you is derived from any of the three.
                 </li>
               </ul>
               <p className="m-0 mb-3">

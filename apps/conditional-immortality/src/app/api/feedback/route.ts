@@ -272,7 +272,11 @@ export async function POST(request: Request): Promise<Response> {
    * name or the email address.
    */
   if (siteConfig.feedbackNotifyEmail) {
-    console.info(`[feedback] stored submission ${submission.id} (${submission.type})`)
+    // The id and the outcome, and nothing a reader typed. `type` is one of the
+    // three required fields on the form, and this line put it in a log against
+    // the rule stated at the top of this file and the promise on `/privacy/`
+    // that submission contents are never written to a log.
+    console.info(`[feedback] stored submission ${submission.id}`)
   }
 
   if (!wantsJson) return redirect(SUCCESS_REDIRECT)
