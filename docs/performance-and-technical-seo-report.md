@@ -26,9 +26,14 @@ no deployed origin (see [External limitations](#external-limitations)).
   baseline number below was taken on `e020539`.
 - **Whole-site sweep and every "after" number** were taken on `0d0d42d`, which
   is `e020539` plus the one production change described here.
-- **Final commit** is the head of `claude/production-readiness-qa-launch-59185d`;
-  everything after `0d0d42d` is documentation and gate wiring, with no change to
-  what is served.
+- **Final commit** is the head of `claude/production-readiness-qa-launch-59185d`.
+  Everything after `0d0d42d` is documentation, gate wiring, and the merge of
+  `main` once PR #6 landed on it. That merge changed what is served — it brought
+  in thirty-four commits of gap-sweep work — so the numbers above describe the
+  tree they were taken on and were **not** re-measured afterwards. The one
+  change with a plausible effect is `scrollbar-gutter: stable` on the root; the
+  route inventory, the indexability matrix and the interaction latencies were
+  all re-run on the final tree and are unchanged.
 
 ## The instrument
 
@@ -535,21 +540,23 @@ offered as an excuse for it.
 
 Every command run for this work, and what it returned.
 
+Re-measured on the final tree, after main — carrying PR #6 — was merged in.
+
 | Command | Result |
 |---|---|
 | `bun install --frozen-lockfile` | exit 0, no changes |
-| `CI=1 bun run validate` | **exit 0** — 957 unit and component tests across 39 files |
-| `CI=1 bun run test:coverage` | **exit 0**, thresholds met |
+| `CI=1 bun run validate` | **exit 0** — 1,035 unit and component tests across 46 files |
+| `CI=1 bun run test:coverage` | **exit 0**, every threshold met without moving one |
 | `bun run seo:matrix` | **exit 0** — 120 routes, no finding |
 | `bun run perf:routes` | **exit 0** — four sources reconciled |
-| `bun run test:browser`, in three project groups | **exit 0 ×3** — **609 tests, 0 failures, 0 flakes** |
+| `bun run test:browser`, in four project groups | **exit 0 ×4** — **651 tests, 0 failures, 0 flakes** |
 | `bun run perf:audit` (240 cold audits) | **exit 1** — mobile Performance, as recorded above |
-| GitHub Actions on the head commit | see the pull request |
+| **GitHub Actions on the head commit** | **all green** — the whole browser suite in one invocation, on Linux |
 
-Browser counts by project: chromium-desktop 206, chromium-mobile 196,
-accessibility 32, accessibility-mobile 32, geometry-chromium / -firefox /
+Browser counts by project: chromium-desktop 218, chromium-mobile 208,
+accessibility 38, accessibility-mobile 38, geometry-chromium / -firefox /
 -webkit 23 each, firefox-smoke 23, webkit-smoke 23, visual 14, interaction 13,
-served-build 1.
+print-chromium / -firefox / -webkit 2 each, served-build 1.
 
 ### One flake, root-caused rather than re-run
 

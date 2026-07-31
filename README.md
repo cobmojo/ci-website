@@ -113,7 +113,7 @@ unknown reference fails the build. Do not work around this by typing the verse.
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-1,635 tests in the gate: 984 unit and component across 42 files, and 651
+1,686 tests in the gate: 1,035 unit and component across 46 files, and 651
 browser tests across fifteen Playwright projects — end-to-end on desktop and
 mobile, accessibility at both viewports, cross-engine smoke in Firefox and
 Playwright WebKit, printed output in all three engines, text geometry in three
