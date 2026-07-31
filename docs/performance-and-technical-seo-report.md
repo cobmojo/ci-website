@@ -8,7 +8,17 @@ diagnosed and attributed below, and Lighthouse's own insights report **zero
 available savings** for First Contentful Paint or Largest Contentful Paint on
 every route audited.
 
-The reason is now stated in bytes rather than in adjectives. Under simulated
+The most consequential thing found in this round was not a score. The prefetch
+policy recorded below as site-wide was not site-wide: three files still reached
+`next/link` directly, and the transcript on `/watch/` was speculatively
+downloading **the page the reader was already on**, once per timestamp — 33
+requests and 142 kB, measured. `/corrections/` was starting another 74 kB. Both
+are now zero, and the guard that was supposed to prevent this has been extended
+to the two routes it never covered. Details in
+[Three links the policy never reached](#three-links-the-policy-never-reached).
+
+The reason a mobile 100 is out of reach is now stated in bytes rather than in
+adjectives. Under simulated
 throttling on a local origin the whole page finishes loading before the observed
 paint, so Lantern's LCP graph contains all of it and the simulated LCP is the
 simulated fully-loaded time. A mobile Performance score of 100 on this page
@@ -269,11 +279,17 @@ pressed anything. The home page started **1.82 MB**, of which 959 kB was
 `/full-case/`. `/scripture/` prefetched *itself*, from its own header.
 
 **Change.** `components/navigation/link.tsx` wraps `next/link` with prefetching
-off unless asked for; all 42 imports in the application point at it. One
-exception, asked for explicitly: Previous and Next on a case section, because
-sequential reading is the one navigation here that is genuinely predictable.
-They sit at the foot of a four-thousand-word section, so they prefetch when the
-reader reaches them rather than when the page loads.
+off unless asked for. One exception, asked for explicitly: Previous and Next on
+a case section, because sequential reading is the one navigation here that is
+genuinely predictable. They sit at the foot of a four-thousand-word section, so
+they prefetch when the reader reaches them rather than when the page loads.
+
+> This paragraph used to end "all 42 imports in the application point at it."
+> **That was false when it was written**, and it is corrected in
+> [Three links the policy never reached](#three-links-the-policy-never-reached)
+> below. Three files still imported `next/link` directly, and between them they
+> were starting about 217 kB of speculative payload that this section claimed
+> had been removed.
 
 **Guard.** `tests/e2e/prefetch-budget.spec.ts` — a budget per route family on
 the wire, plus an assertion that the one permitted prefetch really does happen
@@ -340,7 +356,123 @@ scripting-disabled readers is still the same real `<a href="/search/">`; nothing
 is fetched before a reader shows an interest in searching, so the privacy
 contract is untouched.
 
+### Three links the policy never reached — kept
+
+**Cause.** The prefetch policy above was enforced by a wrapper, and a wrapper
+only governs the files that import it. Three did not:
+
+| File | What it links to |
+|---|---|
+| `components/navigation/focus-on-arrival-link.tsx` | the transcript's 39 timestamps, and search paging |
+| `app/corrections/page.tsx` | `/changelog/`, `/method/`, `/accessibility/`, `/privacy/` |
+| `components/feedback/feedback-form.tsx` | the success state's one link |
+
+The transcript case is the sharper one. Every timestamp is a query-only link
+back to `/watch/`, and the App Router keys its prefetch cache on
+`{pathname, search}` — so each distinct `?t=` is a distinct target, and the page
+speculatively downloaded **itself**, once per timestamp. Measured on the wire,
+scrolling through the transcript: **33 requests, 142,487 bytes**, the first of
+them a full copy of a document the reader was already holding. `/corrections/`
+started **5 requests, 74,267 bytes** on load, the largest a 54,732-byte copy of
+`/changelog/`.
+
+None of it could ever be useful: on `/watch/` the destination is the current
+page, and on `/corrections/` it is four pages a reader of a correction form is
+unlikely to want.
+
+**Change.** All three now import the repository's own `Link`. Nothing else about
+them moved.
+
+**Why removing it costs the reader nothing, measured rather than argued.** The
+click path was A/B'd on `/watch/` by aborting only requests carrying
+`next-router-prefetch`, leaving real navigation fetches alive. As shipped, the
+router committed the URL at 46ms; with prefetching suppressed, 77ms; with
+prefetching suppressed *and* the navigation payload delayed a full two seconds,
+2,094ms. In all three the immediate state was identical — focus on
+`video-player`, the element in the viewport, and the player's `src` already
+carrying `&start=107`. Nothing a reader sees or hears waits on the router
+commit, because `focus-on-arrival-link.tsx` moves focus and the video facade
+seeks synchronously on the click. Prefetching was buying a faster commit of
+something invisible.
+
+**Guard.** `tests/e2e/prefetch-budget.spec.ts` gained `/watch/` and
+`/corrections/` — neither was in its route list, which is why a policy this
+file existed to enforce had been broken since it was written — plus a new test
+that scrolls the whole transcript past the viewport and holds it at zero.
+Scrolling is deliberately *not* folded into the shared helper, because
+`/case/…` is supposed to prefetch Previous and Next once they come into view,
+and the existing test for that exception still passes.
+
+**Measured effect.** Proven red before the fix and green after, on the wire:
+
+| Route | before | after |
+|---|---|---|
+| `/corrections/` (on load) | 5 requests, 74,267 B | **0** |
+| `/watch/` (scrolled through) | 33 requests, 142,487 B | **0** |
+
+Every other audited route measured zero both before and after, which is the
+evidence that the wrapper was working everywhere it was actually used.
+
+### The text-layout loader follows the engine — kept
+
+**Cause.** `loadTextLayoutEngine` fetched the pretext runtime lazily, but the
+module *containing* it — the font contract, the prepared-text cache and the
+loader itself — was reached by a static import from the search dialog, which
+put **3,586 bytes** of it in the chunk every route loads. Its only caller on
+that path is `prewarm`; the excerpt fitter reaches it again from inside the
+result list, which is already lazy.
+
+**Change.** The import is now dynamic, with its own `.catch` — it is called
+without being awaited, so the chunk fetch becoming a new failure mode had to be
+swallowed like the engine's.
+
+**Measured effect.** Median first-load JavaScript **572,901 → 569,313 bytes**,
+uniform across all 30 route groups. Predicted 3,586; measured 3,588.
+
+**Hardening shipped with it.** `lazy` throws to the nearest error boundary if
+its import rejects, and the nearest one is the route's — so a dropped result
+chunk would have replaced the page with the error document instead of the
+"search could not load" line. The result list is now awaited inside `loadIndex`
+alongside the index and the engine, so that failure lands in the same `catch`
+as the other two.
+
 ## Hypotheses tested and rejected
+
+### Splitting the `@ci/ui` barrel — rejected on the budget it would break
+
+The largest remaining application-side chunk is 28,994 bytes shipped to 119
+routes, and it is there so that `cn` — `twMerge(clsx(…))` — can be called.
+About 26,798 bytes of it is tailwind-merge's class-group table.
+
+The mechanism is real and was verified twice: only two first-load modules call
+`cn` (`NavLinkItem`, `MobileNavigation`), and running the repository's own
+tailwind-merge 3.6.0 and clsx 2.1.1 over **every live call site** shows
+`twMerge(clsx(x)) === clsx(x)` in all nine — so a non-merging joiner would
+produce byte-identical class attributes. The same probe found the two places
+that genuinely do depend on conflict resolution, `Button` at `size="sm"` and
+`size="lg"`, which is how we know the equivalence was measured and not assumed.
+
+It was rejected anyway, on three grounds:
+
+1. **It breaks the bundle budget.** `bundle-budget.ts` is deliberately
+   *relative* — 3% over the median. Removing 27 kB from the shared chunk drops
+   the median to ~545,899 and the ceiling with it, while the seven routes that
+   still legitimately use `@ci/ui` keep their copy. Seven routes then fail, and
+   shipping would mean adding six new allowance entries to a table whose own
+   comment says such edits are "indistinguishable from quietly widening the
+   budget". The optimistic variant still leaves five.
+2. **It erodes a documented contract.** `scroll-region.tsx:21-24` records that
+   the component owns className composition precisely because an earlier helper
+   let callers compose wrong. A non-merging joiner silently returns that hazard
+   for any future caller, and `NavLinkItem` takes a `className` too.
+3. **No test would catch a mistake.** `button-contract.test.ts` calls
+   `buttonVariants` directly, which has never passed through twMerge, so it
+   passes identically either way. The change would be safe because the strings
+   happen to be identical today, not because anything holds them there.
+
+The honest summary is that this is 27 kB — about 7 kB on the wire, worth
+roughly 34ms of simulated LCP — in exchange for a weakened deterministic gate
+and a re-opened composition hazard. Recorded rather than taken.
 
 ### The two preloaded faces are the LCP determinant — rejected
 
@@ -787,6 +919,25 @@ Run on the tree carrying the deferral, on the same instrument.
 | `bun run seo:matrix` | **exit 0** — 120 routes, 118 distinct titles and descriptions, no finding |
 | `bun run perf:audit` (240 cold audits) | **exit 1** — mobile Performance, as recorded above |
 | 3 cold mobile runs on `/`, `/corrections/`, `/full-case/` | medians recorded above; the sweep's worst TBT did not reproduce |
+
+### Re-run again for the prefetch and text-layout changes
+
+| Command | Result |
+|---|---|
+| `bun run lint` / `typecheck` / `format:check` | **exit 0** — the same 4 warnings the clean tree has |
+| `bun run test` | **exit 0** — **1,063 tests** (567 app + 336 `@ci/search` + 87 `@ci/content` + 73 `@ci/content-schema`) |
+| `bun run test:e2e` | **exit 0** — **447 tests** (441 + the 6 new prefetch assertions) |
+| `bun run test:a11y` | **exit 0** — **77 tests** |
+| `bun run test:visual` | **exit 0** — **15 tests**, no baseline rewritten |
+| `bun run test:interaction` | **exit 0** — **14 tests**, 24–72ms against a 200ms target |
+| `bun run test:text-geometry` | **exit 0** — **70 tests** across Chromium, Firefox and WebKit |
+| `bun run test:smoke` | **exit 0** — **47 tests** across Firefox and WebKit |
+| `bun run test:print` | **exit 0** — **19 tests** across three engines |
+| `bun run content:bundle` | **exit 0** — median 556.0 kB, every route within budget |
+
+**689 browser tests, no failures and no flakes.** The prefetch budget was proven
+red first — `/corrections/` at 74,267 bytes and `/watch/` at 142,487 — and green
+after.
 
 ### One flake, root-caused rather than re-run
 
