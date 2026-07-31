@@ -441,13 +441,14 @@ against a production build.
 | `bun run content:validate` | Pass |
 | `bun run content:audit` | Pass, ledger exports unchanged |
 | `bun run content:docs` | Pass |
-| `bun run test` | **818 unit tests pass** on the merged tree (281 at the audit base; this branch added 31: button contract ×4, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×7, modified click ×7, scroll-table naming ×2; the balance arrived with PR #5's merge) |
+| `bun run test` | **834 unit tests pass** on the finished tree — 51 in `@ci/content-schema`, 79 in `@ci/content`, 336 in `@ci/search`, 368 in the app (281 at the audit base; the balance is this branch's additions and PR #5's merge) |
 | `bun run build` | Pass, 129 static pages |
 | `bun run content:pii` | Pass: no source contact details in 1,753 built or 295 committed files |
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
 | `bun run content:bundle` | Pass on the merged tree: every route within budget; `/corrections` 663.7 kB against its 664.1 kB allowance |
-| `bun run test:e2e` | **312 tests, 0 failures** on the merged tree (224 at the audit base + 6 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
-| `bun run test:a11y` | **68 tests, 0 failures** (32 at base, desktop only; now 34 × desktop + 34 × mobile via the new `accessibility-mobile` project, `/accessibility/` having joined the axe routes) |
+| `bun run test:e2e` | **314 tests, 0 failures**, Chromium desktop 1440×900 and mobile 375×812 |
+| `bun run test:a11y` | **76 tests, 0 failures** (32 at base, desktop only; now 38 × desktop + 38 × mobile via the new `accessibility-mobile` project, `/accessibility/` having joined the axe routes, plus four keyboard-operation tests axe cannot express) |
+| `bun run test:text-geometry` | **69 tests, 0 failures** across Chromium, Firefox and WebKit |
 
 **Rendered sweep** (production build, before and after): 360 loads over all
 120 sitemap routes at 1280/375/320 px — zero console errors, zero page
@@ -467,9 +468,18 @@ Screenshots are session evidence and are not committed, per repository
 convention.
 
 **Content and privacy integrity**: no permanent id, route, slug, Scripture
-text, source relationship, migration-ledger entry or transcript cue changed;
-the PII scan is clean; no third-party request was introduced (the sweep
-recorded zero external requests before a play activation).
+text, migration-ledger entry or transcript cue changed; the PII scan is clean;
+no third-party request was introduced (the sweep recorded zero external
+requests before a play activation).
+
+Three content records did change, and each is a correction rather than an
+edit. `welch-source-document` gained `S17` and `S18`, which cite it inline and
+were missing from its `citedBy`, and both sections' `sourceIds` gained it to
+keep the existing registry invariant; `sprinkle-introduction` lost `P00`,
+whose text never mentions it. Eighteen authorless sources gained a
+`shortName`, a new optional field, so their citation markers stop reading
+`[What]` and `[Weeping]`. Sweep 6 records the evidence, and a registry test
+now fails if `citedBy` and the MDX bodies disagree in either direction.
 
 **Remaining limitations** (pre-existing, documented): field Core Web Vitals
 still require a real deployment; the no-JS corrections submission cannot
