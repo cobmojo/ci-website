@@ -15,6 +15,15 @@ name: Visual baselines
 # commit them into
 # `apps/conditional-immortality/tests/e2e/visual.spec.ts-snapshots/`.
 on:
+  # `workflow_dispatch` cannot be triggered until this file is on the default
+  # branch, so the first run has to come from somewhere else. A pull request
+  # that touches the baselines or this workflow is the honest trigger: it is
+  # exactly when new baselines are wanted, and it costs nothing on every other
+  # pull request.
+  pull_request:
+    paths:
+      - '.github/workflows/visual-baselines.yml'
+      - 'apps/conditional-immortality/tests/e2e/visual.spec.ts'
   workflow_dispatch:
     inputs:
       reason:
@@ -40,7 +49,11 @@ jobs:
 
     steps:
       - name: Why
-        run: echo "${{ inputs.reason }}"
+        run: echo "${REASON:-triggered by a pull request that touched the visual suite}"
+        env:
+          # Through the environment, never interpolated into the shell: a
+          # workflow input is attacker-controlled text on a fork PR.
+          REASON: ${{ inputs.reason }}
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
