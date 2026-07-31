@@ -1,5 +1,3 @@
-import type { ViteUserConfig } from 'vitest/config'
-
 /**
  * One coverage policy, shared by every package that has tests.
  *
@@ -22,7 +20,22 @@ import type { ViteUserConfig } from 'vitest/config'
  * own, higher ones.
  */
 
-type CoverageOptions = NonNullable<NonNullable<ViteUserConfig['test']>['coverage']>
+/**
+ * Structurally typed rather than imported from `vitest/config`.
+ *
+ * This file sits at the repository root, which is not a workspace, so `vitest`
+ * is not resolvable from here — every package has it, the root does not. The
+ * shape is checked where it is used, which is the only place it matters.
+ */
+interface CoverageOptions {
+  provider: 'v8'
+  reporter: string[]
+  reportsDirectory: string
+  include: string[]
+  exclude: string[]
+  all: boolean
+  thresholds: Record<string, number | Record<string, number>>
+}
 
 export const SHARED_COVERAGE_EXCLUDES = [
   // Generated. Their correctness is the generator's, and the generators are

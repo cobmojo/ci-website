@@ -232,7 +232,11 @@ export const SOURCE_RECORDS: readonly SourceRecord[] = [
     title: 'Rethinking Hell',
     perspective: 'CI',
     url: 'https://rethinkinghell.com/',
-    sourceDocumentUrl: 'http://rethinkinghell.com',
+    // The scheme the source document gave, upgraded to the one the host now
+    // answers on. Same host, same page, verified by the external link audit:
+    // the plain-http form 301s here anyway, so publishing it only sent a
+    // reader's first request out in clear.
+    sourceDocumentUrl: 'https://rethinkinghell.com/',
     accessedAt: '2026-07-29',
     linkStatus: 'live',
     rightsStatus: 'link-only',

@@ -82,7 +82,7 @@ function totalCodewords(version: number): number {
 function functionMask(version: number, size: number): boolean[][] {
   const reserved = Array.from({ length: size }, () => new Array<boolean>(size).fill(false))
   const mark = (x: number, y: number) => {
-    if (x >= 0 && x < size && y >= 0 && y < size) reserved[y]![x] = true
+    if (x >= 0 && x < size && y >= 0 && y < size) (reserved[y] as boolean[])[x] = true
   }
 
   for (const [cx, cy] of [
@@ -189,8 +189,8 @@ function readCodewords(
       const upward = ((right + 1) & 2) === 0
       const y = upward ? size - 1 - step : step
       for (const x of [right, right - 1]) {
-        if (reserved[y]![x]) continue
-        const raw = modules[y]![x] as boolean
+        if ((reserved[y] as boolean[])[x]) continue
+        const raw = (modules[y] as readonly boolean[])[x] as boolean
         bits.push(raw === maskBit(mask, x, y) ? 0 : 1)
       }
     }

@@ -57,6 +57,15 @@ const A11Y_SPEC = /a11y\.spec\.ts$/
 const GEOMETRY_SPEC = /text-geometry\.spec\.ts$/
 /** The served-build guard belongs to its own project, which every other one waits for. */
 const SETUP_SPEC = /served-build\.setup\.ts$/
+/** Screenshots belong to one project, on one engine, at one viewport. */
+const VISUAL_SPEC = /visual\.spec\.ts$/
+/**
+ * The cross-browser and deployed-preview set: origin-agnostic, reads nothing
+ * from `.next`, and asserts the flows an engine can actually differ on.
+ */
+const SMOKE_SPECS = [/smoke\.spec\.ts$/, /security-headers\.spec\.ts$/]
+/** Everything that is neither focused nor origin-agnostic. */
+const FOCUSED_SPECS = [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC, VISUAL_SPEC]
 
 /**
  * Every project depends on this one, so no suite can report a result about a
@@ -103,13 +112,13 @@ export default defineConfig({
     {
       name: 'chromium-desktop',
       dependencies: [...SERVED_BUILD_GUARD],
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC],
+      testIgnore: FOCUSED_SPECS,
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'chromium-mobile',
       dependencies: [...SERVED_BUILD_GUARD],
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC],
+      testIgnore: FOCUSED_SPECS,
       use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
     {
@@ -155,6 +164,59 @@ export default defineConfig({
       dependencies: [...SERVED_BUILD_GUARD],
       testMatch: GEOMETRY_SPEC,
       use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
+    },
+    /*
+     * Cross-engine smoke.
+     *
+     * Firefox and WebKit run the origin-agnostic set rather than the whole
+     * suite. Duplicating four hundred tests across four engines would mostly
+     * re-prove things no engine can differ on — metadata, redirects, content —
+     * while the flows that *can* differ are layout, focus, dialog behaviour and
+     * whether the page renders at all, which is exactly what `smoke.spec.ts`
+     * and `security-headers.spec.ts` assert.
+     *
+     * `webkit-smoke` is Playwright's WebKit build. It is not Safari and is
+     * never described as Safari; the manual Safari procedure is in
+     * docs/pretext-text-geometry.md.
+     */
+    {
+      name: 'firefox-smoke',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: SMOKE_SPECS,
+      use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'webkit-smoke',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: SMOKE_SPECS,
+      use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
+    },
+    /*
+     * Visual regression, pinned hard: one engine, one viewport, one device
+     * scale factor, reduced motion, and a light colour scheme. Anything less
+     * fixed produces a baseline that differs between two runs on one machine,
+     * and a suite whose first reflex is `--update-snapshots` protects nothing.
+     */
+    {
+      name: 'visual',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: VISUAL_SPEC,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: DESKTOP_VIEWPORT,
+        deviceScaleFactor: 1,
+        colorScheme: 'light',
+      },
+    },
+    /*
+     * A deployed origin. Selected only when `PLAYWRIGHT_BASE_URL` is set, and
+     * it runs no local server: see `webServer` below.
+     */
+    {
+      name: 'preview',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: SMOKE_SPECS,
+      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
   ],
 

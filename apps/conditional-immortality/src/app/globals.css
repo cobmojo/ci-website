@@ -984,9 +984,22 @@
     text-decoration: underline;
   }
 
-  /* Surface destinations for external links only; internal anchors would
-     produce noise on every cross-reference. */
-  .prose-article a[href^="http"]::after {
+  /*
+   * Surface destinations for external links only; internal anchors would
+   * produce noise on every cross-reference.
+   *
+   * Scoped to `main` rather than to `.prose-article`. It was the latter, and
+   * measured across all 118 routes that selector matched exactly nothing: the
+   * site's 278 external links live in citation lists, source records, related
+   * reading and the transcript, none of which is inside the MDX body. So the
+   * accessibility statement's promise that "external link destinations are
+   * printed after the link text" was true of no page at all.
+   *
+   * `[href^="http"]` is the whole filter it needs: every internal link on this
+   * site is rendered as a root-relative path, so an absolute one is external
+   * by construction. `tests/e2e/print.spec.ts` holds that to a rendered page.
+   */
+  main a[href^="http"]::after {
     content: " (" attr(href) ")";
     font-size: 0.82em;
     word-break: break-all;

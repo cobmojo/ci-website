@@ -1,0 +1,50 @@
+version: 2
+
+# Two ecosystems, one day a week, and small batches.
+#
+# The point is not to be current. It is that a security advisory against a
+# dependency should arrive as a pull request the CI gate can judge, rather than
+# as something nobody notices until a launch review. Everything here still has
+# to pass `bun run ci`, so an update that breaks a contract fails like any
+# other change.
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Enough to keep a queue moving, few enough to review properly.
+    open-pull-requests-limit: 5
+    groups:
+      # Patch and minor updates that a lockfile-frozen install would otherwise
+      # never take, batched so the queue is one reviewable PR rather than
+      # twenty.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # A framework major is a migration, not an update, and belongs in its own
+      # deliberate piece of work with the whole browser matrix behind it.
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: tailwindcss
+        update-types: [version-update:semver-major]
+      # The Playwright client version and the container image tag in
+      # `.github/workflows/ci.yml` have to move together, or the visual
+      # baselines stop meaning anything. Bumping it needs both edits.
+      - dependency-name: "@playwright/test"
+        update-types: [version-update:semver-major, version-update:semver-minor]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    # Actions are pinned to commit SHAs with the release in a comment;
+    # Dependabot understands that form and rewrites both together.

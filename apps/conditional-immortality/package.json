@@ -12,8 +12,12 @@
     "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile",
     "test:a11y": "playwright test --project=accessibility --project=accessibility-mobile",
     "test:text-geometry": "playwright test --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit",
-    "test:browser": "playwright test --project=chromium-desktop --project=chromium-mobile --project=accessibility --project=accessibility-mobile --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit",
-    "test:coverage": "vitest run --coverage"
+    "test:browser": "playwright test --project=chromium-desktop --project=chromium-mobile --project=accessibility --project=accessibility-mobile --project=firefox-smoke --project=webkit-smoke --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit --project=visual",
+    "test:coverage": "vitest run --coverage",
+    "test:visual": "playwright test --project=visual",
+    "test:visual:update": "playwright test --project=visual --update-snapshots",
+    "test:smoke": "playwright test --project=firefox-smoke --project=webkit-smoke",
+    "test:preview": "playwright test --project=preview"
   },
   "dependencies": {
     "@chenglou/pretext": "0.0.8",
