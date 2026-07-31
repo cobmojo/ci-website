@@ -189,7 +189,7 @@ something, never by a link.
 **Evidence** `route-sweep.spec.ts` checked structure (one `h1`, one `main`, no
 console error, no broken fragment) but nothing checked canonicals, descriptions,
 robots directives, Open Graph agreement or JSON-LD validity.
-**Correction** Nine checks over all routes, driven by the sitemap so a new route
+**Correction** Ten checks over all routes, driven by the sitemap so a new route
 cannot escape them, reading served HTML rather than driving a browser — the
 crawler's view, and origin-agnostic, so the same assertions run against a
 deployed preview through the existing `preview` project.
