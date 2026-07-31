@@ -18,7 +18,10 @@ import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
  * scripting available the link opens a dialog instead, and the index is
  * fetched lazily on first open so pages that are never searched pay nothing.
  *
- * Searching runs entirely in the browser. No query is ever sent to a server.
+ * Searching in this panel runs entirely in the browser: the index is a static
+ * file and what a reader types here is never transmitted. The `/search/` page
+ * it falls back to is server-rendered, so a term reaching that page travels in
+ * the URL — `/privacy/` states the distinction.
  *
  * The text-layout runtime that fits excerpts follows the same rule as the
  * index: nothing is fetched until a reader shows an interest in searching, and
@@ -40,10 +43,19 @@ export function SearchDialogTrigger() {
   const [query, setQuery] = useState('')
   const pathname = usePathname()
 
+  /** Set the moment a load begins, where `loading` state lags by a render. */
+  const loadStarted = useRef(false)
+
   useEffect(() => setMounted(true), [])
 
   const loadIndex = useCallback(async () => {
-    if (index || loading) return
+    // A ref, not the `loading` state: two prewarm calls can arrive inside one
+    // gesture — `pointerenter` then the anchor's `focus`, 8ms apart on a tap —
+    // and React has not committed the state between them, so both passed the
+    // guard and the 610kB index was fetched twice. Every touch tap and every
+    // Ctrl+K paid it.
+    if (index || loadStarted.current) return
+    loadStarted.current = true
     setLoading(true)
     setFailed(false)
     try {
@@ -58,7 +70,7 @@ export function SearchDialogTrigger() {
     } finally {
       setLoading(false)
     }
-  }, [index, loading])
+  }, [index])
 
   /**
    * Search intent: hovering or focusing the trigger.

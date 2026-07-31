@@ -1381,6 +1381,62 @@ tests written to guard it.
   reversed. The offset resyncs on `popstate`, and the guard follows the reader
   back rather than only forward.
 
+The second angle exercised what no earlier sweep had: state that persists or
+accumulates, across tabs, reloads and the browser's own Back and Forward. Nine
+findings, and unlike the recent sweeps these are mostly not from this branch's
+own fixes.
+
+- **A second tab destroyed the first tab's reading record.** The record was
+  written from memory rather than from storage, so a tab that had loaded
+  before any reading held an empty list; one click there replaced four
+  recorded parts with one, and the first tab then reported "you have opened 1
+  of 40". Storage is the shared thing, so it is read before it is written, and
+  a `storage` listener keeps a second tab from showing a stale count.
+- **Search filters reapplied themselves after a soft navigation.** The
+  checkboxes and the book select are uncontrolled defaults, which React sets
+  once and never reapplies. On a URL carrying no filters the query field
+  updated and the controls did not: 81 unfiltered results under a ticked
+  "Objections", a ticked "Key texts" and a selected book, with the disclosure
+  holding the last two closed. Pressing Search then applied three filters the
+  reader never asked for. The form is keyed on the parameters it was rendered
+  from, so the defaults mean what they say.
+- **The search index was downloaded twice, 1.2MB instead of 610kB.** Two
+  prewarm calls arrive inside one gesture — `pointerenter`, then the anchor's
+  `focus`, eight milliseconds apart on a tap — and the guard was React state
+  that had not committed between them. Every touch tap and every Ctrl+K paid
+  it. The guard is a ref now.
+- **The correction form kept saying "Received" over text it had not sent.** A
+  submit stopped by the client validators never reaches the handler that sets
+  the status, so the banner from the previous successful submission stayed
+  above the new inline error. The outcome is cleared when a submit is
+  attempted.
+- **Reading progress claimed records it had not kept, and counted parts that
+  are not there.** With storage full the panel reported a part as opened and
+  the next load reported none; the count came from stored ids rather than ids
+  the page can mark, so four valid-looking ids of which one was present read
+  "4 of 40 parts, each one marked below" above a single marker, and
+  forty-five read "45 of 40". The write reports failure, and the count is
+  bounded by the page.
+
+Three findings are recorded and deliberately not implemented:
+
+- **Back does not rewind the video.** After a seek, Back returns the URL to
+  the previous `?t=` while the player keeps playing where it was. Reported as
+  the two disagreeing; on consideration `?t=` means "start here", not
+  "currently at", and no reader expects Back to scrub a video they are
+  watching. The href and the click were made to agree, which was the real
+  defect; rewinding on history navigation would be a new behaviour, not a
+  correction.
+- **Back from a transcript timestamp does not restore the reader's place**
+  in the transcript, leaving them at the player. Real, and worth fixing, but
+  the fix is in scroll restoration around a query-and-fragment navigation —
+  the same mechanism two earlier sweeps had to correct twice — and getting it
+  wrong again costs more than the annoyance does.
+- **Back from a filtered Scripture index restores the scroll offset but not
+  the filter**, so the reader lands somewhere unrelated in a much longer page.
+  The honest fix is to put the filter in the URL, which is a design change to
+  a progressive enhancement rather than a correction to one.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

@@ -79,6 +79,9 @@ export default async function SearchPage({
       })
     : { results: [], total: 0, usedTerms: [] }
 
+  /** Every parameter the form's uncontrolled defaults are built from. */
+  const formKey = [query, ...selectedTypes, '|', ...selectedGroups, '|', ...selectedBooks].join(',')
+
   const totalPages = Math.max(1, Math.ceil(outcome.total / PAGE_SIZE))
   const caseGroups = Object.keys(CASE_GROUP_LABELS) as CaseGroup[]
 
@@ -129,7 +132,19 @@ export default async function SearchPage({
         {/* A plain GET form: no JavaScript required, and the URL carries state.
             Hidden in print: a paper copy of a results page is the results, not
             the controls that produced them. */}
-        <form action="/search/" method="get" className="mb-8 print:hidden">
+        {/*
+         * Keyed on the query the server rendered from.
+         *
+         * The controls below use `defaultChecked` and `defaultValue`, which
+         * React sets once and never reapplies. On a soft navigation to a URL
+         * with no filters, the query field updated and the checkboxes did not:
+         * the page showed 81 unfiltered results with "Objections" and "Key
+         * texts" still ticked and a book still selected, and pressing Search
+         * then applied three filters the reader never asked for. Remounting
+         * the form on each distinct set of parameters is what makes the
+         * uncontrolled defaults mean what they say.
+         */}
+        <form key={formKey} action="/search/" method="get" className="mb-8 print:hidden">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[16rem] flex-1">
               <label

@@ -636,3 +636,92 @@ test('filtering the Scripture index leaves nothing pointing at hidden sections',
   await expect(page.locator('[data-testament]:visible')).toHaveCount(0)
   await expect(page.getByText(/Nothing in the index matches that/)).toBeVisible()
 })
+
+/* ------------------------------------------------------------------ *
+ * State a reader accumulates
+ * ------------------------------------------------------------------ */
+
+test('a second tab adds to the reading record rather than replacing it', async ({ context }) => {
+  // The record was written from memory, so a tab that had loaded before any
+  // reading held an empty list, and one click there replaced four parts
+  // recorded in the other tab with one.
+  const first = await context.newPage()
+  const second = await context.newPage()
+  await first.goto('/case/')
+  await second.goto('/case/')
+
+  await first.evaluate(() =>
+    localStorage.setItem('ci:case-reading-progress', JSON.stringify(['S07', 'S10', 'S16', 'S17'])),
+  )
+  await second.locator('a[data-section-id]').first().click()
+
+  const stored = await second.evaluate(() =>
+    JSON.parse(localStorage.getItem('ci:case-reading-progress') ?? '[]'),
+  )
+  expect(stored).toEqual(expect.arrayContaining(['S07', 'S10', 'S16', 'S17']))
+  expect(stored.length).toBeGreaterThan(4)
+})
+
+test('the reading count never exceeds what the page can mark', async ({ page }) => {
+  await page.goto('/case/')
+  // Ids of the right shape that are not on this page: the count was taken from
+  // storage, so it read "4 of 40" above a single marker, and a larger store
+  // read "45 of 40".
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'ci:case-reading-progress',
+      JSON.stringify(['ZZ99', 'QQ1', 'AAA12', 'S04']),
+    ),
+  )
+  await page.reload()
+
+  await expect(page.getByText(/You have opened 1 of 40 parts/)).toBeVisible()
+
+  // By part, not by marker: the hub lists some sections twice, once in the
+  // guided order and once on the essential path, so one opened part can carry
+  // two markers. What matters is that only the part actually on the page is
+  // marked.
+  const markedParts = await page.evaluate(() => [
+    ...new Set(
+      [...document.querySelectorAll<HTMLElement>('[data-visited-marker]')]
+        .filter(marker => marker.checkVisibility())
+        .map(marker => marker.closest('[data-section-entry]')?.getAttribute('data-section-entry')),
+    ),
+  ])
+  expect(markedParts).toEqual(['S04'])
+})
+
+test('search filters do not survive a URL that does not carry them', async ({ page }) => {
+  await page.goto('/search/?q=hell&type=objection&book=Matthew')
+  await expect(page.locator('input[name="type"]:checked')).toHaveCount(1)
+
+  // The controls are uncontrolled defaults, which React sets once. On a URL
+  // without filters they stayed ticked over unfiltered results, and pressing
+  // Search then applied filters the reader never asked for.
+  await page.goto('/search/?q=gehenna')
+  await expect(page.locator('input[name="type"]:checked')).toHaveCount(0)
+  await expect(page.locator('select[name="book"]')).toHaveValue('')
+})
+
+test('the search index is fetched once, however search is opened', async ({ page }) => {
+  await page.goto('/case/')
+  const trigger = page.locator('a.search-trigger')
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+
+  // Hover then click inside one gesture fired two prewarms 8ms apart, and the
+  // guard was React state that had not committed between them: 610kB twice.
+  await trigger.hover()
+  await trigger.click()
+  await expect(page.getByRole('dialog', { name: 'Search this site' })).toBeVisible()
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          performance
+            .getEntriesByType('resource')
+            .filter(entry => entry.name.includes('search-index.json')).length,
+      ),
+    )
+    .toBe(1)
+})

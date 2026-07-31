@@ -409,6 +409,13 @@ function FeedbackFormFields({
           event.preventDefault()
           event.stopPropagation()
           const formElement = event.currentTarget
+          // Clear the previous outcome first. A submit stopped by the client
+          // validators never reaches `onSubmit`, so a reader who had just sent
+          // one correction, typed a second and pressed Send saw the inline
+          // error appear beneath "Received. Your submission has been
+          // recorded." — over text that had not been sent.
+          setStatus('idle')
+          setDetail('')
           void form.handleSubmit().then(() => {
             // If validation stopped the submit, move focus to the first
             // rejected control. Its label, description and error are all in
