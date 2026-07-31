@@ -24,7 +24,7 @@ infrastructure rather than twelve in the product — see **INFRA-1** — but a
 green run reported from elsewhere would not have found it, and the nine
 failures read exactly like product defects.
 
-Fourteen independent read-only sweeps then went over the tree: build and
+Fourteen independent read-only sweeps went over the tree: build and
 environment, feedback persistence, security and privacy, Vitest coverage,
 Playwright architecture, accessibility, SEO, search, content integrity,
 performance, resilience, CI and supply chain, documentation accuracy, and
@@ -33,6 +33,15 @@ behavioural ones — the claims where being wrong would have meant changing
 something that was already correct — went to independent verification with
 instructions to refute rather than confirm. Two were refuted outright and five
 had their severity or scope corrected.
+
+When the work was finished, seven more sweeps went over **this branch's own
+diff**, looking for what the pass had broken rather than what it had missed.
+They found 32 candidates, 28 of them regressions introduced here — including
+two the whole exercise would have been worthless without: a resolver that would
+have thrown in a reader's browser, and a turbo environment omission that would
+have made the runbook's own production start refuse every submission. Those are
+recorded in [their own section](#found-by-the-gap-sweep-in-this-branchs-own-work)
+rather than folded quietly into the list above.
 
 ## Findings
 
@@ -339,12 +348,51 @@ against anything else.
 | P2-26 | No runbook, no rollback procedure, no host requirements | `docs/launch-runbook.md` |
 | P2-27 | No `.env.example`; the maintenance guide's variable table listed three of the twelve variables that change production behaviour | `.env.example` with every variable, what breaks without it, and no credential |
 
+#### Known and accepted
+
+`/corrections/#submission-received` is a permanently linkable URL, so anyone who
+visits it directly reads a receipt for a submission they did not make. That is
+inherent to a receipt rendered from static markup on a statically prerendered
+page, and it is what the previous `?submitted=1` did too. The alternative —
+rendering the receipt only after a real POST — would make `/corrections/`
+dynamic on every request for the sake of a URL nobody links to. Recorded rather
+than worked around.
+
+`FEEDBACK_TRUSTED_PROXY_HOPS=0` gives the whole site one shared rate-limit
+allowance, because with no trusted proxy there is nothing to tell one reader
+from another. That is the conservative answer rather than an accident, the
+default is 1, and both `.env.example` and the runbook say what 0 costs.
+
 ### P3 — polish, implemented
 
 `rethinkinghell.com` published as plain `http` when it answers on `https` and
 301s there anyway; Node pinned in `engines`; the `Refresh`-header trailing-slash
 normalisation documented as carrying no policy (it has no body and nothing to
 protect); the two-hop alias redirect chain documented and pinned by a test.
+
+### Found by the gap sweep, in this branch's own work
+
+The adversarial sweep over the finished branch is the reason for this section:
+seven angles went back over the diff looking for what the pass had broken.
+
+| # | Finding | Correction |
+|---|---|---|
+| GAP-1 | **P1.** The new resolver shipped to the client bundle and would have thrown *in a reader's browser* on any deployment that relied on the `VERCEL_*` origin fallback: Next inlines only `NEXT_PUBLIC_` variables, so the server resolved and the browser did not. Confirmed by finding the throw string in two client chunks | The provider fallbacks are gone. Two inputs, both public, both halves of the build see the same thing, and a misconfigured build fails during prerender rather than in front of a reader |
+| GAP-2 | **P1.** `FEEDBACK_STORE_DURABLE` was missing from `globalPassThroughEnv`, so Turborepo's strict env mode stripped it and the runbook's own production start would have answered 503 | Added, with `PORT` and `VERCEL_ENV` |
+| GAP-3 | **P2.** The visual suite shot the viewport, which is the top 900 pixels, so `table-heavy is unchanged` contained a page title and no table | Surfaces may now name the component the shot is about; `table-heavy` shoots the table, and a Scripture block was added for the same reason |
+| GAP-4 | **P2.** `a static asset is cached` checked no static asset | It reads a real `woff2` out of the rendered stylesheet and asserts `immutable`, and a sibling test proves the four noindex paths are noindex and a real page is not |
+| GAP-5 | **P2.** Four refusal paths answered a browser form post with raw JSON, which is the no-JS contract broken on exactly the paths a no-JS reader reaches | Refusals key on whether the post was a form; two tests |
+| GAP-6 | **P3.** `next start` bound a hardcoded port and could not honour a platform-assigned `$PORT` | `--port ${PORT:-3210}` |
+| GAP-7 | **P3.** The print test computed a second assertion and discarded it | Asserted |
+| GAP-8 | **P2.** Nine documentation claims went stale *because of this branch* — the localhost fallback still documented, "no environment variables needed", "no visual regression testing", external links "not fetched by CI", the command lists, and three test counts | All corrected, and every count in this document recomputed |
+| GAP-9 | **P2.** Rescoping the print rule from `.prose-article` to `main` fixed one bug and made another: 56 anchors on `/sources/` and 29 on `/full-case/` — the two pages a reader prints — now printed their address **twice**, `break-all` wrapped, because their visible text is already the URL | `NewTabLink` detects a self-labelled link and the rule excludes it. Both halves are now rendered assertions: no doubling on the three pages that have them, and prose links still annotated |
+| GAP-10 | **P3.** The new `<Cite>` accessible name spoke the locator twice, and three times where the record carries one of its own | The spoken tail drops it; the marker in front already has it |
+| GAP-11 | **P3.** The receipt's `scroll-margin-top` stacked with the site's `scroll-padding-top` — the exact geometry `globals.css` documents two hundred lines earlier as measured and rejected | Deleted |
+| GAP-12 | **P3.** On a preview build the download rule replaced `noindex, nofollow` with `noindex`, dropping `nofollow` from the four paths that contain the whole site's text. A later header rule replaces an earlier one rather than adding to it | The rule carries the preview directive too, and a test asserts the four paths agree with the site-wide policy |
+| GAP-13 | **P2.** Nothing connected the redirect fragments to the ids `/corrections/` renders, so renaming either would leave the redirect pointing at nothing with every test green | Asserted against the exported constants |
+| GAP-14 | **P2.** The no-scripting failure receipt told the reader to "check the form below", which a page reload had emptied | It says the text is gone and why, rather than implying it is still there |
+| GAP-15 | **P2.** `global-error.tsx` claimed to replace Next's built-in error document. It replaces the React-tree case; Next still emits and serves a static `500.html` for a runtime crash, and the App Router offers no way to replace it | The claim is narrowed to what is true |
+| GAP-16 | **P2.** Two races, found by the final full run rather than by reading: axe scanned `/scripture/` mid-arrival and measured a *blended* colour (`#747b84` on `#fefbf6`, neither a token) as a 4.14:1 contrast failure; and the skip-link assertion sampled a single instant of a 150ms transition, which passed in Chromium and failed in WebKit against identical, correct CSS | axe waits for `document.getAnimations()` and the fonts; the skip-link assertion polls. Neither claim was weakened, and neither was answered with a retry |
 
 ### Rejected, with evidence
 
@@ -397,25 +445,30 @@ that pin behaviour rather than from exclusions.
 
 ## Test counts, from the final tree
 
-**Unit and component: 930** across 34 files — 478 app, 336 search, 65 content,
-51 content-schema. Was 808.
+**Unit and component: 931** across 37 files — 479 app, 336 search, 65 content,
+51 content-schema. Was 808 across 31.
 
-**Browser: 570 across eleven projects.**
+**Browser: 566 in one `test:browser` invocation**, across ten projects plus the
+guard. The per-project numbers below exclude the guard, which every project
+depends on and which runs once per invocation.
+
+An eleventh project, `preview`, holds the same 23 origin-agnostic tests and is
+selected only when `PLAYWRIGHT_BASE_URL` is set.
 
 | Project | Tests | What it is for |
 |---|---|---|
 | `served-build` | 1 | Refuses to run the suite against a foreign build |
-| `chromium-desktop` | 185 | Full suite at 1440×900 |
-| `chromium-mobile` | 185 | Full suite at 375×812 with touch |
+| `chromium-desktop` | 186 | Full suite at 1440×900 |
+| `chromium-mobile` | 186 | Full suite at 375×812 with touch |
 | `accessibility` | 32 | axe + structure, desktop |
 | `accessibility-mobile` | 32 | axe + structure, mobile |
-| `firefox-smoke` | 22 | Critical flows and headers, Gecko |
-| `webkit-smoke` | 22 | Critical flows and headers, Playwright WebKit |
+| `firefox-smoke` | 23 | Critical flows and headers, Gecko |
+| `webkit-smoke` | 23 | Critical flows and headers, Playwright WebKit |
 | `geometry-chromium` | 23 | Pretext line-break contract |
 | `geometry-firefox` | 23 | Same, Gecko |
 | `geometry-webkit` | 23 | Same, Playwright WebKit |
-| `visual` | 13 | Screenshot comparison |
-| `preview` | 22 | The same smoke set against a deployed origin |
+| `visual` | 14 | Screenshot comparison |
+| `preview` | 23 | The same smoke set against a deployed origin, not in `test:browser` |
 
 `webkit-smoke` and `geometry-webkit` are Playwright's WebKit build. Neither is
 Safari and neither is described as Safari; the manual Safari procedure is in

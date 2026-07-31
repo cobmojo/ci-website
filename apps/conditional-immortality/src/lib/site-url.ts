@@ -17,6 +17,16 @@
  * So the fallback now has to be asked for. A build either says what the
  * canonical origin is, or says that it is a local build and does not care.
  * There is no third state.
+ *
+ * Both inputs are `NEXT_PUBLIC_`, and that is not cosmetic. This module ends up
+ * in the client bundle — `click-to-load-video.tsx` is a client component and
+ * imports `site-config` — and Next inlines only `NEXT_PUBLIC_` variables there.
+ * A server-only input such as `VERCEL_PROJECT_PRODUCTION_URL` would therefore
+ * resolve on the server and be `undefined` in the browser, so a deployment that
+ * relied on it would build cleanly, serve correct canonical URLs, and then
+ * throw at module load in a reader's browser. There were such fallbacks here;
+ * they are gone. One variable, visible identically to both halves, and a
+ * misconfigured build fails during prerender rather than in front of a reader.
  */
 
 /** Where local development, the test servers and CI serve from. */
@@ -34,8 +44,6 @@ export const LOCALHOST_SITE_URL = 'http://localhost:3210'
 export interface SiteUrlEnv {
   readonly NEXT_PUBLIC_SITE_URL?: string | undefined
   readonly NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL?: string | undefined
-  readonly VERCEL_PROJECT_PRODUCTION_URL?: string | undefined
-  readonly VERCEL_URL?: string | undefined
 }
 
 const GUIDANCE =
@@ -101,23 +109,6 @@ export function resolveSiteUrl(env: SiteUrlEnv): string {
 
   const configured = env.NEXT_PUBLIC_SITE_URL?.trim()
   if (configured) return validated(configured, 'NEXT_PUBLIC_SITE_URL', allowLocalhost)
-
-  /*
-   * Provider fallbacks, in the order the provider itself recommends: the stable
-   * production domain before the per-deployment one, so a production build
-   * never canonicalises itself to a deployment-specific host. These are
-   * server-only variables, so a build that relies on them alone would resolve
-   * differently in the browser bundle — which is why the runbook requires
-   * NEXT_PUBLIC_SITE_URL for a real deployment and treats these as a preview
-   * convenience only.
-   */
-  const providerHost = env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || env.VERCEL_URL?.trim()
-  if (providerHost) {
-    const source = env.VERCEL_PROJECT_PRODUCTION_URL?.trim()
-      ? 'VERCEL_PROJECT_PRODUCTION_URL'
-      : 'VERCEL_URL'
-    return validated(`https://${providerHost.replace(/^https?:\/\//, '')}`, source, allowLocalhost)
-  }
 
   if (allowLocalhost) return LOCALHOST_SITE_URL
 

@@ -4,17 +4,20 @@
   "globalDependencies": ["tsconfig.base.json", "biome.json"],
   "globalEnv": ["NODE_ENV", "CI"],
   "globalPassThroughEnv": [
-    "NEXT_PUBLIC_SITE_URL",
-    "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL",
-    "SITE_ENV",
     "FEEDBACK_NOTIFY_EMAIL",
-    "FEEDBACK_STORE_DIR",
     "FEEDBACK_STORE",
-    "FEEDBACK_STORE_URL",
+    "FEEDBACK_STORE_DIR",
+    "FEEDBACK_STORE_DURABLE",
     "FEEDBACK_STORE_TOKEN",
+    "FEEDBACK_STORE_URL",
     "FEEDBACK_TRUSTED_PROXY_HOPS",
+    "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL",
+    "NEXT_PUBLIC_SITE_URL",
     "PLAYWRIGHT_BASE_URL",
-    "PLAYWRIGHT_PORT"
+    "PLAYWRIGHT_PORT",
+    "PORT",
+    "SITE_ENV",
+    "VERCEL_ENV"
   ],
   "tasks": {
     "build": {

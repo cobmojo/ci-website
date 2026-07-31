@@ -250,18 +250,32 @@ function rateLimitedResponse(wantsJson: boolean, retryAfterSeconds: number): Res
 }
 
 export async function handleFeedback(request: Request, deps: FeedbackDeps): Promise<Response> {
-  if (!isSameSiteRequest(request)) {
-    return json({ ok: false, error: 'cross-site' }, 403)
-  }
+  /*
+   * Which shape of answer this client can read, decided before the body is
+   * touched.
+   *
+   * Every refusal below happens before parsing, so `wantsJson` does not exist
+   * yet — but the content type does. A browser that posted a form and received
+   * a JSON blob is looking at a wall of braces instead of a page, and these are
+   * exactly the paths a reader without scripting reaches.
+   */
+  const contentType = (request.headers.get('content-type') ?? '').toLowerCase()
+  // A form post is the one shape that came from a browser with no scripting, so
+  // it is the one that needs a page back. Everything else — JSON, an unknown
+  // type, no type at all — is a client that can read a status and a body.
+  const isBrowserFormPost =
+    contentType.includes('application/x-www-form-urlencoded') ||
+    contentType.includes('multipart/form-data')
+  const refuse = (error: string, status: number, extra: Record<string, unknown> = {}) =>
+    isBrowserFormPost ? redirect(FAILURE_REDIRECT) : json({ ok: false, error, ...extra }, status)
+
+  if (!isSameSiteRequest(request)) return refuse('cross-site', 403)
 
   const parsed = await parseBody(request)
 
-  if (parsed === 'unsupported-type')
-    return json({ ok: false, error: 'unsupported-content-type' }, 415)
-  if (parsed === 'too-large') {
-    return json({ ok: false, error: 'too-large', maxBytes: MAX_BODY_BYTES }, 413)
-  }
-  if (parsed === 'malformed') return json({ ok: false, error: 'malformed-body' }, 400)
+  if (parsed === 'unsupported-type') return refuse('unsupported-content-type', 415)
+  if (parsed === 'too-large') return refuse('too-large', 413, { maxBytes: MAX_BODY_BYTES })
+  if (parsed === 'malformed') return refuse('malformed-body', 400)
 
   const { body, wantsJson } = parsed
 

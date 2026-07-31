@@ -140,7 +140,9 @@ export function ClickToLoadVideo({
       <p className="mt-3 mb-0 font-sans text-[0.86rem] leading-snug text-ink-muted">
         This video is loaded from YouTube only when you choose to play it. Nothing is requested from
         YouTube before then, and the privacy-enhanced player is used when it is.{' '}
-        <NewTabLink href={watchUrl}>Watch it on YouTube directly: {watchUrl}</NewTabLink>
+        <NewTabLink href={watchUrl} selfLabelled>
+          Watch it on YouTube directly: {watchUrl}
+        </NewTabLink>
       </p>
     </div>
   )

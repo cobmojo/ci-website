@@ -24,8 +24,6 @@ const APP_OUTPUT = join(REPO_ROOT, 'apps', 'conditional-immortality', '.next', '
 const expectedOrigin = resolveSiteUrl({
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL: process.env.NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL,
-  VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
-  VERCEL_URL: process.env.VERCEL_URL,
 })
 
 if (!existsSync(APP_OUTPUT)) {

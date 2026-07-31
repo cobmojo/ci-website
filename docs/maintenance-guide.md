@@ -20,15 +20,18 @@ bun run validate
 
 That is formatting, lint, typecheck, content validation, the content audit,
 the documentation path check, unit tests, the production build, the PII scan,
-the link check and the first-load JavaScript budget, in that order. The last
-three read the build output, which is why they come after it.
+the link check, the canonical-origin check and the first-load JavaScript
+budget, in that order. The last four read the build output, which is why they
+come after it.
 
 ```bash
-bun run ci
+bun run qa:production
 ```
 
-`validate`, then `test:browser`: end-to-end on desktop and mobile,
-accessibility, and the text-geometry contract in Chromium, Firefox and WebKit.
+`validate`, then coverage against its thresholds, then `test:browser`:
+end-to-end on desktop and mobile, accessibility at both viewports, cross-engine
+smoke in Firefox and Playwright WebKit, the text-geometry contract in three
+engines, and visual regression. `bun run ci` is the same command.
 
 All of it also runs on every push and pull request through
 `.github/workflows/ci.yml`, so a red gate is reported rather than discovered.
@@ -42,6 +45,14 @@ bun run content:pii        # scans built output for source contact details
 bun run content:links      # internal links and fragments in built HTML
 bun run content:bundle     # first-load JavaScript budget per route
 bun run content:docs       # every file path named in prose or a comment exists
+bun run content:canonical  # every canonical URL, OG URL and sitemap entry agrees
+bun run test:coverage      # coverage, against the thresholds in vitest.coverage.ts
+bun run test:visual        # thirteen screenshot comparisons
+bun run test:smoke         # the cross-engine set, in Firefox and WebKit
+
+# Outside the gate, because they depend on machines this repository does not own:
+bun run content:links:external              # fetches every published citation
+PLAYWRIGHT_BASE_URL=… bun run test:preview  # the smoke set against a deployment
 
 bun run test:e2e           # desktop and mobile end-to-end
 bun run test:a11y          # axe plus structural accessibility
@@ -266,17 +277,25 @@ per-section changelog automatically.
 
 ## Configuration
 
-Everything works with no environment variables set.
+Local work needs nothing: `bun run dev` and the `validate` chain set the one
+variable they need themselves. A **release build** is different, and refuses to
+proceed until it is told what it is building.
 
-| Variable | Effect if unset |
-|---|---|
-| `NEXT_PUBLIC_SITE_URL` | Canonical URLs fall back to the Vercel URL, then to `http://localhost:3210`. |
-| `FEEDBACK_STORE_DIR` | Submissions are written to `.feedback-store/`. |
-| `FEEDBACK_NOTIFY_EMAIL` | No notification is attempted. Submissions are still persisted. |
+| Variable | Required | Effect if unset |
+|---|---|---|
+| `NEXT_PUBLIC_SITE_URL` | for a release | The build **fails**. It no longer falls back to localhost: a build that guessed was wrong in 604 output files at once, and nothing failed. |
+| `NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL` | for a local build | Same failure. Set by `dev`, `validate` and the browser suites. |
+| `SITE_ENV` | for a preview | A preview is indexable and competes with production. |
+| `FEEDBACK_STORE` | no | Defaults to `filesystem`. |
+| `FEEDBACK_STORE_DIR` | filesystem | Submissions go to `.feedback-store/`. Must be absolute in production. |
+| `FEEDBACK_STORE_DURABLE` | filesystem, in production | The endpoint answers 503 and says nothing was stored. |
+| `FEEDBACK_STORE_URL` | http | The endpoint answers 503. |
+| `FEEDBACK_STORE_TOKEN` | http, if required | The collector rejects the write. |
+| `FEEDBACK_TRUSTED_PROXY_HOPS` | no | Defaults to 1, which is the shape of every managed host. |
+| `FEEDBACK_NOTIFY_EMAIL` | no | No notification line is logged. Submissions are still stored. |
 
-Set `NEXT_PUBLIC_SITE_URL` before a production build so canonical URLs, the
-sitemap, Open Graph images and the printed handout's QR code all point at the
-real domain.
+[`.env.example`](../.env.example) carries the same list with the reasoning, and
+[Launch runbook](launch-runbook.md) has the deployment procedure that uses it.
 
 ---
 

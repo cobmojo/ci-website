@@ -144,10 +144,70 @@ test('transport security matches the scheme the origin is actually served on', a
   }
 })
 
-test('a static asset is cached, and the write endpoint is not', async ({ request }) => {
-  const feedback = await request.get('/api/feedback', { maxRedirects: 0 })
+test('a font is cached for a year, and the write endpoint is not cached at all', async ({
+  request,
+  page,
+}) => {
+  /*
+   * The font is read out of the rendered document rather than guessed: the
+   * filenames are an implementation detail of the build, and a test that
+   * hardcodes one silently stops checking anything the day it changes.
+   */
+  await page.goto('/')
+  const fontUrl = await page.evaluate(() =>
+    [...document.styleSheets]
+      .flatMap(sheet => {
+        try {
+          return [...sheet.cssRules]
+        } catch {
+          return []
+        }
+      })
+      .map(rule => /url\((?:"|')?([^"')]*\.woff2)/.exec(rule.cssText)?.[1])
+      .find(Boolean),
+  )
+  expect(fontUrl, 'no woff2 referenced by any stylesheet').toBeTruthy()
+
+  const font = await request.get(fontUrl as string)
+  expect(font.status()).toBe(200)
+  expect(font.headers()['cache-control'] ?? '').toContain('immutable')
+  expect(font.headers()['cache-control'] ?? '').toMatch(/max-age=\d{7,}/)
+
+  const feedback = await request.get('/api/feedback/', { maxRedirects: 0 })
   const cacheControl = feedback.headers()['cache-control'] ?? ''
   expect(cacheControl, 'the write endpoint must not be cached').not.toMatch(/max-age=[1-9]/)
+})
+
+test('the downloads and the search index are reachable but not indexable', async ({ request }) => {
+  for (const route of [
+    '/download/transcript.txt',
+    '/download/bibliography.txt',
+    '/download/handout.html',
+    '/search-index.json',
+  ]) {
+    const response = await request.get(route)
+    expect(response.status(), route).toBe(200)
+    expect(response.headers()['x-robots-tag'] ?? '', route).toContain('noindex')
+  }
+
+  /*
+   * A real page is not caught by the same rule. On a preview deployment every
+   * page carries `noindex, nofollow`, so the assertion is that this page agrees
+   * with the site-wide policy rather than that it has none.
+   */
+  const home = (await request.get('/')).headers()['x-robots-tag']
+  const article = (await request.get('/case/key-texts/eternal-punishment/')).headers()[
+    'x-robots-tag'
+  ]
+  expect(article).toBe(home)
+
+  // And where the site-wide policy exists, the four paths do not weaken it: a
+  // later header rule replaces an earlier one rather than adding to it, so the
+  // download rule has to carry the preview directive too.
+  if (home?.includes('nofollow')) {
+    const download = await request.get('/download/transcript.txt')
+    expect(download.headers()['x-robots-tag']).toContain('nofollow')
+  }
 })
 
 test('the search index is served as JSON and revalidates rather than going stale', async ({

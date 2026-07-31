@@ -51,7 +51,17 @@ const SHOT = {
   maxDiffPixelRatio: 0.002,
 } as const
 
-const SURFACES: ReadonlyArray<{ name: string; route: string; fullPage?: boolean }> = [
+/**
+ * `target` names the thing the shot is about.
+ *
+ * Without it every shot is the viewport, which is the top 900 pixels — and for
+ * a surface whose whole point is below the fold, that is a screenshot of a
+ * heading. `table-heavy` was exactly that: a picture of a page title, standing
+ * in for a comparison table it never contained. Where a surface is about one
+ * component, the shot is of that component; where it is about the page's first
+ * impression, the viewport is right.
+ */
+const SURFACES: ReadonlyArray<{ name: string; route: string; target?: string }> = [
   { name: 'home', route: '/' },
   { name: 'start', route: '/start/' },
   { name: 'article', route: '/case/key-texts/eternal-punishment/' },
@@ -59,17 +69,27 @@ const SURFACES: ReadonlyArray<{ name: string; route: string; fullPage?: boolean 
   { name: 'search-results', route: '/search/?q=fire' },
   { name: 'corrections', route: '/corrections/' },
   { name: 'sources', route: '/sources/' },
-  { name: 'table-heavy', route: '/start/compare-the-views/' },
+  { name: 'table-heavy', route: '/start/compare-the-views/', target: 'main table' },
   { name: 'watch-poster', route: '/watch/' },
   { name: 'not-found', route: '/this-address-does-not-exist/' },
+  // The article's Scripture treatment, which is the site's most distinctive
+  // component and sits well below the fold on every page that has one.
+  {
+    name: 'scripture-block',
+    route: '/case/key-texts/eternal-punishment/',
+    target: '.scripture-block',
+  },
 ]
 
 for (const surface of SURFACES) {
   test(`${surface.name} is unchanged`, async ({ page }) => {
     await page.goto(surface.route)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+    const shot = surface.target ? page.locator(surface.target).first() : page
+    if (surface.target) await expect(page.locator(surface.target).first()).toBeVisible()
     await settle(page)
-    await expect(page).toHaveScreenshot(`${surface.name}.png`, SHOT)
+    await expect(shot).toHaveScreenshot(`${surface.name}.png`, SHOT)
   })
 }
 

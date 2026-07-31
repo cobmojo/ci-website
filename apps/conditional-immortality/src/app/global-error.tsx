@@ -10,8 +10,14 @@ import './globals.css'
  * This replaces the whole document, so it renders its own `<html>` and
  * `<body>` — the layout that would normally supply them is what failed. The
  * `lang` attribute is set here for the same reason: without it a screen reader
- * announces the page in whatever voice it was last using, and the built-in
- * fallback Next serves in this position sets none.
+ * announces the page in whatever voice it was last using.
+ *
+ * It does not replace everything. Next still emits a static `500.html` and
+ * serves it for a failure that never reaches React at all — a crash in the
+ * server runtime rather than in a render. There is no supported way to replace
+ * that document in the App Router, so the honest scope of this file is "an
+ * uncaught error in the React tree", which is the case a reader can actually
+ * reach by following a link.
  *
  * Deliberately plain. No header, no navigation, no search: every one of them
  * is rendered by the layout that just failed, and importing them here would

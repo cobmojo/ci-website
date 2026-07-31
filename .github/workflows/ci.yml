@@ -31,7 +31,7 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
-    # A cold build of 129 pages plus the full browser suite.
+    # A cold build of 121 prerendered pages plus the full browser suite.
     timeout-minutes: 45
 
     steps:
@@ -169,12 +169,15 @@ jobs:
       - name: The Linux baselines are committed
         run: |
           dir=apps/conditional-immortality/tests/e2e/visual.spec.ts-snapshots
+          # Derived from the spec rather than hardcoded, so adding a surface
+          # cannot leave the guard passing on a stale count.
+          expected=$(grep -c 'toHaveScreenshot(' apps/conditional-immortality/tests/e2e/visual.spec.ts)
           count=$(ls "$dir"/*-linux.png 2>/dev/null | wc -l)
-          if [ "$count" -lt 13 ]; then
-            echo "::error::Found $count Linux visual baselines, expected 13. Run the 'Visual baselines' workflow, download its artifact, and commit the images."
+          if [ "$count" -lt "$expected" ]; then
+            echo "::error::Found $count Linux visual baselines, expected $expected. Run the 'Visual baselines' workflow, download its artifact, and commit the images."
             exit 1
           fi
-          echo "$count Linux baselines present."
+          echo "$count Linux baselines present, $expected expected."
 
       - name: Build
         run: bun run build:local

@@ -133,6 +133,10 @@ export default function CorrectionsPage() {
 
               `tabIndex={-1}` is what makes the browser move focus here on the
               fragment navigation, which is what announces it.
+
+              The wording differs from the form's own status region on purpose:
+              both are in the DOM at once, and two elements reading "Received."
+              on one page is ambiguous to anything scanning it, test or reader.
             */}
             <div
               className="submission-receipt m-0 mb-5 rounded-md border border-affirm/30 bg-affirm-soft p-4 font-sans text-[0.95rem] text-ink"
@@ -140,10 +144,9 @@ export default function CorrectionsPage() {
               tabIndex={-1}
             >
               <p className="m-0">
-                <strong className="font-semibold text-affirm">Received.</strong> Your submission has
-                been recorded. Every submission is read. If it leads to a change, that change is
-                published in the <Link href="/changelog/">changelog</Link> with the issue and the
-                decision.
+                <strong className="font-semibold text-affirm">Recorded.</strong> Your submission was
+                saved. Every submission is read. If it leads to a change, that change is published
+                in the <Link href="/changelog/">changelog</Link> with the issue and the decision.
               </p>
             </div>
             <div
@@ -152,9 +155,11 @@ export default function CorrectionsPage() {
               tabIndex={-1}
             >
               <p className="m-0">
-                <strong className="font-semibold text-deny">Not recorded.</strong> Nothing was
-                stored. Either a field was not accepted or the site could not write the submission
-                down. Please check the form below and send it again.
+                <strong className="font-semibold text-deny">Not saved.</strong> Nothing was stored,
+                and because your browser reloaded this page the form below is empty again. Either a
+                field was not accepted — the message needs at least twenty characters, and a source
+                address needs to begin with http:// or https:// — or the site could not write the
+                submission down. We are sorry to ask you to type it again.
               </p>
             </div>
 

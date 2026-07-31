@@ -84,19 +84,23 @@ describe('resolveSiteUrl', () => {
     )
   })
 
-  it('falls back to the Vercel production domain before the per-deployment one', () => {
-    expect(
+  /**
+   * There is deliberately no provider fallback.
+   *
+   * This module is in the client bundle, where Next inlines `NEXT_PUBLIC_`
+   * variables and nothing else. A server-only input such as
+   * `VERCEL_PROJECT_PRODUCTION_URL` would resolve on the server and be
+   * `undefined` in the browser, so a deployment relying on it would build
+   * cleanly, serve correct canonical URLs, and throw at module load in a
+   * reader's browser. Two inputs, both public, both halves see the same thing.
+   */
+  it('consults no server-only provider variable, whatever is set', () => {
+    expect(() =>
       resolveSiteUrl({
         VERCEL_PROJECT_PRODUCTION_URL: 'example.org',
         VERCEL_URL: 'deployment-xyz.vercel.app',
-      }),
-    ).toBe('https://example.org')
-  })
-
-  it('falls back to the per-deployment Vercel domain when that is all there is', () => {
-    expect(resolveSiteUrl({ VERCEL_URL: 'deployment-xyz.vercel.app' })).toBe(
-      'https://deployment-xyz.vercel.app',
-    )
+      } as never),
+    ).toThrow(/NEXT_PUBLIC_SITE_URL/)
   })
 
   it('refuses to fall back to localhost for a release build', () => {

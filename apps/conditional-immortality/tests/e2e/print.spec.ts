@@ -79,9 +79,10 @@ test('the printed page keeps the argument and drops the furniture', async ({ pag
       if (!element) return true
       return getComputedStyle(element).display === 'none'
     }
-    return { header: hidden('header'), searchForm: hidden('.search-trigger') }
+    return { header: hidden('header'), searchTrigger: hidden('.search-trigger') }
   })
   expect(furniture.header, 'the site header printed').toBe(true)
+  expect(furniture.searchTrigger, 'the search trigger printed').toBe(true)
 })
 
 test('every external destination is printed after its link text', async ({ page }) => {
@@ -103,4 +104,51 @@ test('every external destination is printed after its link text', async ({ page 
   expect(shown?.after ?? '', 'an external destination is not printed beside its link').not.toBe(
     'none',
   )
+})
+
+test('a link whose text is already its URL does not print it twice', async ({ page }) => {
+  /*
+   * The other half of the rule above. Scoping it from `.prose-article` to
+   * `main` was right — the earlier scope matched none of the site's 278
+   * external links — but `main` also contains the source library, where the
+   * visible text *is* the address. Measured before the exclusion: 56 doubled
+   * anchors on `/sources/` and 29 on `/full-case/`, which are precisely the two
+   * pages a reader prints.
+   */
+  for (const route of ['/sources/', '/full-case/', '/watch/']) {
+    await page.goto(route)
+    await page.emulateMedia({ media: 'print' })
+
+    const doubled = await page.evaluate(() =>
+      [...document.querySelectorAll('main a[href^="http"]')]
+        .filter(link => {
+          const href = link.getAttribute('href') as string
+          const shown = (link.textContent ?? '').replace(/\s*\(opens in a new tab\)\s*$/, '')
+          if (!shown.includes(href)) return false
+          return getComputedStyle(link, '::after').content !== 'none'
+        })
+        .map(link => link.getAttribute('href')),
+    )
+
+    expect(doubled, `${route} prints ${doubled.length} address(es) twice`).toEqual([])
+  }
+})
+
+test('a link whose text is prose still prints its destination', async ({ page }) => {
+  /*
+   * Guards the exclusion above from swallowing the rule it narrows. Not on
+   * `/sources/`: every external link there is the URL itself, so the correct
+   * count on that page is zero. This is a page whose links are prose, which is
+   * where the annotation is the only way to check a citation on paper.
+   */
+  await page.goto('/case/roadblocks/tradition/')
+  await page.emulateMedia({ media: 'print' })
+
+  const annotated = await page.evaluate(
+    () =>
+      [...document.querySelectorAll('main a[href^="http"]')].filter(
+        link => getComputedStyle(link, '::after').content !== 'none',
+      ).length,
+  )
+  expect(annotated, 'the exclusion silenced every external link in the prose').toBeGreaterThan(0)
 })

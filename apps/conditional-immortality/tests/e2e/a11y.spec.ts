@@ -159,11 +159,32 @@ function headingSkips(headings: { level: number; text: string }[]): string[] {
   return skips
 }
 
+/**
+ * Nothing may still be moving when axe measures.
+ *
+ * The Tier 3 arrival fades `.mount-reveal` in over 200ms, and a colour part way
+ * through a fade is a blend of two colours. axe read one: it reported
+ * `#747b84` on `#fefbf6` at 4.14:1 for `/scripture/` — neither of which is a
+ * token, both being the filter panel's ink and paper caught mid-arrival. The
+ * settled values pass. Waiting for the animations rather than for a duration
+ * keeps the check on the variant a reader without a motion preference gets,
+ * which is the one worth scanning.
+ */
+async function settled(page: Page): Promise<void> {
+  await page.waitForLoadState('domcontentloaded')
+  await page.evaluate(async () => {
+    await document.fonts.ready
+    await Promise.all(
+      document.getAnimations().map(animation => animation.finished.catch(() => undefined)),
+    )
+  })
+}
+
 test.describe('axe-core, WCAG 2.0 / 2.1 / 2.2 level AA', () => {
   for (const route of ROUTES) {
     test(`reports no violations on ${route}`, async ({ page }) => {
       await page.goto(route)
-      await page.waitForLoadState('domcontentloaded')
+      await settled(page)
       expect(await axeViolations(page)).toEqual([])
     })
   }

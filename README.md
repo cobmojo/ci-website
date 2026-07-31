@@ -24,17 +24,32 @@ The site runs at `http://localhost:3210`. No environment variables are required.
 bun run validate
 ```
 
-Formatting, lint, typecheck, content validation, the content audit, unit tests,
-the production build, the PII scan and the link check.
+Formatting, lint, typecheck, content validation, the content audit, the
+documentation path check, unit tests, the production build, the PII scan, the
+internal link check, the canonical-origin check and the bundle budget.
 
 ```bash
-bun run ci
+bun run qa:production
 ```
 
-`validate`, then every browser suite: end-to-end on desktop and mobile,
-accessibility, and the text-geometry contract in Chromium, Firefox and WebKit.
-Each is also available on its own as `test:e2e`, `test:a11y` and
-`test:text-geometry`.
+`validate`, then coverage with its thresholds, then every browser suite:
+end-to-end on desktop and mobile, accessibility at both viewports, cross-engine
+smoke in Firefox and WebKit, the text-geometry contract in three engines, and
+visual regression. `bun run ci` is the same thing. Each suite is also available
+on its own as `test:e2e`, `test:a11y`, `test:smoke`, `test:text-geometry` and
+`test:visual`.
+
+Two commands are deliberately outside that gate, because they depend on
+machines this repository does not control:
+
+```bash
+bun run content:links:external
+PLAYWRIGHT_BASE_URL=https://preview.example bun run test:preview
+```
+
+The first fetches every published citation; it runs monthly and before a
+release. The second runs the origin-agnostic suite against a real deployment
+and starts no local server.
 
 ## What is here
 
@@ -87,10 +102,16 @@ unknown reference fails the build. Do not work around this by typing the verse.
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-1,249 tests: 808 unit, 308 end-to-end across desktop and mobile, 64
-accessibility across desktop and mobile viewports, and 69 text-geometry
-across Chromium, Firefox and WebKit.
-They run on every push; see `.github/workflows/ci.yml`.
+1,497 tests in the gate: 931 unit and component across 37 files, and 566
+browser tests across ten Playwright projects — end-to-end on desktop and
+mobile, accessibility at both viewports, cross-engine smoke in Firefox and
+Playwright WebKit, text geometry in three engines, and visual regression. An
+eleventh project, `preview`, runs 23 of them against a deployed origin. They
+run on every push; see `.github/workflows/ci.yml`.
+
+Before a launch, read [Production-readiness QA](docs/production-readiness-qa.md)
+and [Launch runbook](docs/launch-runbook.md). The site does **not** build without
+a canonical origin, on purpose.
 
 ## Conventions
 

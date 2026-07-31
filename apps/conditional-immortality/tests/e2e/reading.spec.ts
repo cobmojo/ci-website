@@ -194,11 +194,22 @@ test('a visitor can find every section that uses Matthew 10:28', async ({ page }
 test('a visitor can locate the source behind an early church claim', async ({ page }) => {
   await page.goto('/case/roadblocks/tradition/')
 
-  const citation = page.getByRole('link', { name: /^Source: Irenaeus of Lyons/ }).first()
+  const citation = page
+    .getByRole('link', { name: /^Lyons, Book II, chapter 34, section 3\./ })
+    .first()
   await expect(citation).toBeVisible()
-  // The citation itself carries the locator, so a reader knows where to look
-  // before they follow it.
-  await expect(citation).toHaveAccessibleName(/Book II, chapter 34, section 3/)
+  /*
+   * The accessible name begins with the visible marker and the full citation
+   * follows it. WCAG 2.2 SC 2.5.3 asks that the visible label be contained in
+   * the name, and it was not: the name used to open "Source: Irenaeus of
+   * Lyons. Against Heresies…", interleaving the work and the year between the
+   * two halves of the visible "[Lyons, Book II, chapter 34, section 3]".
+   */
+  await expect(citation).toHaveAccessibleName(/Source: Irenaeus of Lyons/)
+  // Once, not twice: `formatCitation` appends the record's own locator, so
+  // repeating the marker's locator in the tail said it two or three times.
+  const spoken = (await citation.getAttribute('aria-label')) ?? ''
+  expect(spoken.match(/Book II, chapter 34, section 3/g) ?? []).toHaveLength(1)
 
   await citation.click()
   await expect(page).toHaveURL(/\/sources\/#irenaeus-against-heresies$/)

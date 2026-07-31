@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { resetRateLimit } from '../../rate-limit'
 import { resolveFeedbackConfig } from '../config'
@@ -177,6 +179,47 @@ describe('what the endpoint refuses', () => {
       body: JSON.stringify(VALID),
     })
     expect((await handleFeedback(request, deps())).status).toBe(201)
+  })
+
+  /**
+   * Every refusal above happens before the body is parsed, so `wantsJson` is
+   * not known yet — but the content type is. A browser that posted a form and
+   * got a JSON blob back is looking at a wall of braces rather than at a page,
+   * and these are exactly the paths a reader without scripting can reach.
+   */
+  it('sends a scripting-free reader to the failure receipt, not to raw JSON', async () => {
+    const cases: Array<[string, Request]> = [
+      ['cross-site', formRequest(VALID, { 'sec-fetch-site': 'cross-site' })],
+      ['oversized', formRequest(VALID, { 'content-length': String(MAX_BODY_BYTES + 1) })],
+      [
+        'malformed',
+        new Request('https://example.org/api/feedback', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+            'sec-fetch-site': 'same-origin',
+          },
+          // `formData()` rejects a multipart content type with no boundary.
+          body: '%%%',
+        }),
+      ],
+    ]
+
+    for (const [label, request] of cases) {
+      const response = await handleFeedback(request, deps())
+      expect(response.status, label).toBe(303)
+      expect(response.headers.get('location'), label).toBe(`/corrections/#${FAILURE_FRAGMENT}`)
+      expect(await response.text(), label).toBe('')
+    }
+  })
+
+  it('still answers a scripted client with JSON on those same paths', async () => {
+    const response = await handleFeedback(
+      jsonRequest(VALID, { 'sec-fetch-site': 'cross-site' }),
+      deps(),
+    )
+    expect(response.status).toBe(403)
+    expect(response.headers.get('content-type')).toContain('application/json')
   })
 
   it('allows a request from something that is not a browser at all', async () => {
@@ -410,5 +453,27 @@ describe('duplicate submissions', () => {
     const records = store.records?.() ?? []
     expect(records).toHaveLength(2)
     expect(records[0]?.id).not.toBe(records[1]?.id)
+  })
+})
+
+describe('the receipts the redirects point at exist on the page', () => {
+  /**
+   * The two halves of the no-scripting fix live in different files: the
+   * endpoint redirects to a fragment, and `/corrections/` renders an element
+   * with that id. Nothing connected them, so renaming either left a redirect
+   * pointing at nothing and every test still green — the reader would land on
+   * the corrections page with no receipt at all, which is the exact behaviour
+   * the fix was for.
+   */
+  const page = readFileSync(path.resolve(__dirname, '../../../app/corrections/page.tsx'), 'utf8')
+
+  for (const fragment of [SUCCESS_FRAGMENT, FAILURE_FRAGMENT]) {
+    it(`/corrections/ renders an element with id="${fragment}"`, () => {
+      expect(page).toContain(`id="${fragment}"`)
+    })
+  }
+
+  it('and the two are not the same element', () => {
+    expect(SUCCESS_FRAGMENT).not.toBe(FAILURE_FRAGMENT)
   })
 })

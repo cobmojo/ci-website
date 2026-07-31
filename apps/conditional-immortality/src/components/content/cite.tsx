@@ -35,11 +35,18 @@ export function Cite({ id, locator }: { id: string; locator?: string }) {
     locator ? `, ${locator}` : ''
   }`
 
+  /*
+   * The spoken tail deliberately omits the locator, because the marker in
+   * front of it already carries one. `formatCitation` appends the record's own
+   * locator too, so `${marker}. Source: ${label}` said it twice — and three
+   * times where a record has a locator of its own and the citation passes one
+   * as well. The visible text and the tooltip are unchanged.
+   */
   return (
     <a
       href={`/sources/#${source.id}`}
       className="ml-0.5 font-sans text-[0.72em] align-super no-underline text-copper-deep hover:underline"
-      aria-label={`${marker}. Source: ${label}`}
+      aria-label={`${marker}. Source: ${formatCitation(source)}`}
       title={label}
     >
       [{marker}]

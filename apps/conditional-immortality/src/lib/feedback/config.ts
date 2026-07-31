@@ -73,6 +73,14 @@ export const DEFAULT_STORE_DIR = '.feedback-store'
  * address to `X-Forwarded-For` before passing the request on. The entry that
  * matters is therefore the *last* one, not the first — everything to the left
  * of it is whatever the client chose to send.
+ *
+ * Zero means nothing is in front of this process, so no forwarding header can
+ * be believed and there is no way to tell one reader from another. The limiter
+ * then keys every request the same way, which is one shared allowance for the
+ * whole site: five submissions per ten minutes, in total. That is deliberate —
+ * a limiter that cannot identify a client should throttle conservatively rather
+ * than not at all — but it is a real consequence of an explicit setting, and
+ * `.env.example` and the runbook both say so.
  */
 const DEFAULT_TRUSTED_PROXY_HOPS = 1
 

@@ -112,13 +112,20 @@ test('the skip link is reachable, visible once focused, and moves focus', async 
 
   const skip = page.getByRole('link', { name: 'Skip to main content' })
   await expect(skip).toBeFocused()
-  const box = await skip.boundingBox()
-  expect(box, 'the focused skip link has no box').not.toBeNull()
-  // Fully inside the viewport, not merely scrolled towards.
-  expect(
-    box?.y ?? -1,
-    'the focused skip link is clipped above the viewport',
-  ).toBeGreaterThanOrEqual(0)
+
+  /*
+   * Polled, not sampled once. The link slides in over `--motion-overlay-exit`
+   * for a reader with no motion preference, so a single `boundingBox()` taken
+   * the instant after Tab reads a position part way through the transition —
+   * which is how this passed in Chromium and failed in WebKit while the CSS
+   * was identical and correct in both. What is asserted is unchanged: once
+   * focused, the link is fully inside the viewport rather than clipped above it.
+   */
+  await expect
+    .poll(async () => (await skip.boundingBox())?.y ?? -1, {
+      message: 'the focused skip link never came fully into view',
+    })
+    .toBeGreaterThanOrEqual(0)
 
   await page.keyboard.press('Enter')
   await expect(page.locator('#main-content')).toBeFocused()

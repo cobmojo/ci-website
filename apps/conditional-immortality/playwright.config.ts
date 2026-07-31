@@ -249,6 +249,19 @@ export default defineConfig({
         timeout: 2 * 60 * 1000,
         stdout: 'pipe',
         stderr: 'pipe',
-        env: { FEEDBACK_STORE_DIR },
+        env: {
+          FEEDBACK_STORE_DIR,
+          /*
+           * `next start` is a production environment, and the feedback config
+           * refuses a filesystem store in production unless someone states
+           * that the directory outlives the process. Here it does: the store
+           * is a throwaway directory in the system temp folder, created
+           * before the run and untouched by anything the run does, which is
+           * exactly the assertion the flag asks for. Without it every test
+           * that submits a correction gets a truthful 503 — which is the new
+           * behaviour working, not a test to route around.
+           */
+          FEEDBACK_STORE_DURABLE: '1',
+        },
       },
 })
