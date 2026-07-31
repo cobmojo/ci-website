@@ -16,8 +16,11 @@ import { expect, test } from '@playwright/test'
  *
  * Determinism is the whole game. Every source of drift is pinned:
  *
- * - one engine and one viewport per shot, fixed by the project;
- * - `reducedMotion: 'reduce'`, so nothing is mid-transition;
+ * - one engine, one viewport and one device scale factor, fixed by the project;
+ * - reduced motion, also set by the project — in Playwright 1.62 it lives under
+ *   `contextOptions`, and passing it as a top-level `use` key is accepted and
+ *   ignored, which is how the first set of baselines came to be taken with
+ *   animation still enabled;
  * - fonts awaited through `document.fonts.ready`, so no shot is taken in the
  *   fallback face;
  * - the caret hidden and scroll positions reset;
@@ -28,8 +31,6 @@ import { expect, test } from '@playwright/test'
  * `bun run test:visual:update` regenerates them, and regenerating without
  * looking is the one thing this suite cannot survive.
  */
-
-test.use({ reducedMotion: 'reduce' })
 
 /** Everything that has to settle before a screenshot means anything. */
 async function settle(page: import('@playwright/test').Page): Promise<void> {

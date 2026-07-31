@@ -53,7 +53,9 @@ export default function PrivacyPage() {
                   play.
                 </li>
                 <li>
-                  Search runs inside your browser. Nothing you type into it leaves your device.
+                  The search box in the header matches inside your browser, and nothing you type
+                  into it leaves your device. The full search page is an ordinary page request, so
+                  its address — which contains your query — reaches this server like any other.
                 </li>
                 <li>
                   The correction form is the only place the site receives anything, and only what
@@ -125,13 +127,22 @@ export default function PrivacyPage() {
               </h2>
               <p className="m-0 mb-3">
                 The search index is a single file downloaded from this site the first time you open
-                search. Matching happens inside your browser. No query is transmitted anywhere, not
-                to this site and not to anyone else, and no search is logged, stored or counted.
+                the search box in the header. Matching happens inside your browser: what you type
+                there is never sent anywhere, not to this site and not to anyone else, and it works
+                with no network connection once the index has been fetched.
+              </p>
+              <p className="m-0 mb-3">
+                The full search page at <Link href="/search/">/search/</Link> is different, and it
+                is fair to say so plainly. It is an ordinary page: your query is part of its web
+                address, so it reaches this server the way every address you visit does. That is
+                what lets a result page be linked, bookmarked and shared, and what lets search work
+                with scripting switched off. Nothing is done with it — no query is logged by this
+                application, counted, analysed or kept — but it does leave your browser, and a claim
+                that it does not would be untrue.
               </p>
               <p className="m-0">
-                That is why search works with no network connection once the index has been fetched,
-                and why the same page also works with scripting disabled, where the search control
-                becomes an ordinary link.
+                If you would rather a query never left your device, use the search box in the header
+                rather than the search page.
               </p>
             </section>
 

@@ -103,6 +103,11 @@ const KNOWN_NON_HTML_ROUTES = new Set([
   '/og',
   '/api/feedback',
   '/search',
+  // The site icon. `app/icon.svg` is a file convention: Next serves it and
+  // writes the `<link rel="icon">` itself, with a cache-busting query it
+  // generates, so there is no prerendered HTML for it and the href on every
+  // page carries a hash this check cannot predict.
+  '/icon.svg',
 ])
 
 /** Build asset prefixes. These are emitted by the bundler, not by a route. */

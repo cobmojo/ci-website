@@ -206,6 +206,14 @@ export default defineConfig({
         viewport: DESKTOP_VIEWPORT,
         deviceScaleFactor: 1,
         colorScheme: 'light',
+        /*
+         * Under `contextOptions`, which is where Playwright 1.62 reads it.
+         * As a top-level `use` key it is accepted and silently ignored, and a
+         * screenshot taken mid-transition is a baseline that disagrees with
+         * itself. `tsconfig.tests.json` is what surfaced that: these specs
+         * were outside every tsconfig and had never been typechecked.
+         */
+        contextOptions: { reducedMotion: 'reduce' },
       },
     },
     /*

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "The Playwright specs, which the app's tsconfig excludes. Without this they are never typechecked at all: seven spec files and two fixtures, and the only thing standing between a mistyped locator and a green run is the test happening to fail for the right reason. Separate rather than folded in, because Playwright's globals and Next's generated route validator disagree about the ambient environment.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["tests/**/*.ts", "playwright.config.ts"],
+  "exclude": ["node_modules"]
+}

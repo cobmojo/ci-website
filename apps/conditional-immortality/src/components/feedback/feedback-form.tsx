@@ -245,6 +245,8 @@ function FeedbackFormFields({
    */
   const [scripted, setScripted] = useState(false)
   const honeypotRef = useRef<HTMLInputElement>(null)
+  /** True while a submission is in flight. See the guard in `onSubmit`. */
+  const inFlightRef = useRef(false)
 
   useEffect(() => setScripted(true), [])
 
@@ -258,6 +260,20 @@ function FeedbackFormFields({
       publicationConsent: 'do-not-publish' as PublicationConsent,
     },
     onSubmit: async ({ value }) => {
+      /*
+       * One submission per press, however many presses arrive.
+       *
+       * The button is deliberately never disabled — a control that cannot be
+       * pressed tells a reader nothing about why — so the guard belongs here
+       * instead. Without it a second press while the first request is in
+       * flight sends a second POST and stores a second identical record, and
+       * the reader has no way to know they have done it. A ref rather than
+       * the `status` state, because two presses in the same React batch see
+       * the same state value and both get through.
+       */
+      if (inFlightRef.current) return
+      inFlightRef.current = true
+
       setStatus('submitting')
       setDetail('')
       try {
@@ -324,6 +340,10 @@ function FeedbackFormFields({
         setDetail(
           'The submission could not be sent, which usually means the connection dropped. Your text is still in the form.',
         )
+      } finally {
+        // Released on every path, including the early returns above, so a
+        // rejected or rate-limited submission can be corrected and sent again.
+        inFlightRef.current = false
       }
     },
   })

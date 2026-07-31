@@ -106,12 +106,48 @@ const nextConfig: NextConfig = {
 
   typedRoutes: false,
 
-  images: {
-    remotePatterns: [{ protocol: 'https', hostname: 'i.ytimg.com' }],
-  },
+  /*
+   * `images` is deliberately absent.
+   *
+   * It allowed `i.ytimg.com` as a remote pattern for a `next/image` this
+   * repository does not contain and has no plan to add — the video poster is
+   * text, by design. An allowed remote pattern is not inert: it opens
+   * `/_next/image?url=…` as a fetch-and-re-encode proxy for that host, which
+   * is server work anyone can ask for and nothing here needs.
+   */
 
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      {
+        /*
+         * The six self-hosted faces never change without changing name: their
+         * unicode-range subsets are mirrored in `supported-text.ts`, which
+         * already treats widening them as a font change first. Without this
+         * they inherit the default and are revalidated on every navigation,
+         * which is a round trip before any text can be shaped in the right
+         * face.
+         */
+        source: '/fonts/:file*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        /*
+         * Reachable, quotable, and not indexable.
+         *
+         * The three downloads and the search index are complete duplicates of
+         * pages that are already indexed — the transcript of `/watch/`, the
+         * bibliography of `/sources/`, the handout of `/start/`, and an index
+         * containing every page's prose. A crawler that reaches one of them
+         * finds the site's whole text with no navigation and no canonical URL
+         * to point back at. Nothing about them should be hidden from a reader;
+         * they simply should not compete in a search result.
+         */
+        source:
+          '/:path(download/transcript.txt|download/bibliography.txt|download/handout.html|search-index.json)',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex' }],
+      },
+    ]
   },
 
   async redirects() {
