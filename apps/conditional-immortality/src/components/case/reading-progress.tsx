@@ -125,7 +125,9 @@ export function ReadingProgress({ total }: { total: number }) {
 
   if (!mounted) return null
 
-  const marked = visited.filter(id => onPage.includes(id))
+  // Deduplicated as well as bounded: membership alone still let a store
+  // holding one id forty-five times read "45 of 40 parts" above one marker.
+  const marked = [...new Set(visited)].filter(id => onPage.includes(id))
   const markerCss = marked
     .map(id => `[data-section-entry="${id}"] [data-visited-marker]{display:inline-flex}`)
     .join('')

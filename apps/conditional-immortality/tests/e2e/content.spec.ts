@@ -689,16 +689,35 @@ test('the reading count never exceeds what the page can mark', async ({ page }) 
     ),
   ])
   expect(markedParts).toEqual(['S04'])
+
+  // And the count the test is named for: membership alone did not deduplicate,
+  // so one id stored forty-five times still read "45 of 40 parts".
+  await page.evaluate(() =>
+    localStorage.setItem('ci:case-reading-progress', JSON.stringify(Array(45).fill('S04'))),
+  )
+  await page.reload()
+  await expect(page.getByText(/You have opened 1 of 40 parts/)).toBeVisible()
 })
 
 test('search filters do not survive a URL that does not carry them', async ({ page }) => {
   await page.goto('/search/?q=hell&type=objection&book=Matthew')
   await expect(page.locator('input[name="type"]:checked')).toHaveCount(1)
 
-  // The controls are uncontrolled defaults, which React sets once. On a URL
-  // without filters they stayed ticked over unfiltered results, and pressing
-  // Search then applied filters the reader never asked for.
-  await page.goto('/search/?q=gehenna')
+  // A soft navigation, not a second `page.goto`. A full load re-renders the
+  // defaults from the server whatever the key does, so a `goto`-based version
+  // of this test passes with the key deleted.
+  const trigger = page.locator('a.search-trigger')
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+  await trigger.click()
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+
+  // And a query that spells the filter it must not be confused with: the key
+  // was a comma-joined string, so "hell,objection" and "hell" plus the
+  // Objections filter produced the same key and the form did not remount.
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('hell,objection')
+  await dialog.getByRole('link', { name: /full search page/i }).click()
+
+  await expect(page).toHaveURL(/q=hell%2Cobjection/)
   await expect(page.locator('input[name="type"]:checked')).toHaveCount(0)
   await expect(page.locator('select[name="book"]')).toHaveValue('')
 })
@@ -714,14 +733,77 @@ test('the search index is fetched once, however search is opened', async ({ page
   await trigger.click()
   await expect(page.getByRole('dialog', { name: 'Search this site' })).toBeVisible()
 
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          performance
-            .getEntriesByType('resource')
-            .filter(entry => entry.name.includes('search-index.json')).length,
-      ),
+  const indexFetches = () =>
+    page.evaluate(
+      () =>
+        performance
+          .getEntriesByType('resource')
+          .filter(entry => entry.name.includes('search-index.json')).length,
     )
-    .toBe(1)
+
+  await expect.poll(indexFetches).toBe(1)
+})
+
+test('search recovers from a failed index fetch, as the failure message promises', async ({
+  page,
+}) => {
+  // The guard that stopped the double fetch was a ref set before the request
+  // and released nowhere, so one dropped connection ended search for the whole
+  // session — while the pane said "Reopen search to try again". Counting
+  // fetches on the success path cannot see that: a latched guard produces the
+  // same 1.
+  let failNext = true
+  await page.route('**/search-index.json', route => {
+    if (failNext) {
+      failNext = false
+      return route.abort('connectionfailed')
+    }
+    return route.continue()
+  })
+
+  await page.goto('/case/')
+  const trigger = page.locator('a.search-trigger')
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+  await trigger.click()
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await expect(dialog.getByText(/could not load/i)).toBeVisible()
+
+  // Reopening is the recovery the reader is told to perform.
+  await page.keyboard.press('Escape')
+  await trigger.click()
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('gehenna')
+  await expect(dialog.getByRole('listitem').first()).toBeVisible()
+})
+
+test('the card route always answers with a card', async ({ request }) => {
+  // `ImageResponse` streams, so a renderer failure lands after the handler has
+  // returned: an Arabic title closed the socket with no response written at
+  // all. The bytes are buffered now so the failure can be answered.
+  const titles = [
+    '', // no title at all
+    'Mark 9:42-48',
+    'العذاب الأبدي', // the script that produced no reply
+    'Hell 🔥 forever? 家族',
+    'x'.repeat(400),
+  ]
+
+  for (const title of titles) {
+    const response = await request.get(`/og/?title=${encodeURIComponent(title)}`)
+    expect(response.status(), `no card for ${JSON.stringify(title.slice(0, 20))}`).toBe(200)
+    expect(response.headers()['content-type']).toContain('image/png')
+    expect((await response.body()).length).toBeGreaterThan(1000)
+  }
+})
+
+test('the search index can be revalidated rather than refetched', async ({ request }) => {
+  // 610kB with `must-revalidate` and no validator meant every visit
+  // re-downloaded it — three visits cost 1.8MB — while /privacy/ described it
+  // as downloaded the first time search is opened.
+  const response = await request.get('/search-index.json')
+  expect(response.status()).toBe(200)
+
+  const headers = response.headers()
+  expect(headers.etag, 'no validator to revalidate against').toBeTruthy()
+  expect(headers['cache-control']).toMatch(/max-age=[1-9]/)
 })

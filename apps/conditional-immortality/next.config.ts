@@ -36,7 +36,16 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
   'default-src': ["'self'"],
   'script-src': ["'self'", "'unsafe-inline'"],
   'style-src': ["'self'", "'unsafe-inline'"],
-  'img-src': ["'self'", 'data:', 'https://i.ytimg.com'],
+  /*
+   * No YouTube thumbnail host. The poster is drawn from type and site colour
+   * rather than a remote image, which `click-to-load-video.tsx` states as a
+   * feature — "even the image request that a normal poster would make does not
+   * happen" — and a sweep of fourteen routes recorded zero external origins
+   * contacted. Allowing `i.ytimg.com` let this policy permit something the
+   * site does not do, against the header's own comment that the only external
+   * origin ever contacted is YouTube's privacy-enhanced domain.
+   */
+  'img-src': ["'self'", 'data:'],
   'font-src': ["'self'"],
   'connect-src': ["'self'"],
   'frame-src': ['https://www.youtube-nocookie.com'],
@@ -78,8 +87,9 @@ const nextConfig: NextConfig = {
 
   typedRoutes: false,
 
+  /* No remote image host: nothing on this site loads one. */
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: 'i.ytimg.com' }],
+    remotePatterns: [],
   },
 
   async headers() {

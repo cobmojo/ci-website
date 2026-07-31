@@ -164,3 +164,72 @@ describe('cuesToParagraphs', () => {
     expect(cuesToParagraphs(cues('   ', '\n'))).toEqual([])
   })
 })
+
+/**
+ * The transcript's own promise, on both surfaces it appears on.
+ *
+ * `/watch/` and `/download/transcript.txt` say "the cue times and wording are
+ * the published ones; only whitespace was normalised". Grouping cues into
+ * paragraphs is the one place that could break it, and it did: splitting on
+ * every full stop treated the ones inside numbers and domains as sentence
+ * ends, so the speaker's "about 0.00001%" rendered as a paragraph ending
+ * "about 0." followed by an orphan "00001%,", and "rethinking hell.com" as
+ * "rethinking hell. com".
+ */
+describe('the published wording, paragraph by paragraph', () => {
+  const cue = (text: string, start: number): TranscriptCue => ({
+    start,
+    duration: 5,
+    text,
+  })
+
+  /** Exactly what the cues said, with runs of whitespace collapsed. */
+  const published = (cues: readonly TranscriptCue[]) =>
+    cues
+      .map(entry => entry.text.trim())
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+  it('keeps a decimal inside the sentence that contains it', () => {
+    // One cue, as the published captions have it: the split under test is the
+    // paragraph one, not the cue one.
+    const cues = [
+      cue('has been doled out so far?" And God says, "Oh, about 0.00001%," which', 0),
+      cue('is a very small number indeed. Then he stops. And starts again.', 5),
+    ]
+    const rendered = cuesToParagraphs(cues).join(' ')
+    expect(rendered).toContain('0.00001%')
+    expect(rendered).not.toMatch(/about 0\.\s/)
+  })
+
+  it('keeps a dotted domain whole', () => {
+    const cues = [cue('go to rethinking hell.com or google it. Then read what is there.', 0)]
+    const rendered = cuesToParagraphs(cues).join(' ')
+    expect(rendered).toContain('rethinking hell.com')
+    expect(rendered).not.toContain('hell. com')
+  })
+
+  it('joins back to exactly what the cues said', () => {
+    const cues = [
+      cue('First sentence here. Second one follows, at 0.5 per cent.', 0),
+      cue('Third asks a question? Fourth exclaims! Fifth ends here.', 5),
+      cue('A sixth, longer sentence that runs on for a while and then stops.', 10),
+    ]
+    expect(cuesToParagraphs(cues).join(' ').replace(/\s+/g, ' ').trim()).toBe(published(cues))
+  })
+
+  it('attaches a chapter that stops mid-sentence to the sentence before it', () => {
+    // The boundary is a timestamp, not a full stop, so the last cue of a
+    // chapter can end on a word. One chapter ends on the single word "The",
+    // which read as a mistake standing alone in a paragraph of its own.
+    const cues = [
+      cue('One sentence. Two sentences. Three sentences. Four sentences.', 0),
+      cue('Five sentences. The', 5),
+    ]
+    const paragraphs = cuesToParagraphs(cues)
+    expect(paragraphs.at(-1)).toMatch(/The$/)
+    expect(paragraphs.filter(paragraph => paragraph.length < 12)).toEqual([])
+    expect(paragraphs.join(' ').replace(/\s+/g, ' ').trim()).toBe(published(cues))
+  })
+})

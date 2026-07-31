@@ -1437,6 +1437,77 @@ Three findings are recorded and deliberately not implemented:
   The honest fix is to put the filter in the URL, which is a design change to
   a progressive enhancement rather than a correction to one.
 
+### Gap sweep 15 (completed tree)
+
+Two angles over the tree at `856da6f`: the pattern in the previous sweep's
+fixes, and the last unswept surface — everything the site serves that is not
+an HTML page. Instances ten and eleven of the pattern, and eight findings on
+the handlers.
+
+Both new instances were in the previous sweep's own fixes, and both had tests
+that could not see them:
+
+- **One dropped request ended search for the whole session.** The ref that
+  stopped the index being fetched twice was set before the request and released
+  nowhere, so after a failure the guard rejected every retry — while the pane
+  said "Reopen search to try again" and the code comment promised the next
+  keystroke retries. Measured: one aborted fetch, then reopening, hovering,
+  focusing, typing and navigating produced no further request at all; a hard
+  reload proved the index and the network were fine. **The test written for the
+  double fetch asserts the count is 1 on the success path, which is exactly
+  what a permanently latched guard produces.** The guard is released on the
+  only path that leaves no index, and a test now fails the first fetch and
+  requires the second to work.
+- **The form key was not injective.** Joined with commas, searching for the
+  phrase `hell,objection` produced the same key as searching `hell` with the
+  Objections filter on, so the form did not remount and the reader got the
+  filtered form over unfiltered results — the same defect, the same 81
+  results, that the key was added to prevent. **And its test used two
+  `page.goto` calls, which are full loads: it passed identically with the key
+  deleted.** The key is a `JSON.stringify` of the parameters, extracted so its
+  injectivity is a unit test rather than a browser one, and the end-to-end
+  check now drives a real soft navigation.
+- The progress count was bounded by page membership but not deduplicated, so
+  one id stored forty-five times still read "45 of 40 parts" — the sentence the
+  previous commit said it had retired, under a test named for an invariant the
+  code did not hold.
+
+The handlers, none of which any page test touches:
+
+- **The transcript altered the published wording, on both surfaces that
+  promise it did not.** Paragraphs were split on every full stop, including the
+  ones inside numbers and domains, so "about 0.00001%" became a paragraph
+  ending "about 0." followed by an orphan "00001%," and "rethinking hell.com"
+  became "rethinking hell. com". Sentences now end where terminal punctuation
+  is followed by a space, and a chapter that stops mid-sentence keeps its
+  fragment attached. The test is the whole promise: every chapter's paragraphs,
+  rejoined, equal the published cue text exactly.
+- **`/og` returned no HTTP response at all for an Arabic title** — the socket
+  closed with nothing written, which is worse than an error. `ImageResponse`
+  streams, so the failure lands after the handler returns and a guard around
+  the constructor catches nothing; the bytes are buffered now and a card that
+  cannot be drawn is answered with the plain one.
+- **`/og` claimed it "never contacts a third party" and does.** The renderer
+  fetches a font from Google and an emoji sprite from a CDN for scripts its
+  bundled subset lacks. True of every card this site emits, false in general,
+  and `title` comes from a query string. The claim now says which is which.
+- **The search index was re-downloaded in full on every visit** — 610kB each
+  time, 1.8MB for three — because `must-revalidate` had no validator to
+  revalidate against, while `/privacy/` called it "a single file downloaded the
+  first time you open search". It carries an ETag and an hour of freshness.
+- **The content security policy allowed a host the site never uses.**
+  `i.ytimg.com` was permitted for YouTube thumbnails that the click-to-load
+  poster deliberately does not load — its own comment says so — against the
+  header's statement that the only external origin ever contacted is YouTube's
+  privacy-enhanced domain.
+
+Recorded, not implemented: `/og` will put arbitrary text on a card branded with
+the site and the author, which is a property of every open card renderer and
+would need an allowlist of published titles to close; route-handler responses
+are served uncompressed, which is a deployment concern rather than a code one;
+and the site ships no favicon, so every tab request costs a 404. Each is
+written up with its measurement.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

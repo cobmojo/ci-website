@@ -68,6 +68,25 @@ export function transcriptSegments(): readonly TranscriptSegment[] {
 }
 
 /**
+ * Split on sentence ends, and only on sentence ends.
+ *
+ * Matching "anything up to a full stop" treats every full stop as a boundary,
+ * including the ones inside numbers and domain names. The transcript said so
+ * itself — "the cue times and wording are the published ones; only whitespace
+ * was normalised" — while rendering the speaker's "about 0.00001%" as a
+ * paragraph ending "about 0." followed by an orphan "00001%,", and "rethinking
+ * hell.com" as "rethinking hell. com".
+ *
+ * A sentence ends where terminal punctuation is followed by space and then
+ * something that starts a sentence. A decimal point has no space after it, and
+ * neither does a dotted domain, so both survive.
+ */
+function splitSentences(text: string): string[] {
+  const sentences = text.split(/(?<=[.!?]["')\]]*)\s+(?=["'([]*[A-Z0-9])/)
+  return sentences.map(sentence => sentence.trim()).filter(Boolean)
+}
+
+/**
  * Cue text joined into readable paragraphs.
  *
  * Caption cues break on timing, not on sense, so a cue almost never ends at a
@@ -85,7 +104,7 @@ export function cuesToParagraphs(
     .trim()
   if (!text) return []
 
-  const sentences = text.match(/[^.!?]+(?:[.!?]+["')\]]*|$)/g) ?? [text]
+  const sentences = splitSentences(text)
   const paragraphs: string[] = []
   for (let i = 0; i < sentences.length; i += sentencesPerParagraph) {
     const chunk = sentences
@@ -94,5 +113,18 @@ export function cuesToParagraphs(
       .join(' ')
     if (chunk) paragraphs.push(chunk)
   }
+
+  /*
+   * A chapter's captions can stop mid-sentence, because the boundary is a
+   * timestamp rather than a full stop. That trailing fragment belongs to the
+   * sentence it came from, not to a paragraph of its own: one chapter ends on
+   * the single word "The", which read as a mistake standing alone. Joined, not
+   * dropped — the words are the published ones.
+   */
+  const last = paragraphs.at(-1)
+  if (paragraphs.length > 1 && last && !/[.!?]["')\]]*$/.test(last)) {
+    paragraphs.splice(-2, 2, `${paragraphs.at(-2)} ${last}`)
+  }
+
   return paragraphs
 }

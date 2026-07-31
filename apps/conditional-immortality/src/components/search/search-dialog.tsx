@@ -65,7 +65,13 @@ export function SearchDialogTrigger() {
     } catch {
       // A dropped connection must not surface as an unhandled rejection and a
       // silently blank pane. The failure line below names the recovery path,
-      // and the next open or keystroke of search intent retries.
+      // and the next open or keystroke of search intent retries — which needs
+      // the guard released, or one dropped request ends search for the whole
+      // session while the pane tells the reader to reopen and try again.
+      // Releasing here cannot bring the double fetch back: the two prewarm
+      // calls arrive about 8ms apart while the request is still in flight, and
+      // this runs only once it has settled.
+      loadStarted.current = false
       setFailed(true)
     } finally {
       setLoading(false)

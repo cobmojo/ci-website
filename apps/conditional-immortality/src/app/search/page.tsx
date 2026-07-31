@@ -14,6 +14,7 @@ import { Breadcrumbs } from '@/components/article/article-chrome'
 import { FocusOnArrivalLink } from '@/components/navigation/focus-on-arrival-link'
 import { SearchEmptyState, SearchResultsList } from '@/components/search/search-results'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
+import { searchFormKey } from '@/lib/search-form-key'
 import { searchIndex } from '@/lib/search-index'
 
 export const metadata: Metadata = pageMetadata({
@@ -79,8 +80,7 @@ export default async function SearchPage({
       })
     : { results: [], total: 0, usedTerms: [] }
 
-  /** Every parameter the form's uncontrolled defaults are built from. */
-  const formKey = [query, ...selectedTypes, '|', ...selectedGroups, '|', ...selectedBooks].join(',')
+  const formKey = searchFormKey(query, selectedTypes, selectedGroups, selectedBooks)
 
   const totalPages = Math.max(1, Math.ceil(outcome.total / PAGE_SIZE))
   const caseGroups = Object.keys(CASE_GROUP_LABELS) as CaseGroup[]
