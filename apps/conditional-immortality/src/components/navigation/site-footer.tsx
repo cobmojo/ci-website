@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@/components/navigation/link'
 import { formatLongDate } from '@/lib/format'
 import { FOOTER_NAV } from '@/lib/navigation'
 import { siteConfig } from '@/lib/site-config'

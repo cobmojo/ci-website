@@ -1,9 +1,9 @@
 'use client'
 
 import { cn } from '@ci/ui'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { Link } from '@/components/navigation/link'
 import { isActiveRoute } from '@/lib/navigation'
 
 /**

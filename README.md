@@ -24,17 +24,40 @@ The site runs at `http://localhost:3210`. No environment variables are required.
 bun run validate
 ```
 
-Formatting, lint, typecheck, content validation, the content audit, unit tests,
-the production build, the PII scan and the link check.
+Formatting, lint, typecheck, content validation, the content audit, the
+documentation path check, unit tests, the production build, the PII scan, the
+internal link check, the canonical-origin check, the bundle budget and the
+route-inventory reconciliation.
 
 ```bash
-bun run ci
+bun run qa:production
 ```
 
-`validate`, then every browser suite: end-to-end on desktop and mobile,
-accessibility, and the text-geometry contract in Chromium, Firefox and WebKit.
-Each is also available on its own as `test:e2e`, `test:a11y` and
-`test:text-geometry`.
+`validate`, then coverage with its thresholds, then the indexability matrix,
+then every browser suite: end-to-end on desktop and mobile, accessibility at
+both viewports, cross-engine smoke in Firefox and WebKit, the text-geometry
+contract in three engines, interaction latency, and visual regression.
+`bun run ci` is the same thing. Each suite is also available on its own as `test:e2e`, `test:a11y`, `test:smoke`, `test:text-geometry`,
+`test:interaction` and `test:visual`.
+
+Lighthouse is deliberately outside the gate: a category score taken on a shared
+runner is noise, and a flaky performance gate teaches people to re-run the
+build. What the gate holds instead is the deterministic *cause* of each thing
+it measures. See
+[Performance and technical SEO](docs/performance-and-technical-seo-report.md)
+for the numbers and `bun run perf:audit` to reproduce them.
+
+Two commands are deliberately outside that gate, because they depend on
+machines this repository does not control:
+
+```bash
+bun run content:links:external
+PLAYWRIGHT_BASE_URL=https://preview.example bun run test:preview
+```
+
+The first fetches every published citation; it runs monthly and before a
+release. The second runs the origin-agnostic suite against a real deployment
+and starts no local server.
 
 ## What is here
 
@@ -69,6 +92,9 @@ Read these before changing anything substantive.
   withdrawn, narrowed, corrected, and awaiting specialist review.
 - [Rights audit](docs/rights-audit.md). Every category of third-party material
   and the basis on which it is used.
+- [Performance and technical SEO](docs/performance-and-technical-seo-report.md).
+  What Lighthouse measures here, what was optimised, what was tried and
+  reverted, and where the remaining mobile shortfall comes from.
 
 ## Two things that are load-bearing
 
@@ -87,10 +113,18 @@ unknown reference fails the build. Do not work around this by typing the verse.
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-1,342 tests: 843 unit, 348 end-to-end across desktop and mobile, 76
-accessibility across desktop and mobile viewports, 6 print and 69
-text-geometry, each across Chromium, Firefox and WebKit.
-They run on every push; see `.github/workflows/ci.yml`.
+1,692 tests in the gate: 1,041 unit and component across 46 files, and 651
+browser tests across fifteen Playwright projects — end-to-end on desktop and
+mobile, accessibility at both viewports, cross-engine smoke in Firefox and
+Playwright WebKit, printed output in all three engines, text geometry in three
+engines, interaction latency, visual regression, and the served-build guard
+every one of them waits for. A sixteenth project, `preview`, runs the
+origin-agnostic set against a deployed origin. They run on every push; see
+`.github/workflows/ci.yml`.
+
+Before a launch, read [Production-readiness QA](docs/production-readiness-qa.md)
+and [Launch runbook](docs/launch-runbook.md). The site does **not** build without
+a canonical origin, on purpose.
 
 ## Conventions
 

@@ -35,7 +35,20 @@ export function sourcesForSection(sectionId: string): readonly SourceRecord[] {
 }
 
 /** Formatted citation line, used in bibliographies and footnotes. */
-export function formatCitation(source: SourceRecord): string {
+/**
+ * `includeLocator: false` leaves the record's own locator off the end.
+ *
+ * `<Cite>` needs it: WCAG 2.5.3 puts the visible marker at the front of the
+ * accessible name, and that marker already carries a locator. Appending the
+ * record's as well made a screen reader say "Book II, chapter 34, section 3"
+ * twice in one name. Everywhere else — the source library, the downloadable
+ * bibliography — the full citation is what is wanted, so that stays the
+ * default.
+ */
+export function formatCitation(
+  source: SourceRecord,
+  options: { readonly includeLocator?: boolean } = {},
+): string {
   const parts: string[] = []
   if (source.author) parts.push(source.author)
   parts.push(source.title)
@@ -43,7 +56,7 @@ export function formatCitation(source: SourceRecord): string {
   if (source.edition) parts.push(source.edition)
   if (source.publisher) parts.push(source.publisher)
   if (source.date) parts.push(source.date)
-  if (source.locator) parts.push(source.locator)
+  if (source.locator && options.includeLocator !== false) parts.push(source.locator)
   return parts.join('. ')
 }
 

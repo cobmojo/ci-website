@@ -108,6 +108,11 @@ const KNOWN_NON_HTML_ROUTES = new Set([
   '/og',
   '/api/feedback',
   '/search',
+  // The site icon. `app/icon.svg` is a file convention: Next serves it and
+  // writes the `<link rel="icon">` itself, with a cache-busting query it
+  // generates, so there is no prerendered HTML for it and the href on every
+  // page carries a hash this check cannot predict.
+  '/icon.svg',
   '/corrections',
 ])
 
@@ -195,7 +200,17 @@ for (const page of pages.values()) {
     if (match[1]) linked.add(normaliseRoute(match[1]))
   }
 }
-const orphans = [...pages.keys()].filter(route => route !== '/' && !linked.has(route))
+/*
+ * `/_not-found/` and `/_global-error/` are Next's own error documents. They are
+ * reached by failing to find something, never by a link, so a link to either
+ * would be the defect. Everything else that no page points at is unreachable
+ * by a reader and uncrawlable by anything that does not read the sitemap.
+ */
+const NOT_LINKED_BY_DESIGN = (route: string) => route.startsWith('/_')
+
+const orphans = [...pages.keys()].filter(
+  route => route !== '/' && !NOT_LINKED_BY_DESIGN(route) && !linked.has(route),
+)
 
 console.log('Link check')
 console.log('==========')
@@ -206,10 +221,17 @@ console.log(`  orphan pages     ${orphans.length}`)
 console.log(`  duplicated ids   ${duplicateCount}`)
 console.log('')
 
-if (orphans.length > 0) {
-  console.log('  Pages not linked from anywhere:')
-  for (const orphan of orphans) console.log(`    ? ${orphan}`)
-  console.log('')
+/*
+ * An orphan is an error, not a note.
+ *
+ * This used to print the list and exit zero, which meant a page could stop
+ * being linked from anywhere and every gate would stay green. A page nothing
+ * links to is one a reader cannot reach by reading, and one that a crawler
+ * only ever sees because the sitemap names it — no context, no anchor text,
+ * and nothing saying what it is for.
+ */
+for (const orphan of orphans) {
+  errors.push(`${orphan} is linked from no other page, so nothing but the sitemap can find it.`)
 }
 
 if (errors.length > 0) {

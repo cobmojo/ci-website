@@ -178,7 +178,7 @@ export default async function SearchPage({
                 type="search"
                 defaultValue={query}
                 placeholder="A reference, a phrase, a term, or a section id"
-                className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+                className="min-h-11 w-full rounded-md border border-border-control bg-paper-raised px-3 font-sans text-[1rem] text-ink"
               />
             </div>
             <button type="submit" className={buttonVariants({ variant: 'primary' })}>
@@ -251,7 +251,7 @@ export default async function SearchPage({
                   id="search-book"
                   name="book"
                   defaultValue={selectedBooks[0] ?? ''}
-                  className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+                  className="min-h-11 w-full rounded-md border border-border-control bg-paper-raised px-3 font-sans text-[1rem] text-ink"
                 >
                   <option value="">Any book</option>
                   {referencedBooks.map(book => (

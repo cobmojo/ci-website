@@ -1,0 +1,618 @@
+# Production-readiness QA
+
+The final review before launch: what was inspected, what was wrong, what was
+done about it, and what is still not this repository's to decide.
+
+The companion document is [Launch runbook](launch-runbook.md), which is the
+procedure. This one is the record.
+
+**Status: no-go, on two external decisions.** Every code-level finding is
+closed. The site cannot launch until someone chooses a domain and provisions a
+store for reader corrections, and neither is something code can do. See
+[External launch decisions](#external-launch-decisions).
+
+## How this was done
+
+Nothing here was taken on trust, including the previous audits. The baseline
+was re-measured from a clean install before anything was changed, and every
+count in this document was recomputed from the final tree.
+
+That mattered immediately. The launch candidate claimed 1,249 tests and zero
+failures; the first full browser run on this machine produced **nine failures
+and three flakes**. All twelve turned out to be one defect in the test
+infrastructure rather than twelve in the product — see **INFRA-1** — but a
+green run reported from elsewhere would not have found it, and the nine
+failures read exactly like product defects.
+
+Fourteen independent read-only sweeps went over the tree: build and
+environment, feedback persistence, security and privacy, Vitest coverage,
+Playwright architecture, accessibility, SEO, search, content integrity,
+performance, resilience, CI and supply chain, documentation accuracy, and
+Next 16 conformance. They produced 111 raw candidates. Twelve of the
+behavioural ones — the claims where being wrong would have meant changing
+something that was already correct — went to independent verification with
+instructions to refute rather than confirm. Two were refuted outright and five
+had their severity or scope corrected.
+
+When the work was finished, seven more sweeps went over **this branch's own
+diff**, looking for what the pass had broken rather than what it had missed.
+They found 32 candidates, 28 of them regressions introduced here — including
+two the whole exercise would have been worthless without: a resolver that would
+have thrown in a reader's browser, and a turbo environment omission that would
+have made the runbook's own production start refuse every submission. Those are
+recorded in [their own section](#found-by-the-gap-sweep-in-this-branchs-own-work)
+rather than folded quietly into the list above.
+
+## Findings
+
+Severity is user and launch impact, not effort: **P0** blocks a launch,
+**P1** is a major defect, **P2** is a meaningful production-quality gap,
+**P3** is polish.
+
+### P0 — launch blockers
+
+#### P0-1 · The canonical origin could silently be localhost
+
+*Deployment configuration · `src/lib/site-config.ts` · Implemented and verified*
+
+`resolveSiteUrl` fell back to `http://localhost:3210` unconditionally, so a
+production build that forgot one variable was wrong everywhere at once and
+nothing failed.
+
+Measured on the build in the tree at the time: **604 output files** carried
+the localhost origin, including every one of the 119 canonical links, all 118
+sitemap `<loc>` entries, `Host` and `Sitemap` in `robots.txt`, every Open Graph
+URL, the address printed on all three downloads, and the destination encoded in
+the printed handout's QR code. A site in that state is un-indexable, its social
+cards never resolve, and its printed QR code goes nowhere. Because the value is
+baked at build time, setting the variable on a running server afterwards fixes
+none of it.
+
+Reproduction: `bunx next build` with no environment, then
+`grep -rl 'localhost:3210' .next/server/app | wc -l`.
+
+**Correction.** The resolver moved to `src/lib/site-url.ts` as a pure function
+of its environment and now refuses to guess: a build either names the canonical
+origin or declares itself a localhost build via
+`NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL`. There is no third state. It also
+rejects a path component, a query, a fragment, embedded credentials, a
+non-`http` scheme, and plain `http` for a release. `next.config.ts` calls the
+same function, so the header policy and the canonical URLs cannot disagree
+about what the build is.
+
+**Alternatives considered.** Warning instead of failing was rejected: a warning
+in a build log is exactly what nobody reads before a deploy. Defaulting to a
+placeholder domain was rejected for the same reason it is wrong today — a
+plausible-looking wrong answer is worse than a refusal.
+
+**Coverage.** 19 unit tests over every branch, and
+`scripts/conditional-immortality/canonical-check.ts` in `validate`, which
+proves the resolved origin is the one that actually reached the output in every
+canonical tag, Open Graph URL, sitemap entry and robots directive. Verified red
+against a mismatched origin (1,082 problems, exit 1) and green against a correct
+one.
+
+#### P0-2 · A published citation resolved to the private working document
+
+*Privacy, rights · `packages/ci-content/src/sources/sources.ts` · Implemented and verified*
+
+`/sources/`, the downloadable bibliography and the public search index all
+carried `https://tinyurl.com/ECTvsCI`. It 301s to a Google Doc — the working
+document that `docs/rights-audit.md` withholds because "it opens with a
+personal email address and phone number" and "contains 30 private editorial
+comments by named third parties who did not consent to publication".
+
+Reproduction: `curl -sI https://tinyurl.com/ECTvsCI` returns
+`301 → https://docs.google.com/document/d/1Q_EU…`.
+
+The record was `citedBy: []` — it cited nothing — so the short link served no
+reader and leaked the document to any of them.
+
+**Correction.** The URL is removed; the record and its note stay, so the source
+count is unchanged and the fact that a short link existed and was retired is
+still on the page. A registry test now rejects any source URL on a shortener or
+a shared-drive host, on the general ground that a published citation whose
+destination the registry cannot show has not been reviewed.
+
+#### P0-3 · Unconsented third-party correspondence in a public repository
+
+*Privacy · `private/source/` · Implemented in code; history purge is external*
+
+The same thirty comments — three named people, dates, full text — were
+committed to a public GitHub repository in `source-comments.json`,
+`source-elements.json` and `source-text-redacted.md`. The rights audit's
+reasoning had been applied to the website and not to the repository, and
+`pii-scan.ts` was told by name to skip two of the three files.
+
+**Correction.** All three untracked and ignored. They are outputs of
+`bun run source:import`; nothing in the build, the validation chain or any test
+reads them. `pii-scan.ts` now fails if one is ever tracked again — verified red
+before the fix, green after. It also stopped skipping `.body` files, which is
+the whole of `robots.txt`, `sitemap.xml`, the search index and all three
+downloads: 1,753 files were being scanned and 1,778 are now.
+
+**What this does not do.** Removing a file from `HEAD` does not remove it from
+a public repository's history. That is recorded as **EXT-3**.
+
+#### P0-4 · Feedback persistence was unsafe on any topology but one
+
+*Data loss · `src/app/api/feedback/route.ts` · Implemented and verified*
+
+The site's only write appended to a directory under `process.cwd()`. On a
+persistent server with a real volume that is correct. On anything serverless,
+containerised or multi-instance it is either a hard failure (read-only
+filesystem) or silent loss (an ephemeral one). No code can tell the two apart:
+a volume that survives a redeploy and one that evaporates behave identically to
+`appendFile`. No deployment target has been chosen, so both were live
+possibilities. The endpoint also had **no tests at all**.
+
+**Correction.** Three stores behind one interface, chosen by configuration:
+
+- `filesystem` — the default. In production it additionally requires
+  `FEEDBACK_STORE_DURABLE=1`, which is an operator asserting the volume
+  outlives the process, and an absolute path, because `cwd` is the host's
+  choice and moves between a build step and a running server.
+- `http` — POSTs each record to an endpoint the operator owns, with a five
+  second timeout. The only durable option that ties the site to no vendor and
+  adds no dependency.
+- `memory` — tests, and refused in production by name.
+
+A configuration that does not resolve answers **503 and says nothing was
+stored**, rather than accepting a correction and dropping it. It does not
+throw, so one wrong variable cannot take the other 129 pages down with it.
+
+**Alternatives considered.** Adding a database client was rejected: it would
+commit the project to a vendor before it has chosen a host, and add a
+dependency for a form that receives a handful of submissions. Emailing the
+record was rejected because the privacy design forbids the message body leaving
+in a notification. Silently degrading to `/tmp` was rejected as the exact
+failure being fixed.
+
+**Coverage.** 60 tests across config, stores and handler: every refusal, the
+honeypot answering identically to a success, a blocked store, a store that
+fails mid-write, concurrent appends, month-boundary filing, and four sentinel
+strings proving no message, name, email or source URL reaches a log line or a
+response body.
+
+### P1 — major defects
+
+#### P1-1 · The rate limiter was not a rate limiter
+
+*Security · `src/lib/rate-limit.ts` · Implemented and verified*
+
+`clientAddress` read the **first** `X-Forwarded-For` entry, which is whatever
+the client typed. A new leftmost address per request is a new bucket per
+request, so the window was never met and the site's only write endpoint was an
+unbounded write target for anyone who noticed.
+
+**Correction.** It reads the entry the nearest trusted proxy appended, counted
+from the right, with the hop count configured because it is a property of the
+host (`FEEDBACK_TRUSTED_PROXY_HOPS`, default 1; 0 means nothing is in front and
+no forwarding header is believed). Eleven tests, including one that forges a
+chain and proves the key does not move.
+
+#### P1-2 · No request body cap
+
+*Security · Implemented and verified*
+
+The entire body was buffered before validation, and the limiter did not run
+until after that. A 64 KiB cap is now applied on the declared `Content-Length`
+and again while reading the stream, because the header is a claim. Two tests,
+one of them lying about its length.
+
+#### P1-3 · Every form control failed WCAG 2.2 SC 1.4.11
+
+*Accessibility · `src/app/globals.css` · Implemented and verified*
+
+All twelve author-styled inputs, textareas and selects drew their only boundary
+at **2.04:1** (`--color-border-strong` on `--color-paper-raised`) or **1.45:1**
+(`--color-border` on `--color-paper`), against a required 3:1. Their fill
+differs from the surround by 1.08:1, so the border was the only thing
+identifying them, and because border-colour, background and radius are all
+authored the "determined by the user agent" exception does not apply.
+
+axe-core 4.12.1 has no non-text-contrast rule — only the text-only
+`color-contrast` — so the accessibility gate was green and would have stayed
+green.
+
+**Correction.** A new `--color-border-control` takes the same warm grey deeper
+until it clears 3:1 on every surface a control sits on: 3.71:1 on paper,
+4.01:1 on paper-raised, 3.37:1 on panel, 3.02:1 on panel-strong. Structural
+borders are untouched — 1.4.11 governs components and states, not decoration,
+and darkening a card edge would change the look of the whole site to fix
+something it is not part of.
+
+**Coverage.** `form-control-contrast.test.ts` recomputes the ratios from the
+tokens in `globals.css` rather than restating them, asserts the twelve controls
+all use the token, and asserts the count is twelve so the check cannot pass
+vacuously. Verified red by reverting one control.
+
+#### P1-4 · A submission made without scripting produced no receipt
+
+*Resilience, accessibility · Implemented and verified*
+
+The success and failure banners were rendered by a client component reading
+`?submitted=`, which is the one place a reader with no scripting can never see
+them. `/corrections/` is statically prerendered, so a no-JS reader was returned
+to an apparently untouched empty form whether their correction had been
+recorded or not.
+
+**Correction.** The endpoint redirects to a fragment and `/corrections/`
+renders both receipts in static markup, revealed by `:target`, focusable so the
+fragment navigation announces them. With scripting on the form posts with
+`fetch` and never navigates, so neither fragment is reached and the form's own
+status region remains the only message.
+
+#### P1-5 · No error boundaries
+
+*Resilience · Implemented and verified*
+
+An uncaught render error served Next's built-in page: no `lang`, no landmark,
+its own dark-mode styling, and no way out. `error.tsx` and `global-error.tsx`
+now offer a retry and two routes, and log the digest only.
+
+#### P1-6 · `qr.ts` had no test
+
+*Correctness · Implemented and verified*
+
+666 lines of hand-written Reed-Solomon, masking and bit placement behind the QR
+code on the printed handout — an artefact whose failure a reader discovers by
+pointing a phone at a piece of paper. Its header lists five correctness checks
+including a round trip through "an independently written decoder"; none was in
+the repository, so none was reproducible.
+
+**Correction.** That decoder is now in the suite. It reads the format bits,
+unmasks, walks the zigzag, de-interleaves the blocks and parses the payload
+back to text for eight payloads including multi-byte ones; checks every block
+at every version 1–10 against Reed-Solomon syndromes computed from a separately
+written GF(256), with a corruption case proving the check is not vacuous; and
+verifies the capacity table, the format bits, the finder and timing patterns
+and the dark module.
+
+The encoder is correct. The ISO/IEC 18004 Annex I vector reproduces exactly
+(`A5 24 D4 C1 ED 36 C7 87 2C 55`). The finding was the absence of the test, not
+a defect in the code.
+
+#### P1-7 · The privacy page made a false claim
+
+*Privacy, content integrity · Implemented and verified*
+
+"No query is transmitted anywhere, not to this site and not to anyone else."
+The header search box does match in the browser and transmits nothing — but
+`/search/` is a server-rendered page whose query is part of its address, and it
+is the only search a reader without scripting has.
+
+**Correction.** The page says both things plainly, and says which to use if a
+query must never leave the device. The implementation is unchanged: making
+`/search/` client-only would break the no-scripting path, which is a contract,
+and the honest fix for a false sentence is a true sentence.
+
+#### P1-8 · No coverage measurement anywhere
+
+*Test system · Implemented and verified*
+
+No provider, no script, no threshold. See [Coverage](#coverage).
+
+### P2 — production-quality gaps
+
+#### INFRA-1 · The browser suite could silently measure the wrong build
+
+*Test infrastructure · Implemented and verified*
+
+The suite served its production build on a hard-coded port. During this review
+a second checkout of the repository was testing at the same time, and the run
+bound to — or was answered by — the other checkout's server. It reported nine
+failures that described **that** build: hashed chunk names the lazy-boundary
+tests could not match, dialog markup the excerpt tests could not find. Every
+one looked like a product defect. None was; all forty passed in isolation.
+
+This is the most dangerous class of test failure, because a wrong answer that
+looks like a finding costs more than no answer.
+
+**Correction.** `PLAYWRIGHT_PORT` overrides the port, and the Pretext harness
+and the feedback store are keyed to it so two runs cannot share either. Every
+project depends on a `served-build` guard that refuses to start unless the
+server is serving this checkout's `.next/BUILD_ID`. Verified in both
+directions: green against its own build, and a named, actionable failure
+against anything else.
+
+#### Other P2 findings, all implemented and verified
+
+| # | Finding | Correction |
+|---|---|---|
+| P2-1 | Print deleted the body of every closed disclosure. `::details-content` is a user-agent pseudo-element the `display: revert` on children cannot reach; measured under print emulation, all three engines printed the summary and nothing else — the opposite of what `/accessibility/` says | `content-visibility: visible` on the pseudo-element, plus a **rendered** print test. The old check asserted the CSS text, which proves rules exist, not that content reaches paper |
+| P2-2 | The external-destination print rule was scoped to `.prose-article`. Measured across all 118 routes, that selector matched **zero** of the site's 278 external links, so the accessibility statement's promise was true of no page | Scoped to `main`, where the citations actually are |
+| P2-3 | `<Cite>` failed SC 2.5.3 Label in Name: the visible "[Dear, page 76]" appeared nowhere in the accessible name | The name begins with the visible marker; the full citation still follows |
+| P2-4 | No security-header test anywhere — the whole CSP and header block was computed and never read back off a response | Asserted on the wire, in a spec that also runs against a deployed origin |
+| P2-5 | No HSTS, and no `X-Robots-Tag` for previews | Both added, gated on the resolved origin being HTTPS and on `SITE_ENV`/`VERCEL_ENV` |
+| P2-6 | `VERCEL_ENV` and the origin variables changed build output but were not in the Turborepo cache key, so a cached **preview** build could be restored as production — with `Disallow: /` in it | Six variables added to the `build` task's `env` |
+| P2-7 | No deployed-preview mode: the suite could only test a locally started server | `PLAYWRIGHT_BASE_URL`, a `preview` project, and `bun run test:preview` that starts no local server |
+| P2-8 | No visual regression of any kind | Fourteen surfaces, pinned engine/viewport/scale/motion, Linux baselines produced in the same image CI compares in |
+| P2-9 | The rendered route sweep covered 31 hand-picked routes | `route-sweep.spec.ts` drives all 120 public routes from the sitemap at five viewports |
+| P2-10 | No Origin or `Sec-Fetch-Site` check on the only write endpoint | Added, with `curl` deliberately still allowed: the endpoint has no session to borrow, so this is spam hygiene, not CSRF defence |
+| P2-11 | Malformed JSON answered 415 | 400. The content type was supported; the body was not |
+| P2-12 | The eleven build scripts belonged to no tsconfig, and `tests/e2e` was excluded from the app's — nine Playwright files and every gate script had never been typechecked | Two tsconfigs, wired into `typecheck`. The first run found a real defect: see P2-13 |
+| P2-13 | `reducedMotion` is not a top-level test option in Playwright 1.62 — it lives under `contextOptions`, and a top-level key is accepted and ignored. The first visual baselines had been taken with animation enabled | Moved to where it is read; baselines regenerated and proved stable against themselves |
+| P2-14 | `images.remotePatterns` allowed `i.ytimg.com` for a `next/image` the repository does not contain, opening `/_next/image` as a fetch-and-re-encode proxy | Removed |
+| P2-15 | The six self-hosted faces were served with `max-age=0`, revalidated on every navigation | `immutable`, one year. Their subsets are already frozen by `supported-text.ts` |
+| P2-16 | The three downloads and the search index are complete duplicates of indexed pages, crawlable with no `X-Robots-Tag` | `noindex`, still fully reachable |
+| P2-17 | CI actions pinned to mutable major tags; `persist-credentials` left on; no Dependabot | SHAs verified against the legitimate repositories with the release in a comment; credentials off; Dependabot for both ecosystems |
+| P2-18 | CI installed Playwright browsers with `playwright@latest`, outside the frozen lockfile | `bunx playwright`, which resolves the pinned version |
+| P2-19 | `cancel-in-progress` applied to `main`, so a merge could be cancelled by the next merge and leave the default branch with no completed gate | Off for `main` only |
+| P2-20 | The drift gate used `git diff`, which cannot see a generated file that is **new** rather than modified | `git status --porcelain` |
+| P2-21 | No external-link audit, and no gate ever fetched a citation | `external-link-audit.ts`, monthly and on demand, deliberately **not** in CI |
+| P2-22 | `bundle-budget.ts` had no absolute ceiling: uniform growth raises the median with it and nothing fails | A hard ceiling, and per-route allowances expressed over the median rather than as absolute numbers |
+| P2-23 | The correction form sent two POSTs on a double press | An in-flight guard in the handler. The button stays enabled: a control that cannot be pressed tells a reader nothing |
+| P2-24 | No favicon or app icon; every page load 404'd on `/favicon.ico` | `app/icon.svg`, the existing wordmark at icon scale |
+| P2-25 | The privacy page promised deletion on request and timed retention, and nothing in the repository could perform either | Runbook §8: read, export, delete-by-email, delete-by-id, retention |
+| P2-26 | No runbook, no rollback procedure, no host requirements | `docs/launch-runbook.md` |
+| P2-27 | No `.env.example`; the maintenance guide's variable table listed three of the twelve variables that change production behaviour | `.env.example` with every variable, what breaks without it, and no credential |
+
+#### Known and accepted
+
+`/corrections/#submission-received` is a permanently linkable URL, so anyone who
+visits it directly reads a receipt for a submission they did not make. That is
+inherent to a receipt rendered from static markup on a statically prerendered
+page, and it is what the previous `?submitted=1` did too. The alternative —
+rendering the receipt only after a real POST — would make `/corrections/`
+dynamic on every request for the sake of a URL nobody links to. Recorded rather
+than worked around.
+
+`FEEDBACK_TRUSTED_PROXY_HOPS=0` gives the whole site one shared rate-limit
+allowance, because with no trusted proxy there is nothing to tell one reader
+from another. That is the conservative answer rather than an accident, the
+default is 1, and both `.env.example` and the runbook say what 0 costs.
+
+### P3 — polish, implemented
+
+`rethinkinghell.com` published as plain `http` when it answers on `https` and
+301s there anyway; Node pinned in `engines`; the `Refresh`-header trailing-slash
+normalisation documented as carrying no policy (it has no body and nothing to
+protect); the two-hop alias redirect chain documented and pinned by a test.
+
+### Found by the gap sweep, in this branch's own work
+
+The adversarial sweep over the finished branch is the reason for this section:
+seven angles went back over the diff looking for what the pass had broken.
+
+| # | Finding | Correction |
+|---|---|---|
+| GAP-1 | **P1.** The new resolver shipped to the client bundle and would have thrown *in a reader's browser* on any deployment that relied on the `VERCEL_*` origin fallback: Next inlines only `NEXT_PUBLIC_` variables, so the server resolved and the browser did not. Confirmed by finding the throw string in two client chunks | The provider fallbacks are gone. Two inputs, both public, both halves of the build see the same thing, and a misconfigured build fails during prerender rather than in front of a reader |
+| GAP-2 | **P1.** `FEEDBACK_STORE_DURABLE` was missing from `globalPassThroughEnv`, so Turborepo's strict env mode stripped it and the runbook's own production start would have answered 503 | Added, with `PORT` and `VERCEL_ENV` |
+| GAP-3 | **P2.** The visual suite shot the viewport, which is the top 900 pixels, so `table-heavy is unchanged` contained a page title and no table | Surfaces may now name the component the shot is about; `table-heavy` shoots the table, and a Scripture block was added for the same reason |
+| GAP-4 | **P2.** `a static asset is cached` checked no static asset | It reads a real `woff2` out of the rendered stylesheet and asserts `immutable`, and a sibling test proves the four noindex paths are noindex and a real page is not |
+| GAP-5 | **P2.** Four refusal paths answered a browser form post with raw JSON, which is the no-JS contract broken on exactly the paths a no-JS reader reaches | Refusals key on whether the post was a form; two tests |
+| GAP-6 | **P3.** `next start` bound a hardcoded port and could not honour a platform-assigned `$PORT` | `--port ${PORT:-3210}` |
+| GAP-7 | **P3.** The print test computed a second assertion and discarded it | Asserted |
+| GAP-8 | **P2.** Nine documentation claims went stale *because of this branch* — the localhost fallback still documented, "no environment variables needed", "no visual regression testing", external links "not fetched by CI", the command lists, and three test counts | All corrected, and every count in this document recomputed |
+| GAP-9 | **P2.** Rescoping the print rule from `.prose-article` to `main` fixed one bug and made another: 56 anchors on `/sources/` and 29 on `/full-case/` — the two pages a reader prints — now printed their address **twice**, `break-all` wrapped, because their visible text is already the URL | `NewTabLink` detects a self-labelled link and the rule excludes it. Both halves are now rendered assertions: no doubling on the three pages that have them, and prose links still annotated |
+| GAP-10 | **P3.** The new `<Cite>` accessible name spoke the locator twice, and three times where the record carries one of its own | The spoken tail drops it; the marker in front already has it |
+| GAP-11 | **P3.** The receipt's `scroll-margin-top` stacked with the site's `scroll-padding-top` — the exact geometry `globals.css` documents two hundred lines earlier as measured and rejected | Deleted |
+| GAP-12 | **P3.** On a preview build the download rule replaced `noindex, nofollow` with `noindex`, dropping `nofollow` from the four paths that contain the whole site's text. A later header rule replaces an earlier one rather than adding to it | The rule carries the preview directive too. **This entry was written before the change actually landed** — a patch silently missed after the formatter reflowed the line, and the accompanying test was written so that it could only run on a preview and was therefore dead everywhere the suite runs. The second sweep found both. Now applied, verified on the wire against a real preview build, and the assertion is unconditional |
+| GAP-13 | **P2.** Nothing connected the redirect fragments to the ids `/corrections/` renders, so renaming either would leave the redirect pointing at nothing with every test green | Asserted against the exported constants |
+| GAP-14 | **P2.** The no-scripting failure receipt told the reader to "check the form below", which a page reload had emptied | It says the text is gone and why, rather than implying it is still there |
+| GAP-15 | **P2.** `global-error.tsx` claimed to replace Next's built-in error document. It replaces the React-tree case; Next still emits and serves a static `500.html` for a runtime crash, and the App Router offers no way to replace it | The claim is narrowed to what is true |
+| GAP-16 | **P2.** Two races, found by the final full run rather than by reading: axe scanned `/scripture/` mid-arrival and measured a *blended* colour (`#747b84` on `#fefbf6`, neither a token) as a 4.14:1 contrast failure; and the skip-link assertion sampled a single instant of a 150ms transition, which passed in Chromium and failed in WebKit against identical, correct CSS | axe waits for `document.getAnimations()` and the fonts; the skip-link assertion polls. Neither claim was weakened, and neither was answered with a retry |
+
+### Found by the second gap sweep
+
+Seven angles went over the finished branch; six more went over it again once
+those were fixed, with instructions to look for fixes that did not work and for
+defects the fixes created. That second pass is the reason for this section, and
+for the correction to GAP-12 above.
+
+| # | Finding | Correction |
+|---|---|---|
+| GAP2-1 | **P1.** The `Origin` fallback on the write endpoint compared against `request.url` — which behind a proxy, meaning every deployment, is the internal host the process bound to, while the browser sends the public one. An ordinary submission would have been refused as cross-site, and only for the older browsers that send no `Sec-Fetch-Site`, which are exactly the ones the fallback exists for | Compared against the canonical origin, which the route supplies. Two tests, one of them a request whose URL and `Origin` deliberately disagree |
+| GAP2-2 | **P1.** The "derive the count from the spec" improvement to the visual guard made it weaker than the hardcoded number it replaced: eleven surfaces share one `toHaveScreenshot(` call inside a loop, so it derived 4 where 14 are required and would have passed on a third of the evidence | Compares the two baseline sets, which must be the same size, and fails if either is empty |
+| GAP2-3 | **P2.** GAP-6's `--port ${PORT:-3210}` is not expanded by Bun's shell — it reaches Next as a literal string, which its port parser rejects. So the fix for a hardcoded port produced a start command that fails outright. `next start` reads `PORT` from the environment itself, which is what the flag was reaching for | The flag is gone |
+| GAP2-4 | **P2.** `next start` refuses to boot without `NEXT_PUBLIC_SITE_URL`, because `next.config.ts` resolves the origin when it loads — while the runbook and `.env.example` both described the variable as build-scope. An operator following the runbook exactly would have had a server that would not start | Both documents corrected. The requirement is real and stays: the value has to match the build, which baked it in |
+| GAP2-5 | **P2.** The honeypot answered before the rate limiter ran, so a trapped request never consumed an allowance — which makes the pair an oracle: a sender who never meets the limit knows it tripped the trap, and knows which field to leave empty | The limiter runs first |
+| GAP2-6 | **P2.** `bun run test:smoke` was documented twice and existed only inside the app package | Wired at the repository root, with its turbo task |
+| GAP2-7 | **P3.** GAP-10 de-duplicated the accessible name and left the tooltip, which is also the accessible description, saying the locator twice | Both compose from one value |
+| GAP2-8 | **P3.** `turbo.json` still hashed `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` into the build key after GAP-1 removed the code that reads them | Removed |
+| GAP2-9 | **P3.** Dependabot's `@playwright/test` rule ignored major and minor but not patch, and the client version and the pinned container tag have to move together | Patch ignored too |
+| GAP2-10 | **P2/P3.** Fourteen documentation numbers had drifted again during the round-one fixes — test counts, screenshot counts, page counts, the external-link total, the bundle medians, and the canonical-check verification figure | Every one recomputed from the final tree |
+
+### From the automated review on this pull request
+
+Codex reviewed commit `e1bc03e` — a mid-branch state — and raised eight points.
+Seven were already closed by later commits in the same pass and are recorded
+above under their own identifiers: the Turborepo pass-through for
+`FEEDBACK_STORE_DURABLE` (GAP-2), the same variable in the browser test
+server, the Linux visual baselines, the launch runbook the validated code
+names, the `docs-check` exemption for the deliberately untracked private
+artefacts, the removal of the server-only Vercel origin fallbacks (GAP-1), and
+the coverage thresholds, which are measured floors rather than zeros.
+
+The eighth was open, and it is the most interesting finding on the branch.
+
+| Id | Finding | Resolution |
+|---|---|---|
+| REV-1 | **P1.** `FEEDBACK_STORE=http` posts every submission in full — the message, and the reader's name and email address if they gave them — to whatever `FEEDBACK_STORE_URL` names. `/corrections/` tells the reader "no third party is contacted" and that submissions are "stored on the site's own server"; `/privacy/` says "there is no third party involved in receiving, storing or reading a submission". The runbook then recommended "a spreadsheet webhook, a form service" for exactly this configuration. Nothing was lying yet, because no deployment exists — but the documented, recommended setup would have made two published pages false | The endpoint is refused in production unless `FEEDBACK_STORE_FIRST_PARTY=1` states that the collector is a service the site owner operates. The same shape as `FEEDBACK_STORE_DURABLE`: a fact the code cannot check, so the deployment states it, and a missing statement is a visible 503 rather than a quiet contradiction. The runbook now says a hosted form product is not an option without first changing those two pages — a decision that remains available, and is now a decision rather than a configuration detail. Four tests hold the gate and three more hold the pages to the promise it protects, so the pair cannot drift apart |
+
+### Rejected, with evidence
+
+| Candidate | Why it was rejected |
+|---|---|
+| `/og` is "uncached, unthrottled, with an attacker-controlled cache key", 127 images re-rendered per crawl | **Refuted.** The route sets `cache-control: public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800` and it reaches the client unmodified. "127" is the count of prerendered pages, not of OG URLs. Satori escapes text, so no injection is possible. The proposed fix — restricting titles to a registry allowlist — would silently break real social cards for the 28 `pageMetadata` call sites that pass hand-written titles |
+| "Metric-similar font fallback that does not exist" | **Refuted as stated.** No metric-adjusted fallback is declared, which is a restatement of the neighbouring finding rather than an independent one. The cache header, which was real, is fixed as P2-15 |
+| "With scripting off, four primary destinations are unreachable below 1280px" | **Partly refuted.** The structural facts hold, but "unreachable" is false: the home link is in the global chrome on every page and the home page indexes all four. What was true was four stale comments claiming the footer mirrors the primary nav; corrected in place |
+| The text-geometry gate "can silently disable itself and still report green" | **Partly refuted.** The conditional branch asserts a second, real contract rather than nothing, and checks it against production's own runtime self-check. Non-zero-case guards were added so the iteration cannot become vacuous, but the gate was not broken |
+| `/full-case/` ships 1.82 MB of HTML with duplicated RSC flight payload | **Confirmed as a measurement, rejected as a defect.** The flight duplication is structural to React Server Components and Next exposes no flag to suppress it; the page is a deliberate read-it-all edition and is `noindex`. What was actionable — speculative prefetch of that payload from five link sites — is a separate item |
+| Remove `@tanstack/react-table`, which has no imports | **Deferred, not rejected.** It is genuinely unreferenced, but removing a dependency changes the lockfile and the shared graph, and this branch is already large. Recorded for the next dependency pass rather than smuggled into a QA PR |
+| Search index `builtAt` breaks reproducibility | **Partly refuted.** It is date-only, so two builds on the same UTC day are already identical. Real but P3, and touching the index generator risks the ranking baseline this PR must not move |
+
+## Coverage
+
+Measured with V8 — Vitest runs its workers on Node here even though the runner
+is invoked through Bun, so V8 coverage is available and accurate, and Istanbul
+would add a Babel pass for nothing.
+
+`include` is explicit. Without it a provider only reports files a test happened
+to import, so a module with **no** test does not appear as 0% — it does not
+appear, and the number rises as coverage falls.
+
+| Package | Statements | Branches | Functions | Lines |
+|---|---|---|---|---|
+| `apps/conditional-immortality` | 65.9% | 56.9% | 50.6% | 66.9% |
+| `packages/ci-content-schema` | 94.1% | 89.7% | 100% | 98.5% |
+| `packages/ci-content` | 71.1% | 60.3% | 66.1% | 76.6% |
+| `packages/ci-search` | 95.6% | 89.7% | 100% | 97.8% |
+
+The app's global figure keeps 29 components in the denominator on purpose.
+Excluding them would lift it about twenty points while measuring less. What
+they have instead is a browser: 120 routes rendered at five viewports, axe at
+two, fourteen screenshots, and the reading, motion and search specs driving
+their real interactions. jsdom copies would be weaker oracles for the same
+claims.
+
+Where unit coverage is the right tool, the floors are strict:
+
+| Module | Lines | Branches |
+|---|---|---|
+| `src/lib/site-url.ts` | 100% | 100% |
+| `src/lib/feedback/**` | 98.1% (floor 95) | 93.0% (floor 88) |
+| `src/lib/qr.ts` | 99.6% (floor 98) | 92.6% (floor 90) |
+| `src/lib/rate-limit.ts` | 84.2% (floor 83) | 89.3% (floor 87) |
+| `src/lib/text-layout/**` | 85.8% (floor 84) | 74.8% (floor 72) |
+
+App line coverage went from 50.5% to 66.9% over this pass, entirely from tests
+that pin behaviour rather than from exclusions.
+
+## Test counts, from the final tree
+
+**Unit and component: 938** across 37 files — 486 app, 336 search, 65 content,
+51 content-schema. Was 808 across 31.
+
+**Browser: 570 in one `test:browser` invocation**, across ten projects plus the
+guard. The per-project numbers below exclude the guard, which every project
+depends on and which runs once per invocation.
+
+An eleventh project, `preview`, holds the same 23 origin-agnostic tests and is
+selected only when `PLAYWRIGHT_BASE_URL` is set.
+
+| Project | Tests | What it is for |
+|---|---|---|
+| `served-build` | 1 | Refuses to run the suite against a foreign build |
+| `chromium-desktop` | 188 | Full suite at 1440×900 |
+| `chromium-mobile` | 188 | Full suite at 375×812 with touch |
+| `accessibility` | 32 | axe + structure, desktop |
+| `accessibility-mobile` | 32 | axe + structure, mobile |
+| `firefox-smoke` | 23 | Critical flows and headers, Gecko |
+| `webkit-smoke` | 23 | Critical flows and headers, Playwright WebKit |
+| `geometry-chromium` | 23 | Pretext line-break contract |
+| `geometry-firefox` | 23 | Same, Gecko |
+| `geometry-webkit` | 23 | Same, Playwright WebKit |
+| `visual` | 14 | Screenshot comparison |
+| `preview` | 23 | The same smoke set against a deployed origin, not in `test:browser` |
+
+`webkit-smoke` and `geometry-webkit` are Playwright's WebKit build. Neither is
+Safari and neither is described as Safari; the manual Safari procedure is in
+[Pretext and text geometry](pretext-text-geometry.md).
+
+## What was measured, not assumed
+
+| Claim | Measured |
+|---|---|
+| Prerendered HTML pages | 121 (119 with canonicals, plus `_not-found` and `_global-error`, which correctly have none) |
+| Sitemap entries | 118 |
+| Pages the link checker walks | 121, 9,543 internal links, 0 broken, 0 duplicate ids |
+| External links published | 30 distinct after the retired short link was removed; all answered; 6 redirect; 1 plain-http host offers no TLS |
+| Median first-load JS | 590.9 kB uncompressed |
+| Largest route | 667.2 kB (`/corrections`, TanStack Form) |
+| Search index | 624 kB, fetched once on search intent |
+| Third-party requests before video activation | 0 |
+
+## Verification
+
+Every command below was run on the final commit, from a tree with no
+uncommitted changes, and the tree was clean afterwards.
+
+| Command | Result |
+|---|---|
+| `bun install --frozen-lockfile` | exit 0, 594 packages |
+| `CI=1 bun run validate` | exit 0, **twice consecutively** |
+| `bun run test:coverage` | exit 0, all thresholds met |
+| `bun run test:browser` | exit 0, **570 passed, twice consecutively** |
+| `bun run content:links:external` | exit 0, every published citation answered |
+| GitHub Actions | green on the head commit: Validate and Visual regression |
+
+**Burn-in, retries disabled.** The interaction-heavy specs — search, motion,
+print and the cross-engine smoke set — at `--repeat-each=3` across both
+Chromium projects: **463 passed**. The motion suite at `--repeat-each=5` after
+its sampling race was fixed: **191 passed**. No flake was answered with a
+retry; each of the four found during this pass was root-caused instead:
+
+- a foreign server on a shared port (INFRA-1);
+- axe measuring a colour mid-fade;
+- a skip-link assertion sampling one instant of a transition, in two files;
+- two search boxes existing for a moment during a client-side navigation.
+
+One test remains sensitive to a heavily loaded machine: `geometry-webkit`
+timed out once at 180 seconds inside an artificial triple-repeat burn-in with
+four projects competing, and passed in every ordinary run including both
+consecutive full matrices and CI. It is recorded here rather than tuned away,
+because raising a timeout to make a burn-in green is how a real race gets
+hidden.
+
+**What CI runs, and passes:** formatting, lint, typecheck (including the eleven
+scripts and nine Playwright files that were outside every tsconfig until this
+pass), content validation, the content audit, the documentation path check,
+938 unit tests, the production build, the PII scan, the internal link check,
+the canonical-origin check, the bundle budget, coverage against its thresholds,
+the generated-file drift check, end-to-end on desktop and mobile, accessibility
+at both viewports, cross-engine smoke in Firefox and WebKit, text geometry in
+three engines, and visual regression inside the pinned Playwright container.
+
+## External launch decisions
+
+These are not code, and none of them is marked done.
+
+**EXT-1 · The canonical domain.** Nobody has chosen one. The build now refuses
+to proceed without it rather than inventing `localhost`, so this is a hard
+blocker by design. Apex versus `www` must be settled before the first release
+build: every canonical URL, every sitemap entry and the printed QR code carry
+it, and changing it later is a rebuild.
+
+**EXT-2 · A durable store for reader corrections.** The architecture is done
+and tested; the provisioning is not. Until `FEEDBACK_STORE` and its companions
+are set, the endpoint answers 503 and tells the reader nothing was stored —
+correct behaviour, and not a launched state. Runbook §3 has the decision and
+the checklist.
+
+**EXT-3 · Purging the private artefacts from public git history.** P0-3 removed
+three files from `HEAD`. Their contents remain in the history of a public
+repository, and rewriting that history is destructive, outward-facing, and the
+owner's call. It requires a history rewrite plus a force-push, contacting
+GitHub Support to purge cached views, and a decision about whether to tell the
+three named people. Nothing in this branch does any of it.
+
+**EXT-4 · Video description.** Six pages carry `specialist-review-pending` and
+S34 carries `revision-needed`; the video's on-screen text is undescribed.
+Whether the overview needs audio description or a media alternative for WCAG AA
+depends on watching it and judging whether the on-screen text is conveyed in
+the audio. That is content work on material this review cannot verify, and
+`/accessibility/` is careful to describe itself as testing rather than
+conformance, which remains accurate. The flags are untouched.
+
+**EXT-5 · Human theological review.** Unchanged by this pass, and not
+this review's to grant.
+
+**EXT-6 · Field Core Web Vitals.** The site has never been served publicly, so
+there is no field data and lab numbers are not field numbers. Runbook §9 sets
+out reading them from Search Console after launch, which needs no script on the
+page and contradicts nothing the privacy page says.
+
+## What was deliberately not changed
+
+The warm-paper palette, Source Serif 4 and Inter in their roles, the
+information architecture, every route and permanent section identifier
+(`P00`, `RB1`–`RB3`, `S01`–`S34`, `APP1`, `APP2`), fragment behaviour, the
+motion doctrine and its tiers, theological wording, Scripture text, citations,
+search ranking, search normalisation and Unicode mapping, the migration ledger,
+and every review-status flag.
+
+The one token added is `--color-border-control`, and it exists because twelve
+controls failed a WCAG AA requirement. No test was disabled, no assertion
+weakened, no threshold lowered, and no sweep narrowed.

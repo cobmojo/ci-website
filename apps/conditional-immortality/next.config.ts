@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { resolveSiteUrl } from './src/lib/site-url'
 
 /**
  * Content Security Policy.
@@ -17,18 +18,19 @@ import type { NextConfig } from 'next'
  * WebKit upgrades the site's own scripts and fonts to a port with no TLS and
  * fails every one of them.
  *
- * So it is emitted when, and only when, the canonical origin is HTTPS —
- * resolved exactly as `site-config.ts` resolves it, including the Vercel
- * fallbacks, so a deployment that sets no `NEXT_PUBLIC_SITE_URL` still gets
- * the production policy. The local production server the browser suites run
- * against resolves to none of them, and is testable in all three engines.
+ * `Strict-Transport-Security` is emitted under the same condition and for the
+ * same reason: sent from a plain-HTTP local server it would pin the browser's
+ * `localhost` entry to HTTPS for a year and break every other project on the
+ * machine. It belongs to an origin that already has TLS.
+ *
+ * The origin is resolved by the same validated function `site-config.ts` uses,
+ * so the header policy and the canonical URLs can never disagree about what
+ * this build is.
  */
-const canonicalOrigin =
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : '') ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+const canonicalOrigin = resolveSiteUrl({
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL: process.env.NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL,
+})
 
 const servedOverHttps = canonicalOrigin.startsWith('https://')
 
@@ -36,16 +38,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
   'default-src': ["'self'"],
   'script-src': ["'self'", "'unsafe-inline'"],
   'style-src': ["'self'", "'unsafe-inline'"],
-  /*
-   * No YouTube thumbnail host. The poster is drawn from type and site colour
-   * rather than a remote image, which `click-to-load-video.tsx` states as a
-   * feature — "even the image request that a normal poster would make does not
-   * happen" — and a sweep of fourteen routes recorded zero external origins
-   * contacted. Allowing `i.ytimg.com` let this policy permit something the
-   * site does not do, against the header's own comment that the only external
-   * origin ever contacted is YouTube's privacy-enhanced domain.
-   */
-  'img-src': ["'self'", 'data:'],
+  'img-src': ["'self'", 'data:', 'https://i.ytimg.com'],
   'font-src': ["'self'"],
   'connect-src': ["'self'"],
   'frame-src': ['https://www.youtube-nocookie.com'],
@@ -61,6 +54,19 @@ const csp = Object.entries(CSP_DIRECTIVES)
   .map(([key, values]) => (values.length ? `${key} ${values.join(' ')}` : key))
   .join('; ')
 
+/**
+ * Whether this deployment is a preview rather than the canonical site.
+ *
+ * `robots.ts` already answers this for `robots.txt`, but a crawler that reaches
+ * a preview URL directly — from a pull-request comment, a chat link, a referrer
+ * header — never asks for `robots.txt` first, and a `Disallow` in it does not
+ * remove a URL that is already known. `X-Robots-Tag` on the response itself
+ * does. `SITE_ENV` is the provider-neutral switch; `VERCEL_ENV` is recognised
+ * because the repository already reads it.
+ */
+const isPreviewDeployment =
+  (process.env.SITE_ENV ?? process.env.VERCEL_ENV ?? '').toLowerCase() === 'preview'
+
 const securityHeaders = [
   { key: 'Content-Security-Policy', value: csp },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -71,6 +77,17 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()',
   },
+  /*
+   * Two years, subdomains included, but deliberately no `preload`. Preloading
+   * is a one-way door: it is hard-coded into browser binaries and takes months
+   * to undo, and it would commit every current and future subdomain of a domain
+   * this project does not yet own to HTTPS-only. That is the owner's decision to
+   * make after the domain is live, and it is recorded in the launch runbook.
+   */
+  ...(servedOverHttps
+    ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' }]
+    : []),
+  ...(isPreviewDeployment ? [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] : []),
 ]
 
 const nextConfig: NextConfig = {
@@ -87,13 +104,57 @@ const nextConfig: NextConfig = {
 
   typedRoutes: false,
 
-  /* No remote image host: nothing on this site loads one. */
-  images: {
-    remotePatterns: [],
-  },
+  /*
+   * `images` is deliberately absent.
+   *
+   * It allowed `i.ytimg.com` as a remote pattern for a `next/image` this
+   * repository does not contain and has no plan to add — the video poster is
+   * text, by design. An allowed remote pattern is not inert: it opens
+   * `/_next/image?url=…` as a fetch-and-re-encode proxy for that host, which
+   * is server work anyone can ask for and nothing here needs.
+   */
 
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      {
+        /*
+         * The six self-hosted faces never change without changing name: their
+         * unicode-range subsets are mirrored in `supported-text.ts`, which
+         * already treats widening them as a font change first. Without this
+         * they inherit the default and are revalidated on every navigation,
+         * which is a round trip before any text can be shaped in the right
+         * face.
+         */
+        source: '/fonts/:file*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        /*
+         * Reachable, quotable, and not indexable.
+         *
+         * The three downloads and the search index are complete duplicates of
+         * pages that are already indexed — the transcript of `/watch/`, the
+         * bibliography of `/sources/`, the handout of `/start/`, and an index
+         * containing every page's prose. A crawler that reaches one of them
+         * finds the site's whole text with no navigation and no canonical URL
+         * to point back at. Nothing about them should be hidden from a reader;
+         * they simply should not compete in a search result.
+         */
+        source:
+          '/:path(download/transcript.txt|download/bibliography.txt|download/handout.html|search-index.json)',
+        /*
+         * A later rule with the same key replaces an earlier one rather than
+         * adding to it, so this has to carry the preview directive too.
+         * Without it these four paths would be the only ones on a preview
+         * deployment that lost `nofollow` — and `handout.html` carries links,
+         * so a crawler reaching the preview would be invited to follow them.
+         */
+        headers: [
+          { key: 'X-Robots-Tag', value: isPreviewDeployment ? 'noindex, nofollow' : 'noindex' },
+        ],
+      },
+    ]
   },
 
   async redirects() {

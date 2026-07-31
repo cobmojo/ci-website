@@ -7,10 +7,12 @@ on:
   pull_request:
   workflow_dispatch:
 
-# A second push to the same branch makes the first run irrelevant.
+# A second push to the same branch makes the first run irrelevant — except on
+# `main`, where cancelling a merge's run can leave the default branch with no
+# completed gate against it at all.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -19,19 +21,33 @@ env:
   # Turbo's own telemetry has nothing to tell us and adds a network call.
   TURBO_TELEMETRY_DISABLED: 1
   NEXT_TELEMETRY_DISABLED: 1
+  # This job builds a production bundle and serves it from localhost, so it
+  # says so. A release build that omits both this and NEXT_PUBLIC_SITE_URL
+  # fails, which is the point: nothing may ship a localhost canonical by
+  # accident. See apps/conditional-immortality/src/lib/site-url.ts.
+  NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL: 1
 
 jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
-    # A cold build of 121 pages plus the full browser suite.
-    timeout-minutes: 30
+    # A cold build of 121 prerendered pages plus the full browser suite.
+    timeout-minutes: 45
 
     steps:
-      - uses: actions/checkout@v7
+      # Third-party actions are pinned to a full-length commit SHA. A tag is
+      # mutable: `v7` is a pointer its owner can move, and moving it is how a
+      # compromised action reaches every workflow that trusts it. The comment
+      # records the release each SHA was, so an upgrade stays legible.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing in this job talks to the API, and a pull request from a
+          # fork runs code from that fork. Leaving a token in `.git/config`
+          # for it to find is free credential exposure.
+          persist-credentials: false
 
       - name: Install bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           # Matches the packageManager field in package.json.
           bun-version: 1.3.14
@@ -39,17 +55,23 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # ~150 MB, and only changes when @playwright/test does.
+      # ~150 MB, and only changes when @playwright/test does. Keyed on the
+      # app's package.json rather than the whole lockfile, so an unrelated
+      # dependency bump does not throw the browsers away.
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/conditional-immortality/package.json') }}
 
       # Three engines, because the text-geometry contract compares Pretext's
       # predicted line breaking against each of them: they shape and break text
       # with their own code, and agreement in one says nothing about the others.
+      #
+      # `bunx playwright` resolves the version in the lockfile. `playwright@latest`
+      # would fetch an unpinned package from outside the frozen install, and
+      # could install browsers the pinned client cannot drive.
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium firefox webkit
 
@@ -58,12 +80,18 @@ jobs:
       - name: Validate
         run: bun run validate
 
+      - name: Coverage
+        run: bun run test:coverage
+
       # `validate` regenerates committed files. If any of them differs from what
       # is checked in, the checkout is out of date with its own generators.
+      # `git status --porcelain` rather than `git diff --exit-code`: the latter
+      # cannot see a generated file that is new rather than modified.
       - name: No generated file drifted
         run: |
-          if ! git diff --exit-code; then
-            echo "::error::A generated file differs from what is committed. Run 'bun run validate' locally and commit the result."
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::A generated or untracked file differs from what is committed. Run 'bun run validate' locally and commit the result."
+            git status --porcelain
             exit 1
           fi
 
@@ -72,6 +100,12 @@ jobs:
 
       - name: Accessibility tests
         run: bun run test:a11y
+
+      # Firefox and WebKit run the origin-agnostic smoke set rather than the
+      # whole suite: duplicating four hundred tests across engines re-proves
+      # content and metadata, which no engine can differ on.
+      - name: Cross-browser smoke tests
+        run: cd apps/conditional-immortality && bunx playwright test --project=firefox-smoke --project=webkit-smoke
 
       # Print output, in every engine. The engines genuinely disagree here:
       # Firefox declines `content-visibility` on `::details-content`, so a
@@ -85,10 +119,11 @@ jobs:
       - name: Text geometry tests
         run: bun run test:text-geometry
 
-      # The only way to see what a headless browser saw.
+      # The only way to see what a headless browser saw. Traces are retained on
+      # failure only, so a green run uploads nothing.
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-report
           path: apps/conditional-immortality/playwright-report/
@@ -96,8 +131,80 @@ jobs:
 
       - name: Upload traces
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-traces
+          path: apps/conditional-immortality/test-results/
+          retention-days: 14
+
+  visual:
+    name: Visual regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Screenshot baselines are per-platform: font hinting, text rasterisation
+    # and scrollbar metrics all differ between operating systems and between
+    # font stacks, so Playwright suffixes them with the platform. Running
+    # inside the official Playwright image — the same one the committed Linux
+    # baselines were produced in, by `visual-baselines.yml` — is what makes the
+    # comparison mean anything. The tag is pinned to the client version in the
+    # lockfile; the two have to move together, which is why Dependabot is told
+    # not to bump `@playwright/test` on its own.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.0-noble
+
+    steps:
+      # The Playwright image is a runtime image, not a build one, and ships
+      # without `unzip` — which is what the bun installer unpacks with.
+      - name: unzip, for the bun installer
+        run: apt-get update -qq && apt-get install -y -qq unzip
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # A missing baseline is a configuration error, not a passing test.
+      # Playwright writes one and carries on when it cannot find it, so without
+      # this the job would go green having compared nothing.
+      - name: The Linux baselines are committed
+        run: |
+          dir=apps/conditional-immortality/tests/e2e/visual.spec.ts-snapshots
+          # Every shot has a baseline on the platform it was authored on, so the
+          # two sets must be the same size. Counting `toHaveScreenshot(` call
+          # sites does not work — eleven surfaces share one call inside a loop,
+          # so it derived 4 where 14 are required and the guard passed on a
+          # third of the evidence.
+          expected=$(ls "$dir"/*-win32.png 2>/dev/null | wc -l)
+          count=$(ls "$dir"/*-linux.png 2>/dev/null | wc -l)
+          if [ "$expected" -eq 0 ]; then
+            echo "::error::No authored baselines found in $dir at all."
+            exit 1
+          fi
+          if [ "$count" -ne "$expected" ]; then
+            echo "::error::Found $count Linux visual baselines and $expected authored ones. Run the 'Visual baselines' workflow, download its artifact, and commit the images."
+            ls "$dir"
+            exit 1
+          fi
+          echo "$count Linux baselines present, matching $expected authored."
+
+      - name: Build
+        run: bun run build:local
+
+      - name: Visual regression
+        run: cd apps/conditional-immortality && bunx playwright test --project=visual
+
+      # The diff images are the whole point of a failed visual run.
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: visual-diffs
           path: apps/conditional-immortality/test-results/
           retention-days: 14

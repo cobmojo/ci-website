@@ -17,11 +17,18 @@ import { absoluteUrl, siteConfig } from '@/lib/site-config'
 
 const SITE_DATE = siteConfig.lastSubstantivelyUpdated
 
+/**
+ * No `priority` and no `changeFrequency`.
+ *
+ * Google ignores both, by name, in its own sitemap documentation, and nothing
+ * else in this repository reads them. What they did do was oblige whoever
+ * edits this file to invent and maintain two plausible-looking numbers per
+ * route — 0.7 against 0.8 against 0.6 — that no consumer has ever acted on.
+ * `lastmod` is the field Google does use, and it is the one kept.
+ */
 interface Entry {
   readonly route: string
   readonly lastModified: string
-  readonly changeFrequency: 'yearly' | 'monthly' | 'weekly'
-  readonly priority: number
 }
 
 function collect(): readonly Entry[] {
@@ -36,48 +43,26 @@ function collect(): readonly Entry[] {
   }
 
   for (const route of STATIC_ROUTES) {
-    add({
-      route,
-      lastModified: SITE_DATE,
-      changeFrequency: 'monthly',
-      priority: route === '/' ? 1 : 0.7,
-    })
+    add({ route, lastModified: SITE_DATE })
   }
 
   for (const section of caseSections) {
     add({
       route: section.route,
       lastModified: section.lastSubstantiveRevision ?? section.lastReviewed ?? SITE_DATE,
-      changeFrequency: 'monthly',
-      priority: 0.8,
     })
   }
 
   for (const passage of passages) {
-    add({
-      route: passageRoute(passage),
-      lastModified: passage.lastReviewed,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    })
+    add({ route: passageRoute(passage), lastModified: passage.lastReviewed })
   }
 
   for (const topic of topics) {
-    add({
-      route: topicRoute(topic),
-      lastModified: SITE_DATE,
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    })
+    add({ route: topicRoute(topic), lastModified: SITE_DATE })
   }
 
   for (const sectionId of revisedSectionIds) {
-    add({
-      route: `/changelog/${sectionId.toLowerCase()}/`,
-      lastModified: SITE_DATE,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    })
+    add({ route: `/changelog/${sectionId.toLowerCase()}/`, lastModified: SITE_DATE })
   }
 
   return entries
@@ -87,7 +72,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return collect().map(entry => ({
     url: absoluteUrl(entry.route),
     lastModified: new Date(`${entry.lastModified}T00:00:00.000Z`),
-    changeFrequency: entry.changeFrequency,
-    priority: entry.priority,
   }))
 }

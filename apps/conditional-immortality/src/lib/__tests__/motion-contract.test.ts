@@ -530,4 +530,21 @@ describe('print', () => {
       /details\[open\]\s*>\s*\*,\s*details\s*>\s*\*\s*\{\s*display:\s*revert\s*!important/,
     )
   })
+
+  it('reveals the body of a closed disclosure, which `display` alone cannot reach', () => {
+    /*
+     * `::details-content` is a user-agent pseudo-element, so the
+     * `display: revert !important` on the children above does not touch it —
+     * and it is what actually hides a closed disclosure. Measured under print
+     * emulation, Chromium, Firefox and WebKit all printed the summary and no
+     * body without this rule, which is the opposite of what `/accessibility/`
+     * and the disclosure component both tell a reader.
+     *
+     * A rendering assertion lives in `tests/e2e/print.spec.ts`; this one keeps
+     * the rule from being deleted as redundant.
+     */
+    const live = withoutComments(css)
+    const print = live.slice(live.indexOf('@media print'))
+    expect(print).toMatch(/details::details-content\s*\{[^}]*content-visibility:\s*visible/)
+  })
 })

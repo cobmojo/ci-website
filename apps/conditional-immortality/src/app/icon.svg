@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    The site's existing wordmark, on its own paper square.
+
+    Nothing new is designed here: this is the bracket from
+    `components/brand/wordmark.tsx` at icon scale, with the palette's own paper,
+    navy, border and copper written as literals because a favicon is rendered
+    outside the document and cannot read a custom property. It is a `.svg` in
+    `app/`, so Next serves it as the icon and emits the link tag; every browser
+    that asked for /favicon.ico and got a 404 on every page load now gets this.
+
+    Stroke widths are scaled up from the wordmark's 1.7 at 22x26: below about
+    2.5 at 32px the vertical rule disappears in a 16px tab.
+  -->
+  <title>The Case for Conditional Immortality</title>
+  <rect width="32" height="32" rx="6" fill="#f7f4ed" />
+  <path
+    d="M12 6.5H8.5A2.5 2.5 0 0 0 6 9v14a2.5 2.5 0 0 0 2.5 2.5H12"
+    fill="none"
+    stroke="#233a4d"
+    stroke-width="2.6"
+    stroke-linecap="round"
+  />
+  <path
+    d="M20 6.5h3.5A2.5 2.5 0 0 1 26 9v14a2.5 2.5 0 0 1-2.5 2.5H20"
+    fill="none"
+    stroke="#bdb3a1"
+    stroke-width="2.6"
+    stroke-linecap="round"
+  />
+  <path d="M16 10.5v11" fill="none" stroke="#9a6431" stroke-width="2.6" stroke-linecap="round" />
+</svg>

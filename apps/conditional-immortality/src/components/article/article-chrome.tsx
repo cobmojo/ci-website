@@ -11,8 +11,8 @@ import {
   type SourceRecord,
 } from '@ci/content-schema'
 import { Badge, buttonVariants, cn } from '@ci/ui'
-import Link from 'next/link'
 import { NewTabLink } from '@/components/content/new-tab-link'
+import { Link } from '@/components/navigation/link'
 import { formatLongDate } from '@/lib/format'
 
 /* ------------------------------------------------------------------ *
@@ -205,6 +205,14 @@ export function PreviousNextNavigation({
         <Link
           href={previous.route}
           rel="prev"
+          /*
+           * Prefetched, and almost nothing else on the site is. Sequential
+           * reading is the one navigation here that is genuinely predictable:
+           * a reader at the foot of a section is either finished or going on
+           * to the next one. See `components/navigation/link.tsx` for why the
+           * default is the other way round.
+           */
+          prefetch
           className="rounded-md border border-border bg-paper-raised p-4 no-underline hover:border-border-strong"
         >
           <span className="block font-sans text-[0.78rem] tracking-wider text-ink-subtle uppercase">
@@ -221,6 +229,8 @@ export function PreviousNextNavigation({
         <Link
           href={next.route}
           rel="next"
+          // The predictable one. See the note on Previous above.
+          prefetch
           className="rounded-md border border-border bg-paper-raised p-4 text-right no-underline hover:border-border-strong sm:col-start-2"
         >
           <span className="block font-sans text-[0.78rem] tracking-wider text-ink-subtle uppercase">

@@ -471,7 +471,7 @@ function FeedbackFormFields({
                 value={field.state.value}
                 onChange={event => field.handleChange(event.target.value as FeedbackType)}
                 onBlur={field.handleBlur}
-                className="min-h-11 w-full max-w-[28rem] rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+                className="min-h-11 w-full max-w-[28rem] rounded-md border border-border-control bg-paper-raised px-3 font-sans text-[1rem] text-ink"
               >
                 {feedbackTypes.map(value => (
                   <option key={value} value={value}>
@@ -523,7 +523,7 @@ function FeedbackFormFields({
                   aria-describedby={
                     error ? `${ids.messageHint} ${ids.messageError}` : ids.messageHint
                   }
-                  className="w-full rounded-md border border-border-strong bg-paper-raised p-3 text-[1.02rem] leading-relaxed text-ink"
+                  className="w-full rounded-md border border-border-control bg-paper-raised p-3 text-[1.02rem] leading-relaxed text-ink"
                 />
                 {error ? (
                   <p
@@ -578,7 +578,7 @@ function FeedbackFormFields({
                   aria-describedby={
                     error ? `${ids.sourceUrlHint} ${ids.sourceUrlError}` : ids.sourceUrlHint
                   }
-                  className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+                  className="min-h-11 w-full rounded-md border border-border-control bg-paper-raised px-3 font-sans text-[1rem] text-ink"
                 />
                 {error ? (
                   <p
@@ -630,7 +630,7 @@ function FeedbackFormFields({
                     onBlur={field.handleBlur}
                     aria-invalid={error ? true : undefined}
                     aria-describedby={error ? `${ids.nameHint} ${ids.nameError}` : ids.nameHint}
-                    className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+                    className="min-h-11 w-full rounded-md border border-border-control bg-paper-raised px-3 font-sans text-[1rem] text-ink"
                   />
                   {error ? (
                     <p
@@ -680,7 +680,7 @@ function FeedbackFormFields({
                     onBlur={field.handleBlur}
                     aria-invalid={error ? true : undefined}
                     aria-describedby={error ? `${ids.emailHint} ${ids.emailError}` : ids.emailHint}
-                    className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+                    className="min-h-11 w-full rounded-md border border-border-control bg-paper-raised px-3 font-sans text-[1rem] text-ink"
                   />
                   {error ? (
                     <p

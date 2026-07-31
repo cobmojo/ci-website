@@ -3,12 +3,33 @@
   "ui": "stream",
   "globalDependencies": ["tsconfig.base.json", "biome.json"],
   "globalEnv": ["NODE_ENV", "CI"],
-  "globalPassThroughEnv": ["NEXT_PUBLIC_SITE_URL", "FEEDBACK_NOTIFY_EMAIL", "FEEDBACK_STORE_DIR"],
+  "globalPassThroughEnv": [
+    "FEEDBACK_NOTIFY_EMAIL",
+    "FEEDBACK_STORE",
+    "FEEDBACK_STORE_DIR",
+    "FEEDBACK_STORE_DURABLE",
+    "FEEDBACK_STORE_FIRST_PARTY",
+    "FEEDBACK_STORE_TOKEN",
+    "FEEDBACK_STORE_URL",
+    "FEEDBACK_TRUSTED_PROXY_HOPS",
+    "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL",
+    "NEXT_PUBLIC_SITE_URL",
+    "PLAYWRIGHT_BASE_URL",
+    "PLAYWRIGHT_PORT",
+    "PORT",
+    "SITE_ENV",
+    "VERCEL_ENV"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["NEXT_PUBLIC_SITE_URL"]
+      "env": [
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL",
+        "SITE_ENV",
+        "VERCEL_ENV"
+      ]
     },
     "dev": {
       "cache": false,
@@ -48,6 +69,34 @@
       "outputs": ["playwright-report/**", "test-results/**"]
     },
     "test:browser": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    },
+    "test:visual": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:visual:update": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:preview": {
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:smoke": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:interaction": {
       "dependsOn": ["build"],
       "cache": false,
       "outputs": ["playwright-report/**", "test-results/**"]

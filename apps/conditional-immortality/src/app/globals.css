@@ -104,6 +104,30 @@
   --color-copper-deep: #7d4f22;
   --color-border: #d4ccbe;
   --color-border-strong: #bdb3a1;
+  /*
+   * The boundary of a control a reader has to find and operate.
+   *
+   * WCAG 2.2 SC 1.4.11 asks 3:1 of the visual information needed to identify a
+   * user interface component, and the two borders above are decoration by
+   * comparison: #bdb3a1 measures 2.04:1 against paper-raised and 1.89:1
+   * against paper, #d4ccbe 1.57:1 and 1.45:1. Every text field, textarea and
+   * select on the site was drawn with one of them, and because the fill of a
+   * control differs from its surround by 1.08:1 the border is the only thing
+   * identifying it — so there is no other boundary to fall back on, and the
+   * "determined by the user agent" exemption does not apply to a control whose
+   * border-color, background and radius are all authored.
+   *
+   * Same warm grey family, taken deeper until it clears 3:1 on every surface a
+   * control is ever placed on: 3.71:1 on paper, 4.01:1 on paper-raised,
+   * 3.37:1 on panel, 3.02:1 on panel-strong. Structural borders — cards,
+   * panels, rules — keep their existing tokens, because 1.4.11 governs
+   * components and states, not decoration, and darkening those would change
+   * the look of the whole site to fix something they are not part of.
+   *
+   * axe cannot see this: axe-core 4.12.1 has no non-text-contrast rule, only
+   * the text-only `color-contrast`. `form-control-contrast.test.ts` is the gate.
+   */
+  --color-border-control: #847d71;
   /* Dark enough to clear 4.5:1 against ochre-soft, which is the only surface
      it is ever set on. The previous value measured 4.28:1. */
   --color-ochre: #7b5e1a;
@@ -342,6 +366,34 @@
 
   .skip-link:focus {
     translate: 0 0;
+  }
+
+  /*
+   * The receipt for a correction submitted with no scripting.
+   *
+   * The endpoint answers a form-encoded POST with a 303 to `#submission-received`
+   * or `#submission-not-recorded`, and `:target` reveals the one that was asked
+   * for. It has to work with no scripting, because that is the only case in
+   * which it is reached: the form is a client component, so with scripting off
+   * nothing it renders ever appears, and a reader was previously returned to an
+   * apparently untouched empty form whether or not their correction had been
+   * recorded.
+   *
+   * `display` rather than a class toggle, so the receipt that was not asked for
+   * is not in the accessibility tree either.
+   *
+   * No `scroll-margin-top`: `scroll-padding-top` on the scroll container
+   * already clears the sticky header for every fragment target on the site,
+   * and adding both stacks the offsets. That is the geometry measured and
+   * rejected two hundred lines above, which pushed a target 119px down the
+   * page and ate nearly half a landscape phone viewport.
+   */
+  .submission-receipt {
+    display: none;
+  }
+
+  .submission-receipt:target {
+    display: block;
   }
 
   /*

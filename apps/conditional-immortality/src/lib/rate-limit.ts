@@ -108,15 +108,40 @@ export function resetRateLimit(key?: string): void {
 }
 
 /**
- * Best-effort client address from proxy headers.
+ * Client address from proxy headers, read from the end that can be trusted.
+ *
+ * `X-Forwarded-For` is a list a client is free to start and only a proxy can
+ * finish. Reading its *first* entry reads whatever the sender typed, so a
+ * limiter keyed on it is not a limiter at all: a new leftmost address per
+ * request is a new bucket per request, and the window is never met. That was
+ * the previous behaviour, and it made the site's only write endpoint an
+ * unbounded write target for anyone who noticed.
+ *
+ * The meaningful entry is the one appended by the nearest proxy this
+ * deployment actually has, counted from the right. How many that is cannot be
+ * inferred — it depends on the host — so it is configuration
+ * (`FEEDBACK_TRUSTED_PROXY_HOPS`, default 1, the shape of every managed
+ * platform). Zero means nothing is in front of this process, in which case any
+ * forwarding header is client-supplied and none of it is believed.
  *
  * Returned for rate-limit keying only. It is never persisted and never logged.
  */
-export function clientAddress(headers: Headers): string {
+export function clientAddress(headers: Headers, trustedProxyHops = 1): string {
+  const UNKNOWN = 'unknown-client'
+  if (trustedProxyHops <= 0) return UNKNOWN
+
   const forwarded = headers.get('x-forwarded-for')
   if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim()
-    if (first) return first
+    const chain = forwarded
+      .split(',')
+      .map(entry => entry.trim())
+      .filter(entry => entry.length > 0)
+    // A chain shorter than the proxies in front of us cannot have been written
+    // by them, so there is no entry here we are entitled to believe.
+    const entry = chain[chain.length - trustedProxyHops]
+    if (entry) return entry
+    return UNKNOWN
   }
-  return headers.get('x-real-ip')?.trim() || 'unknown-client'
+
+  return headers.get('x-real-ip')?.trim() || UNKNOWN
 }

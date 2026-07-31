@@ -3,7 +3,6 @@ import { getPassage, passageRoute, passages } from '@ci/content/passages'
 import { getSource } from '@ci/content/sources'
 import type { CaseSection, PassageRecord, SourceRecord } from '@ci/content-schema'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
   Breadcrumbs,
@@ -13,6 +12,7 @@ import {
   SourcesCited,
 } from '@/components/article/article-chrome'
 import { Scripture } from '@/components/content/scripture'
+import { Link } from '@/components/navigation/link'
 import { formatLongDate } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 

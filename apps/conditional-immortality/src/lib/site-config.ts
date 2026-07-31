@@ -1,22 +1,21 @@
+import { resolveSiteUrl } from './site-url'
+
 /**
  * Single source of truth for site identity, metadata and external URLs.
  *
- * The production domain is deliberately configurable. `NEXT_PUBLIC_SITE_URL`
- * overrides it at build time; without that variable the site still builds,
- * renders and tests correctly against the localhost default.
+ * The production domain is configurable and, since it decides every canonical
+ * URL the build emits, it is validated rather than guessed. `site-url.ts` owns
+ * the rules and the failure messages.
+ *
+ * Each variable is read as a literal `process.env.X` member access, which is
+ * what lets Next replace the `NEXT_PUBLIC_` ones with their values in the
+ * client bundle. Passing `process.env` itself would defeat that substitution
+ * and leave the browser resolving against an empty object.
  */
-
-const DEFAULT_SITE_URL = 'http://localhost:3210'
-
-function resolveSiteUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim()
-  if (configured) return configured.replace(/\/+$/, '')
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  }
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return DEFAULT_SITE_URL
-}
+const siteUrl = resolveSiteUrl({
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL: process.env.NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL,
+})
 
 export const siteConfig = {
   name: 'The Case for Conditional Immortality',
@@ -28,7 +27,7 @@ export const siteConfig = {
     name: 'Phil Welch',
     role: 'Author of the source document',
   },
-  url: resolveSiteUrl(),
+  url: siteUrl,
   locale: 'en-US',
   language: 'en',
   /** Date of the last substantive editorial review across the whole site. */

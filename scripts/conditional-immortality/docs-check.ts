@@ -30,6 +30,18 @@ const NOT_REPOSITORY_FILES = new Set([
   'apps/conditional-immortality/.next/dev/types/routes.d.ts',
 ])
 
+/**
+ * Directories whose contents are deliberately not committed.
+ *
+ * A path under one of these is still worth naming — `import-source.ts`
+ * documents what it writes, and `pii-scan.ts` names the three artefacts it
+ * fails on if they are ever tracked — but requiring it to be *in* the
+ * repository would invert the point. `docs/rights-audit.md` explains why they
+ * are withheld: they carry thirty editorial comments by named third parties
+ * who did not consent to publication, and this repository is public.
+ */
+const DELIBERATELY_UNTRACKED = ['private/source/']
+
 /** A path mention: a repo-rooted path ending in a file extension. */
 const PATH_PATTERN = new RegExp(
   `(?:${ROOTS.map(root => root.replace(/[.]/g, '\\.')).join('|')})` +
@@ -91,6 +103,7 @@ for (const entry of trackedPaths) {
       const candidate = match[0].replace(/[.,;:)]+$/, '')
       mentions += 1
       if (NOT_REPOSITORY_FILES.has(candidate)) continue
+      if (DELIBERATELY_UNTRACKED.some(prefix => candidate.startsWith(prefix))) continue
       if (trackedPaths.has(candidate)) continue
       missing.push({ file: entry, line: index + 1, path: candidate })
     }
