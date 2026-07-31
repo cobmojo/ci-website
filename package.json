@@ -31,12 +31,12 @@
     "content:pii": "bun run scripts/conditional-immortality/pii-scan.ts",
     "content:links": "bun run scripts/conditional-immortality/link-check.ts",
     "content:links:external": "bun run scripts/conditional-immortality/external-link-audit.ts",
-    "content:canonical": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 bun run scripts/conditional-immortality/canonical-check.ts",
+    "content:canonical": "bun run scripts/conditional-immortality/canonical-check.ts",
     "content:bundle": "bun run scripts/conditional-immortality/bundle-budget.ts",
     "content:docs": "bun run scripts/conditional-immortality/docs-check.ts",
     "source:import": "bun run scripts/conditional-immortality/import-source.ts",
-    "validate": "bun run format:check && bun run lint && bun run typecheck && bun run content:validate && bun run content:audit && bun run content:docs && bun run test && bun run build:local && bun run content:pii && bun run content:links && bun run content:canonical && bun run content:bundle",
-    "qa:production": "bun run validate && bun run test:coverage && bun run test:browser",
+    "validate": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run format:check && bun run lint && bun run typecheck && bun run content:validate && bun run content:audit && bun run content:docs && bun run test && bun run build && bun run content:pii && bun run content:links && bun run content:canonical && bun run content:bundle",
+    "qa:production": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run validate && bun run test:coverage && bun run test:browser",
     "ci": "bun run qa:production"
   },
   "devDependencies": {

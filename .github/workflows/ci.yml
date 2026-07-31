@@ -146,6 +146,11 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.62.0-noble
 
     steps:
+      # The Playwright image is a runtime image, not a build one, and ships
+      # without `unzip` — which is what the bun installer unpacks with.
+      - name: unzip, for the bun installer
+        run: apt-get update -qq && apt-get install -y -qq unzip
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

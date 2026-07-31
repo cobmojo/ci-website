@@ -55,10 +55,17 @@ jobs:
           # workflow input is attacker-controlled text on a fork PR.
           REASON: ${{ inputs.reason }}
 
+      # The Playwright image is a runtime image, not a build one, and ships
+      # without `unzip` — which is what the bun installer unpacks with.
+      - name: unzip, for the bun installer
+        run: apt-get update -qq && apt-get install -y -qq unzip
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
+      # The Playwright image is a runtime image, not a build one, and ships
+      # without `unzip` — which is what the bun installer unpacks with.
       - name: Install bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:

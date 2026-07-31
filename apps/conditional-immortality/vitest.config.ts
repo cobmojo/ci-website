@@ -34,8 +34,38 @@ export default defineConfig({
      */
     env: { NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL: '1' },
     coverage: coverage({
+      /*
+       * `src/lib` is the logic; `src/components` is markup. Both are in the
+       * denominator on purpose. Excluding the components would lift the
+       * headline number by twenty points while measuring less, and a number
+       * that rises as coverage falls is not a gate.
+       *
+       * What the components have instead is a browser: all 120 public routes
+       * are rendered at five viewports by `route-sweep.spec.ts`, swept by axe
+       * at two viewports, screenshotted by the visual project, and driven
+       * through their real interactions by the reading, motion and search
+       * specs. jsdom copies of those would be weaker oracles for the same
+       * claims, so the global floor below is honest about where unit coverage
+       * reaches, and the per-module thresholds are strict where it must.
+       */
       include: ['src/lib/**/*.ts', 'src/components/**/*.tsx'],
-      thresholds: { lines: 0, statements: 0, functions: 0, branches: 0 },
+      thresholds: {
+        // Measured on this tree. A floor to stop regression, not a target:
+        // raising it is a decision, and lowering it has to be argued for.
+        lines: 66,
+        statements: 65,
+        functions: 49,
+        branches: 56,
+
+        // Security, correctness and data-loss surfaces are held far higher,
+        // because for these the question is not "is it exercised" but "is
+        // every branch of it known to behave".
+        'src/lib/feedback/**': { lines: 95, statements: 95, functions: 100, branches: 88 },
+        'src/lib/site-url.ts': { lines: 100, statements: 100, functions: 100, branches: 100 },
+        'src/lib/rate-limit.ts': { lines: 83, statements: 83, functions: 100, branches: 87 },
+        'src/lib/qr.ts': { lines: 98, statements: 97, functions: 100, branches: 90 },
+        'src/lib/text-layout/**': { lines: 84, statements: 80, functions: 82, branches: 72 },
+      },
     }),
     /*
      * The search-dialog component tests drive a coordinator that crosses an
