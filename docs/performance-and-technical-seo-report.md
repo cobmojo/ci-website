@@ -551,6 +551,25 @@ accessibility 32, accessibility-mobile 32, geometry-chromium / -firefox /
 -webkit 23 each, firefox-smoke 23, webkit-smoke 23, visual 14, interaction 13,
 served-build 1.
 
+### One flake, root-caused rather than re-run
+
+A CI run reported three uncaught `ReferenceError: window is not defined` from
+React's scheduler, attributed to `quick-search-results.test.tsx`, with all 505
+tests passing — so the run exited non-zero with no failing test. It did not
+reproduce locally in ten attempts.
+
+The search-excerpt fitter applies its result inside `startTransition`, so the
+render is a scheduler task rather than a synchronous commit. A test that
+asserts and ends can leave one queued; vitest then tears the jsdom environment
+down at the end of the file and the task runs against a deleted `window`. The
+component is not at fault — its cancellation already prevents an update after
+unmount. What was missing was somewhere for an update that is still legitimate
+to land, so `afterEach` now drains the scheduler inside `act` before anything
+is torn down. A transition that throws now throws inside the test that
+scheduled it.
+
+### The local browser suite
+
 The browser suite was run locally as three sequential invocations on three
 different ports rather than as one. On this Windows machine a single
 `next start` serving all eleven projects intermittently stops accepting
