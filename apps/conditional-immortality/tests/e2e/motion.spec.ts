@@ -419,10 +419,24 @@ test.describe('overlays still work', () => {
 
     const skip = page.getByRole('link', { name: 'Skip to main content' })
     await expect(skip).toBeFocused()
-    // Inside the viewport, not merely painted somewhere above it.
-    const box = await skip.boundingBox()
-    expect(box).not.toBeNull()
-    expect(box?.y ?? -1).toBeGreaterThanOrEqual(0)
+    expect(await skip.boundingBox()).not.toBeNull()
+
+    /*
+     * Inside the viewport, not merely painted somewhere above it — polled
+     * rather than sampled once.
+     *
+     * This variant is `no-preference`, so the link *travels*: it slides in over
+     * `--motion-overlay-exit`, which is the whole point of the test. A single
+     * `boundingBox()` taken the instant after Tab therefore reads a position
+     * part way through that transition, and lands negative whenever the machine
+     * is busy enough for the frame to be late. Measured at -3.26 on one run and
+     * fine on the next, with the CSS identical and correct in both.
+     */
+    await expect
+      .poll(async () => (await skip.boundingBox())?.y ?? -1, {
+        message: 'the focused skip link never came fully into view',
+      })
+      .toBeGreaterThanOrEqual(0)
 
     await page.keyboard.press('Enter')
     await expect(page.locator('#main-content')).toBeFocused()
