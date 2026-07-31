@@ -870,7 +870,14 @@
      *
      * The failure mode is hiding argument behind a disclosure that looks open,
      * which is not a risk worth 200ms of polish. Disclosures snap open, as they
-     * did before, and print needs no workaround because nothing collapses them.
+     * did before.
+     *
+     * This comment used to end "and print needs no workaround because nothing
+     * collapses them". Nothing in *this* file does; the browser's own
+     * stylesheet does, on `::details-content`, where no rule on the children
+     * can reach it. The `@media print` block at the end of this file carries
+     * the one rule that targets the pseudo-element, and it is the only one:
+     * the contract test fails if any rule outside print touches it at all.
      */
 
     /* Tier 3. Status messages rise very slightly as they fade in, which is

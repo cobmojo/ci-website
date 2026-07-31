@@ -1304,7 +1304,7 @@
       },
       {
         "id": "section:S28",
-        "score": 439.567909,
+        "score": 451.773203,
         "matchedFields": ["id", "title", "scripture", "heading", "body", "summary", "notes"],
         "matchedTerms": ["revelation"]
       },

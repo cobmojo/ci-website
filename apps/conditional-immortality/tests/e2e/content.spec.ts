@@ -484,7 +484,12 @@ test('a collapsed disclosure prints its contents', async ({ page }) => {
         open: details.open,
         height: Math.round(details.getBoundingClientRect().height),
         contentVisibility: getComputedStyle(details, '::details-content').contentVisibility,
-        characters: (details.textContent ?? '').replace(/\s+/g, ' ').trim().length,
+        // `innerText`, not `textContent`. The latter reads the whole subtree
+        // whether or not any of it is laid out, so it returned ~3,900 for a
+        // disclosure printing 29 characters of summary and this assertion
+        // held against exactly the defect it names. `tests/e2e/print.spec.ts`
+        // documents the same correction; it was made there and not here.
+        characters: (details.innerText ?? '').replace(/\s+/g, ' ').trim().length,
       })),
   )
 
@@ -492,6 +497,10 @@ test('a collapsed disclosure prints its contents', async ({ page }) => {
   for (const details of printed) {
     expect(details.contentVisibility, 'a printed disclosure is still collapsed').not.toBe('hidden')
     expect(details.characters, 'a printed disclosure carries only its summary').toBeGreaterThan(200)
+    // Laid out, not merely present: a rule that hid the content by any other
+    // means would leave the character count intact and the box at summary
+    // height.
+    expect(details.height, 'a printed disclosure is summary-height').toBeGreaterThan(200)
   }
 })
 
@@ -577,6 +586,14 @@ test('the poster link goes where a click on it would go', async ({ page }) => {
   expect(requested).toBeTruthy()
 
   await timestamp.click()
+
+  // Wait for the address, not just the href. The timestamp fires the seek
+  // event synchronously from the link's `onNavigate`, so the poster's href is
+  // rebuilt from React state before the router has committed the URL — and the
+  // Back below depends on the URL, not the state. Without this the history
+  // still held one entry when `goBack` ran and the page went to `about:blank`.
+  await expect(page).toHaveURL(new RegExp(`[?&]t=${requested}$`))
+
   const poster = page.locator('a.video-play')
   await expect(poster).toHaveAttribute('href', new RegExp(`[?&]t=${requested}$`))
 
@@ -641,24 +658,45 @@ test('filtering the Scripture index leaves nothing pointing at hidden sections',
  * State a reader accumulates
  * ------------------------------------------------------------------ */
 
-test('a second tab adds to the reading record rather than replacing it', async ({ context }) => {
-  // The record was written from memory, so a tab that had loaded before any
-  // reading held an empty list, and one click there replaced four parts
-  // recorded in the other tab with one.
+const FOUR_PARTS = ['S07', 'S10', 'S16', 'S17']
+
+test('a second tab is told what the first one recorded', async ({ context }) => {
   const first = await context.newPage()
   const second = await context.newPage()
   await first.goto('/case/')
   await second.goto('/case/')
 
-  await first.evaluate(() =>
-    localStorage.setItem('ci:case-reading-progress', JSON.stringify(['S07', 'S10', 'S16', 'S17'])),
+  // A write in another document fires `storage` here, and without a listener
+  // for it each tab showed its own stale count and neither corrected itself.
+  await first.evaluate(
+    parts => localStorage.setItem('ci:case-reading-progress', JSON.stringify(parts)),
+    FOUR_PARTS,
   )
-  await second.locator('a[data-section-id]').first().click()
+  await expect(second.getByText(/You have opened 4 of \d+ pages/)).toBeVisible()
+})
 
-  const stored = await second.evaluate(() =>
+test('a click writes what storage holds, not what this tab remembers', async ({ page }) => {
+  await page.goto('/case/')
+
+  // Seeded from this page, so no `storage` event fires and its in-memory list
+  // stays empty while storage holds four. That is the state the read-merge-
+  // write exists for, and the only one that can tell it from a write built
+  // from memory.
+  //
+  // Seeding from a second tab instead — which is how this was first written —
+  // fires the cross-document event, resyncs the list, and makes a write built
+  // purely from memory produce the same five ids. The test passed against the
+  // implementation it was added to catch.
+  await page.evaluate(
+    parts => localStorage.setItem('ci:case-reading-progress', JSON.stringify(parts)),
+    FOUR_PARTS,
+  )
+  await page.locator('a[data-section-id]').first().click()
+
+  const stored: string[] = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('ci:case-reading-progress') ?? '[]'),
   )
-  expect(stored).toEqual(expect.arrayContaining(['S07', 'S10', 'S16', 'S17']))
+  expect(stored).toEqual(expect.arrayContaining(FOUR_PARTS))
   expect(stored.length).toBeGreaterThan(4)
 })
 
@@ -836,4 +874,39 @@ test('the case is never described as forty parts', async ({ page }) => {
   await page.goto('/case/')
   await expect(page.getByText(/thirty-seven parts/)).toBeVisible()
   await expect(page.getByRole('heading', { name: 'All 40 pages' })).toBeVisible()
+})
+
+/**
+ * What scripting-off actually leaves.
+ *
+ * `/accessibility/` said "Three features degrade rather than disappear" and
+ * named three that do. A fourth degrades — the video becomes a link that opens
+ * on YouTube rather than a player that loads in place — and three panels are
+ * absent altogether: the filters above the source library and the Scripture
+ * index, and the reading-progress panel on the case map. None of those four
+ * was named, and a reader was told the list was complete.
+ *
+ * The page now says what is missing, and this holds it to that: each panel is
+ * gone, and the list it would have narrowed is rendered whole, which is why
+ * their absence hides nothing.
+ */
+test.describe('the panels that need scripting', () => {
+  test.use({ javaScriptEnabled: false })
+
+  test('are absent, over lists that are rendered complete', async ({ page }) => {
+    await page.goto('/case/')
+    await expect(page.getByRole('heading', { name: 'Your reading progress' })).toHaveCount(0)
+    const listed = await page.locator('[data-section-entry]').evaluateAll(nodes => {
+      return new Set(nodes.map(node => node.getAttribute('data-section-entry'))).size
+    })
+    expect(listed, 'the case map lists fewer pages than the case has').toBe(40)
+
+    await page.goto('/sources/')
+    await expect(page.getByRole('heading', { name: 'Narrow the library' })).toHaveCount(0)
+    expect(await page.locator('[data-source-entry]').count()).toBeGreaterThan(30)
+
+    await page.goto('/scripture/')
+    await expect(page.locator('#scripture-filter-title')).toHaveCount(0)
+    expect(await page.locator('[data-testament]').count()).toBeGreaterThan(100)
+  })
 })

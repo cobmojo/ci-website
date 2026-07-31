@@ -18,7 +18,10 @@ import baseline from './ranking-baseline.json'
  * One exception, and only one: the snapshot is taken against real content, so
  * correcting what is *indexed* legitimately moves it. A ranker change is still
  * wrong. Regenerate only when the content going in was wrong, and only with
- * the diff inspected and explained. That has happened twice.
+ * the diff inspected and explained. `scripts/ranking-baseline.ts` prints that
+ * diff — what moved, per query, per row — because reading it out of a
+ * thirty-query failure through a test reporter is how a real ranking change
+ * gets waved through as content drift. That has happened four times.
  *
  * The first was the hand-authored `headings` on the page, topic and passage
  * documents, which named sections their pages do not render — search was
@@ -40,10 +43,19 @@ import baseline from './ranking-baseline.json'
  * fifteenth. Restoring them to the body brings it back, which is the whole of
  * that diff.
  *
- * Across all three, 27 of the 30 pinned queries are byte-identical to what
+ * Across those three, 27 of the 30 pinned queries are byte-identical to what
  * `main` recorded. "second death" fell from 114 to 97 as the video timestamps
  * stopped matching it, "resurrection" swapped a glossary entry for the
  * comparison page, and "traditional view" moved by score alone.
+ *
+ * The fourth was five passages that a page sets out in full and no section
+ * declared, so `/scripture/` — offered as "every reference used anywhere in
+ * the case" — held no row naming the page that quotes them. Declaring them put
+ * two Revelation references into S28's document, which raised that document's
+ * score for "Revelation 14:11" from 439.567909 to 451.773203. One query, one
+ * row, score alone: same total, same order, same matched fields and terms, and
+ * the other 29 byte-identical. The snapshot was edited by hand, one line, so
+ * the commit shows that and nothing else.
  */
 
 const index = buildSearchIndex()

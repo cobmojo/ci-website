@@ -128,6 +128,23 @@ describe('cross-references', () => {
     }
   })
 
+  it('keeps sourceIds and citedBy in step, which is the direction that drifted', () => {
+    // Only the first direction was checked, so a source could be dropped from
+    // `citedBy` and left behind on the section. One was: P00 went on listing
+    // `sprinkle-introduction` after that record was corrected to
+    // `citedBy: []` with the note that "it was listed against P00, whose text
+    // never mentions it". Nothing renders `CaseSection.sourceIds`, so the two
+    // could disagree indefinitely without a page ever showing it.
+    const known = new Map(sources.map(source => [source.id, source]))
+    for (const section of caseSections) {
+      for (const sourceId of section.sourceIds) {
+        const source = known.get(sourceId)
+        expect(source, `${section.id} lists unknown source ${sourceId}`).toBeDefined()
+        expect(source?.citedBy, `${section.id} lists ${sourceId}`).toContain(section.id)
+      }
+    }
+  })
+
   it('normalises every Scripture reference in the registry', () => {
     for (const section of caseSections) {
       for (const reference of [...section.primaryPassages, ...section.relatedPassages]) {

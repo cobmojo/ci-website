@@ -76,6 +76,15 @@ export async function GET(request: Request): Promise<Response> {
  * than as an error. Awaiting the bytes moves the failure somewhere it can be
  * handled. The cards are around 35kB, so buffering one costs nothing worth
  * counting.
+ *
+ * The recovery is guarded too. The documented failure is specific to the
+ * requested text — a script the bundled subset cannot letter — so the plain
+ * card survives it, but that is a property of one failure rather than of all
+ * of them, and an `await` in a `catch` rejects out of the handler exactly like
+ * the one it was added to replace. A fault in the renderer itself would have
+ * reproduced the dropped socket this function exists to end, on every request.
+ * So the last resort renders nothing at all: an answer a crawler can log beats
+ * a connection that closes silently.
  */
 async function draw(title: string, category: string): Promise<Response> {
   const headers = {
@@ -85,7 +94,14 @@ async function draw(title: string, category: string): Promise<Response> {
   try {
     return new Response(await card(title, category).arrayBuffer(), { headers })
   } catch {
-    return new Response(await card(siteConfig.homepageTitle, '').arrayBuffer(), { headers })
+    try {
+      return new Response(await card(siteConfig.homepageTitle, '').arrayBuffer(), { headers })
+    } catch {
+      return new Response('The card could not be drawn.', {
+        status: 500,
+        headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+      })
+    }
   }
 }
 

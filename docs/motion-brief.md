@@ -157,18 +157,26 @@ In its place, every animation is authored with its variant beside it: movement
 lives inside `no-preference` blocks, and keyframe animations that translate have
 a `reduce` counterpart that only fades.
 
-Three test files hold the line, all in the fast suites:
+Four test files hold the line. The first three are in the fast suites:
 
 - `src/lib/__tests__/motion-contract.test.ts` reads `globals.css` as source and
   fails if a movement transition escapes a `no-preference` block, if a duration
   or curve is not tokenised, if `transition: all` or `ease-in` appears, if
-  `!important` shows up inside a reduced-motion query, or if any rule collapses
-  `::details-content`.
+  `!important` shows up inside a reduced-motion query, or if any rule outside
+  `@media print` targets `::details-content`.
 - `src/components/navigation/__tests__/smooth-anchor-scroll.test.tsx` covers the
   Tier 4 scoping, including every case that must *not* smooth.
 - `tests/e2e/motion.spec.ts` checks what a browser computes with the preference
   set both ways, and ends with a sweep over eight representative pages asserting
   that under `reduce` no rendered element animates a movement property.
+
+And one is not, because it cannot be:
+
+- `tests/e2e/print.spec.ts` measures rendered print output in Chromium, Firefox
+  and WebKit. The disclosure guarantee is the one contract in this document that
+  a source-reading test and a single-engine run structurally cannot see: the
+  rule is present in the CSS and correct in Chromium while a Firefox reader
+  prints two pages of empty boxes.
 
 ## Performance
 
@@ -223,13 +231,38 @@ no rule targets `::details-content` at all.
 
 The failure mode is hiding argument behind a disclosure that looks open. That is
 not worth 200ms of polish on a site whose entire purpose is the argument, so the
-disclosure snaps open as it always did, and print needs no pseudo-element
-override because nothing collapses one. Two tests hold the line: the contract
-test fails if any rule collapses `::details-content`, and an end-to-end test
-opens the disclosure and asserts it actually grew.
+disclosure snaps open as it always did.
 
-If a later engine fixes this, reinstating it means restoring the print override
-in the same commit.
+### The one rule that does target it
+
+This section used to end "print needs no pseudo-element override because nothing
+collapses one". That was true of this project's own stylesheet and false of the
+page. The browser's default stylesheet puts `content-visibility: hidden` on
+`::details-content` for a closed disclosure, and `display: revert` on the
+children cannot reach a pseudo-element, so every collapsed disclosure printed as
+its summary and nothing else — measured, a `<details>` 49px tall on paper whose
+content is 3,902px and four tables — against `/accessibility/`'s promise that
+"disclosures are opened so that nothing is lost inside a collapsed section".
+
+So `@media print` carries exactly one rule on the pseudo-element:
+
+```css
+details::details-content {
+  content-visibility: visible !important;
+}
+```
+
+Three tests hold the line. The contract test fails if any rule **outside** the
+print block targets `::details-content` at all — that is the configuration
+Chromium 148 needs — and if the print block's rule on it is anything other than
+un-collapsing. `tests/e2e/motion.spec.ts` opens a disclosure and asserts it
+actually grew. `tests/e2e/print.spec.ts` measures rendered print output in
+Chromium, Firefox and WebKit, because Firefox declines the override on that
+pseudo-element and only a real print in a real engine can see it; it is not in
+the fast suites, and runs as the `print-*` projects in CI.
+
+If a later engine fixes the collapse, reinstating the animation means keeping
+the print override, not removing it.
 
 ## Adding motion later
 

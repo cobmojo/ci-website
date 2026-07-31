@@ -394,15 +394,33 @@ describe('print', () => {
     // pseudo-element, and every collapsed disclosure printed as its summary and
     // nothing else. So the rule is now what the test's name always meant —
     // nothing may collapse it, and print must actively un-collapse it.
+    //
+    // Pinned to the outcome rather than to three literal values. A first
+    // rewrite forbade `block-size`, `content-visibility: hidden` and
+    // `overflow: hidden` by name, which let `overflow: clip` and
+    // `content-visibility: auto` through — both collapse or clip the
+    // pseudo-element exactly as `hidden` does, and the brief states the rule
+    // as "if any rule collapses `::details-content`".
     const live = withoutComments(css)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*block-size/)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*content-visibility:\s*hidden/)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*overflow:\s*hidden/)
+    const printAt = live.indexOf('@media print')
+    expect(printAt).toBeGreaterThan(-1)
 
-    const print = live.slice(live.indexOf('@media print'))
+    // On screen the premise still holds: no rule targets it at all, which is
+    // the only configuration Chromium 148 opens correctly.
+    expect(live.slice(0, printAt)).not.toMatch(/::details-content/)
+
+    // On paper exactly one rule does, and it un-collapses it.
+    const print = live.slice(printAt)
     expect(print).toMatch(
       /details::details-content\s*\{\s*content-visibility:\s*visible\s*!important/,
     )
+    for (const [, body] of print.matchAll(/::details-content\s*\{([^}]*)\}/g)) {
+      // The lookahead sits directly after the colon and swallows the space
+      // itself. Written as `content-visibility:\s*(?!visible)`, the `\s*`
+      // matches empty and the assertion is made against " visible", which
+      // does not start with `visible`, so every rule failed.
+      expect(body).not.toMatch(/block-size|overflow|content-visibility:(?!\s*visible)/)
+    }
   })
 
   it('keeps disclosures open on paper', () => {

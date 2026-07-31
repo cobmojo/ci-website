@@ -227,11 +227,20 @@ export default function AccessibilityPage() {
                 rendered as HTML, navigation is plain links, and the reading experience does not
                 depend on client-side code.
               </p>
-              <p className="m-0">
-                Three features degrade rather than disappear. The search panel becomes an ordinary
+              <p className="m-0 mb-3">
+                Four features degrade rather than disappear. The search panel becomes an ordinary
                 link to the search page. The narrow-screen menu falls back to the footer, which
                 carries the same structure. The corrections form is a real form that posts to the
-                server, so a correction can still be sent.
+                server, so a correction can still be sent. The video becomes a link that opens it on
+                YouTube in a new tab, rather than a player that loads in place.
+              </p>
+              <p className="m-0">
+                Three panels are absent rather than degraded: the filters above the source library
+                and the Scripture index, and the reading-progress panel on the case map. Each one
+                only narrows or keeps a record of something the page already shows in full, so every
+                list they act on is rendered complete and unfiltered and nothing is hidden by their
+                absence. What is missing is the means to narrow a list, and the note of which parts
+                you have opened.
               </p>
             </section>
 

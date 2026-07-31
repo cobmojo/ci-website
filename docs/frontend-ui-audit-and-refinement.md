@@ -1581,6 +1581,142 @@ guard in `catch` recovers in 61ms without bringing the double fetch back; and
 removing `i.ytimg.com` from the policy refuses nothing, because no code, no
 rendered page and no `next/image` call ever referenced it.
 
+### Gap sweep 17 (follow-up branch)
+
+Four independent finders. The sweep was not clean, and its largest finding is
+the one the site's own promise names.
+
+**The Scripture index did not hold what the pages set out.** `/scripture/` is
+offered as "Every reference used anywhere in the case, with links to the
+sections that treat it". It is built only from each section's declared
+`primaryPassages` and `relatedPassages`; nothing reads the bodies. Eleven full
+Scripture blocks are set out on a page that declares neither list entry for
+them, and for seven the section is already on the row through a containing
+reference it does declare — S04 sets out Matthew 25:46 and declares
+Matthew 25:31-46, S22 sets out three parts of 1 Corinthians 15 and declares the
+chapter — so a reader looking those up finds the page. Five are not covered at
+all: RB2 sets out Genesis 1:26-27 and declares nothing in Genesis, RB3 quotes
+1 Corinthians 15:24-26 and Hebrews 9:27 and declares nothing in either book, and
+S28 quotes Revelation 2:7 and Revelation 22:1-5 while declaring only
+Revelation 22:14-15. Those five are declared now, and the gate is coverage
+rather than string equality, so the seven legitimate sub-ranges cost nothing and
+a sixth cannot appear. Confirmed failing against each of the five.
+
+The declaration moved one pinned ranking outcome: S28's document gained two
+Revelation references, raising its score for "Revelation 14:11" from 439.567909
+to 451.773203. Same total, same order, same matched fields and terms, and the
+other 29 queries byte-identical. `ranking-invariants.test.ts` permits exactly
+this — "correcting what is *indexed* legitimately moves it" — and requires the
+diff inspected and explained, which until now meant reading a thirty-query
+failure through a test reporter. `packages/ci-search/scripts/ranking-baseline.ts`
+prints it per query and per row. It reports and does not write: rewriting the
+snapshot reformatted 4,000 lines of JSON and turned one moved score into a
+3,322-line diff, so the file was edited by hand, one line.
+
+**The privacy page contradicted itself, two bullets apart.** The lede said "the
+only information the site ever receives is what you deliberately type into the
+correction form" and the last bullet of "The short version" repeated it, while
+the bullet immediately above said the full results page "is an ordinary form, so
+its term travels in the address", and the detailed section three screens down
+said the term "reaches the server answering the request as any address does,
+where it may appear in ordinary request logs". Both cannot be true, and a reader
+who reads only the summary — which is what a summary is for — concludes that
+typing into the site's search box sends nothing anywhere. The lede now names
+both things the server receives, and the bullet says the form is the only place
+the site *asks* for anything.
+
+**`/accessibility/` undercounted what scripting-off costs.** It said "Three
+features degrade rather than disappear" and named three that do. A fourth does —
+the video becomes a link that opens on YouTube in a new tab rather than a player
+that loads in place — and three panels are absent altogether, each behind an
+`if (!mounted) return null`: the filters above the source library and the
+Scripture index, and the reading-progress panel on the case map. None of the
+four was named. The page now says which four degrade and which three are
+missing, and adds the part a reader actually needs: every list those panels
+would have narrowed is rendered complete, so their absence hides nothing. That
+is what the new end-to-end test measures.
+
+**A live region was created together with its message.** The recovery sentence
+on `/scripture/` — the one naming the way out when a filter matches nothing —
+carried its own `aria-live` and entered the DOM in the same mutation as its
+text. A region must already be in the accessibility tree for a change inside it
+to be announced, so a screen-reader user heard the count fall to zero and then
+silence: exactly the silence the sentence was added to end. Its comment claimed
+it was "inside a live region" when it was a sibling of one. The search dialog in
+the same branch does this correctly and says so in its own comment. Both
+sentences now sit inside one region mounted from the first render.
+
+**The disclosure decision was documented three ways, two of them false.**
+`docs/motion-brief.md` still said "the only configuration that opens correctly
+is the one where no rule targets `::details-content` at all" and "print needs no
+pseudo-element override because nothing collapses one", and `globals.css` still
+said "print needs no workaround because nothing collapses them" — while the same
+branch added the override and made the contract test require it. The brief was
+edited in this diff, so the section was in scope and was left stale on a binding
+document whose stated purpose is to answer "why not add X" for the next person.
+All three agree now, and the brief lists the fourth test file that holds the line
+and says why it cannot be in the fast suites.
+
+**And the guard for it had been narrowed to three literal values.** Rewriting it
+to permit the print override pinned it to `block-size`,
+`content-visibility: hidden` and `overflow: hidden` by name, so `overflow: clip`
+and `content-visibility: auto` — which collapse or clip the pseudo-element
+identically — walked straight past. It is stated as the outcome now: outside
+`@media print` no rule may target the pseudo-element at all, which is the
+configuration Chromium 148 needs, and inside print the only rule on it must
+un-collapse it. Confirmed failing against both values that used to slip through.
+
+#### Four tests that could not fail, and one that raced
+
+- **The no-scripting correction-form block never posted anything.** All five
+  tests navigate to hand-written URLs, so they measure how `/corrections/` reads
+  a query string and nothing about the redirect that produces it. Each passes
+  against the defect it is named for: drop the fragment from `SUCCESS_REDIRECT`
+  and the test supplies it itself; collapse the two failure outcomes into one
+  and the test still visits both by hand; delete the echo loop entirely and the
+  test still types `section=S04&heading=the-text&type=broken-link` itself.
+  Reaching them meant posting a real submission through the rate limiter and the
+  store, which is why they were written this way. The construction is a property
+  of a string, so it moved to `api/feedback/redirects.ts` — a Next route module
+  may export only its handlers, which is what made it untestable in place — and
+  eight unit tests now hold it, including that the message, the name and the
+  email never appear in a redirect.
+- **The second-tab reading test could not see its own defect.** Its premise is a
+  tab whose in-memory list is empty while storage holds four ids, but it seeded
+  storage from the *other* tab, which fires `storage` — and the listener added
+  in the same change resyncs the list before the click lands. A version that
+  wrote from memory produced the same five ids and passed. Split in two: one
+  test holds the cross-tab resync the listener exists for, the other seeds from
+  the page under test, where no event fires and only a read-merge-write can
+  produce five.
+- **`content.spec.ts` measured a printed disclosure with `textContent`**, which
+  reads the whole subtree whether or not any of it is laid out — the identical
+  mistake `print.spec.ts` documents, in its own comment, as having "passed
+  against exactly the defect this file exists to catch". Corrected there in the
+  sweep before and left here. Now `innerText`, plus the rendered height.
+- **`print.spec.ts` drove both print signals at once**, so either subscription
+  could be deleted and whichever survived did the whole job. The component
+  subscribes twice because the engines disagree about which signal they send,
+  and Firefox is the reason. Now one test per signal per route, plus a third
+  firing both, which is the re-entry case the restore guard exists for.
+- **And the poster-link test raced the router.** `TranscriptTimestamp` fires the
+  seek event synchronously from the link's `onNavigate`, so the poster's href is
+  rebuilt from React state before the address bar has changed; the test asserted
+  the href and then pressed Back, which depends on the address. It failed once in
+  a full run with the page on `about:blank`, history still holding one entry. It
+  waits for the URL now. Same shape as everything else in this list: an
+  assertion on one surface, a dependency on another.
+
+Two smaller things, both structural rather than reproducible. `/og`'s recovery
+path awaited inside its `catch`, so a fault in the renderer itself — rather than
+in the requested glyphs — would reject out of the handler and reproduce the
+dropped socket the buffering was added to end; the last resort renders nothing at
+all now. And P00 went on listing `sprinkle-introduction` in `sourceIds` after
+that source was corrected to `citedBy: []` with the note that "it was listed
+against P00, whose text never mentions it" — the only such disagreement among 33
+sources, invisible because nothing renders `CaseSection.sourceIds`, and checked
+in both directions now rather than one.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

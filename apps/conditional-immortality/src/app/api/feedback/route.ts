@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import {
-  type FeedbackFieldError,
-  FeedbackSubmissionInputSchema,
-  SUBMISSION_STATUS_ID,
-} from '@ci/content-schema'
+import { type FeedbackFieldError, FeedbackSubmissionInputSchema } from '@ci/content-schema'
 import { clientAddress, rateLimit } from '@/lib/rate-limit'
 import { siteConfig } from '@/lib/site-config'
+import {
+  asString,
+  correctionsHref,
+  failureRedirect,
+  type RawBody,
+  SUCCESS_REDIRECT,
+} from './redirects'
 
 /**
  * The single write endpoint on this site.
@@ -38,78 +41,6 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 
 const STORE_DIR = process.env.FEEDBACK_STORE_DIR ?? '.feedback-store'
 
-/**
- * Where a form-encoded submission is sent back to.
- *
- * Three things have to be right about this URL, and each was wrong once.
- *
- * The `submitted` value distinguishes a schema rejection from a submission the
- * server could not store. Telling a reader whose wording was fine to check
- * their wording sends them back into a failure that will repeat identically,
- * and spends their rate-limit allowance doing it. The JSON path always drew
- * this distinction; the redirect now does too.
- *
- * The fragment matters as much. Without it the browser lands at the top and
- * the answer renders where it sits in the document — measured at y=2090 on an
- * 812px viewport — so the reader sees an untouched page and the whole point of
- * the redirect is lost.
- *
- * And a failure has to carry back the context the reader arrived with. Without
- * it the retry is sent from a form that has silently dropped the section, the
- * heading and the feedback type, so a correction to S04 arrives labelled a
- * factual correction with no page attached — the exact harm this route was
- * changed to fix, reappearing on the path where a reader is *told* to try
- * again.
- */
-const STATUS_FRAGMENT = `#${SUBMISSION_STATUS_ID}`
-const SUCCESS_REDIRECT = `/corrections/?submitted=1${STATUS_FRAGMENT}`
-
-/**
- * A failure returns the reader to the form, pointing at the same page and kind
- * of feedback they arrived with.
- *
- * Not their text. A rejected message can be eight thousand characters, and a
- * correction is often the most considered thing a reader will write all week;
- * putting it back through the query string would put it in browser history, in
- * any proxy log on the way, and in the address bar of a shared screen. The
- * failure messages say plainly that the text was not kept, which is the honest
- * trade rather than a silent one.
- *
- * Echoed values are bounded by what the schema would accept. A section id
- * longer than 16 characters is one the schema will reject again, so carrying it
- * back only guarantees a repeat; at around 16kB it also produces a `location`
- * header no client will parse.
- */
-const ECHO_LIMITS = { sectionId: 16, headingId: 128, type: 64 } as const
-
-function failureRedirect(outcome: '0' | 'error', body: RawBody): string {
-  const params = new URLSearchParams({ submitted: outcome })
-  for (const [field, key] of [
-    ['sectionId', 'section'],
-    ['headingId', 'heading'],
-    ['type', 'type'],
-  ] as const) {
-    const value = asString(body[field])?.trim()
-    if (value && value.length <= ECHO_LIMITS[field]) params.set(key, value)
-  }
-  return `/corrections/?${params.toString()}${STATUS_FRAGMENT}`
-}
-
-/** The same context, for the one failure that answers with a page of its own. */
-function correctionsHref(body: RawBody): string {
-  const params = new URLSearchParams()
-  for (const [field, key] of [
-    ['sectionId', 'section'],
-    ['headingId', 'heading'],
-    ['type', 'type'],
-  ] as const) {
-    const value = asString(body[field])?.trim()
-    if (value && value.length <= ECHO_LIMITS[field]) params.set(key, value)
-  }
-  const query = params.toString()
-  return `/corrections/${query ? `?${query}` : ''}#form`
-}
-
 /** The honeypot control rendered off screen by the form. */
 const HONEYPOT_FIELD = 'website'
 
@@ -124,8 +55,6 @@ const ACCEPTED_FIELDS = [
   'email',
   'publicationConsent',
 ] as const
-
-type RawBody = Record<string, unknown>
 
 interface ParsedRequest {
   readonly body: RawBody
@@ -163,10 +92,6 @@ async function parseBody(request: Request): Promise<ParsedRequest | null> {
   }
 
   return null
-}
-
-function asString(value: unknown): string | undefined {
-  return typeof value === 'string' ? value : undefined
 }
 
 /**

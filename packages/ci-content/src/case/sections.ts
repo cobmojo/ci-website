@@ -37,7 +37,7 @@ export const CASE_SECTIONS: readonly CaseSection[] = [
     relatedPassages: ['Ezekiel 33:11'],
     relatedSections: ['S29', 'S19', 'APP1'],
     topicIds: ['eternal-conscious-torment', 'conditional-immortality', 'universal-reconciliation'],
-    sourceIds: ['welch-source-document', 'sprinkle-introduction'],
+    sourceIds: ['welch-source-document'],
     establishes: [
       'The debate concerns the nature of final punishment, not whether judgment is real.',
       'A mistaken view of punishment distorts what we say about the character of God.',
@@ -130,6 +130,7 @@ export const CASE_SECTIONS: readonly CaseSection[] = [
       '1 Corinthians 15:42-43',
     ],
     relatedPassages: [
+      'Genesis 1:26-27',
       '1 Peter 1:23-24',
       'Psalms 144:4',
       'Isaiah 40:6-8',
@@ -180,6 +181,8 @@ export const CASE_SECTIONS: readonly CaseSection[] = [
     sourceParagraphIds: ['p304', 'p305', 'p306', 'p312', 'p345', 'p354', 'p357', 'p359', 'p370'],
     primaryPassages: ['Luke 12:47-48', 'Matthew 11:20-24', 'Romans 2:12', 'James 4:17'],
     relatedPassages: [
+      '1 Corinthians 15:24-26',
+      'Hebrews 9:27',
       'Luke 23:34',
       'John 15:22',
       'John 9:41',
@@ -1441,7 +1444,9 @@ export const CASE_SECTIONS: readonly CaseSection[] = [
     sourceParagraphIds: ['p873', 'p874', 'p876', 'p878', 'p880'],
     primaryPassages: ['Revelation 21:8', 'Revelation 22:14-15', '2 Peter 3:13'],
     relatedPassages: [
+      'Revelation 2:7',
       'Revelation 21:1-4',
+      'Revelation 22:1-5',
       '1 Corinthians 6:9-10',
       'Galatians 5:19-21',
       'Ephesians 5:5',
