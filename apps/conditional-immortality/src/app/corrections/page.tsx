@@ -10,6 +10,28 @@ import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { loadSection, sectionBodyExists } from '@/lib/sections'
 import { siteConfig } from '@/lib/site-config'
 
+/**
+ * Heading ids per section, read once per process.
+ *
+ * This route renders per request, so calling `loadSection` from the handler
+ * put a synchronous `readFileSync` and eleven chained whole-body regexes on
+ * the request path, for a body averaging 8.5kB, to answer one question about a
+ * set of ids. Every other caller is statically generated. The ids cannot change
+ * without a rebuild, so they are computed on first use and kept.
+ */
+const HEADING_IDS = new Map<string, ReadonlySet<string>>()
+
+function headingIdsFor(
+  id: string,
+  section: Parameters<typeof loadSection>[0],
+): ReadonlySet<string> {
+  const cached = HEADING_IDS.get(id)
+  if (cached) return cached
+  const ids = new Set(loadSection(section).headings.map(heading => heading.id))
+  HEADING_IDS.set(id, ids)
+  return ids
+}
+
 const CRUMBS: readonly Crumb[] = [
   { href: '/', label: 'Home' },
   { href: '/corrections/', label: 'Corrections' },
@@ -59,7 +81,7 @@ export default async function CorrectionsPage({
     if (!value || !section) return ''
     const record = getSection(section)
     if (!record || !sectionBodyExists(record)) return ''
-    return loadSection(record).headings.some(heading => heading.id === value) ? value : ''
+    return headingIdsFor(record.id, record).has(value) ? value : ''
   }
   const sectionId = knownSectionId(one(params.section) ?? one(params.sectionId))
   return (
@@ -135,6 +157,10 @@ export default async function CorrectionsPage({
                   The part of the site you came from, when you arrive from a link on a section page,
                   and a heading anchor if the address carries one. These are a section identifier
                   such as S04 and an anchor such as in-brief, nothing more.
+                </li>
+                <li>
+                  The time it arrived, a reference for it, and its place in the queue, added by the
+                  server. The arrival time is what the deletion promise below is measured against.
                 </li>
                 <li>
                   Your network address is used only to limit how many submissions one connection can

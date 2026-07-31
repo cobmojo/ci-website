@@ -73,6 +73,37 @@ function withoutComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '')
 }
 
+/**
+ * Where the print block starts and ends, by brace matching.
+ *
+ * `@media print` is the last block in `globals.css`, so slicing from its
+ * opening keyword to the end of the file makes "inside print" true of anything
+ * appended after it — including a rule lifted out of the block and left to
+ * apply on screen, which is what these assertions exist to prevent. Both tests
+ * below were satisfied by exactly that edit.
+ *
+ * The scan is safe here: the stripped stylesheet contains no brace inside a
+ * quoted string and none inside a `url(...)`.
+ */
+function printBounds(live: string): { start: number; end: number } {
+  const start = live.indexOf('@media print')
+  if (start === -1) return { start: -1, end: -1 }
+  let depth = 0
+  for (let index = start; index < live.length; index += 1) {
+    if (live[index] === '{') depth += 1
+    else if (live[index] === '}') {
+      depth -= 1
+      if (depth === 0) return { start, end: index }
+    }
+  }
+  return { start, end: live.length }
+}
+
+function printBlock(live: string): string {
+  const { start, end } = printBounds(live)
+  return start === -1 ? '' : live.slice(start, end)
+}
+
 interface Declaration {
   readonly property: string
   readonly value: string
@@ -420,26 +451,9 @@ describe('print', () => {
     const [rule] = targeting
     const at = rule?.index ?? -1
 
-    /*
-     * Bounded by the block's closing brace, not by its opening one.
-     *
-     * `@media print` is the last block in the file, so "after `printAt`" is
-     * true of anything appended at the end — including this very rule lifted
-     * out of the block and left to apply on screen, which is the failure the
-     * guard exists for. Checked: that edit left every assertion here green.
-     */
-    let depth = 0
-    let printEnd = live.length
-    for (let index = printAt; index < live.length; index += 1) {
-      if (live[index] === '{') depth += 1
-      else if (live[index] === '}') {
-        depth -= 1
-        if (depth === 0) {
-          printEnd = index
-          break
-        }
-      }
-    }
+    // Bounded by the block's closing brace, not by its opening one: see
+    // `printBounds`.
+    const { end: printEnd } = printBounds(live)
 
     // On screen the premise still holds: nothing targets it, which is the only
     // configuration Chromium 148 opens correctly.
@@ -456,8 +470,16 @@ describe('print', () => {
 
   it('keeps disclosures open on paper', () => {
     // Index into the stripped string, not the original: comments shift offsets.
+    //
+    // Bounded by the closing brace, for the reason set out in the test above.
+    // This sliced to the end of the file, and `@media print` is the last block
+    // in it, so both assertions were satisfied by either `!important` rule
+    // lifted out of the block and appended after it — where they would force
+    // every disclosure and its children open **on screen**, site-wide.
+    // Measured: the print block closes at offset 14868 and a rule moved to the
+    // end lands at 14873, and both matched.
     const live = withoutComments(css)
-    const print = live.slice(live.indexOf('@media print'))
+    const print = printBlock(live)
     // Pinned to the exact selector. `details[^{]*` would also accept
     // `details[open]`, which forces open only what is already open — the
     // regression this line exists to catch.

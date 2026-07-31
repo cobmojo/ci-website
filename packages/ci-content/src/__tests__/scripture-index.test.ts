@@ -38,12 +38,14 @@ const BODIES = new Map<string, string>(
     .map(([id, collection, file]) => [id, readMdx(collection, file)]),
 )
 
-/** Every reference set out as a full `<Scripture>` block in a body. */
+/** Every `<Scripture>` block in a body, in order, repeats included. */
+function matchedIn(body: string): string[] {
+  return [...body.matchAll(/<Scripture\b[^>]*\breference="([^"]+)"/g)].map(match => match[1] ?? '')
+}
+
+/** The distinct references a body sets out. */
 function displayedIn(body: string): string[] {
-  const found = [...body.matchAll(/<Scripture\b[^>]*\breference="([^"]+)"/g)].map(
-    match => match[1] ?? '',
-  )
-  return [...new Set(found)]
+  return [...new Set(matchedIn(body))]
 }
 
 /**
@@ -122,23 +124,25 @@ describe('the Scripture index against the pages it indexes', () => {
     // 189 blocks the corpus holds and true of any 21 of them, so 38 of the 40
     // pages could stop being matched and this stayed green — the same "true of
     // 38 and true of 40" shape as the assertion two tests above.
-    const bodies = [...BODIES.values()]
+    // Every block written is a block parsed, per page. The first attempt at
+    // this compared `bodies.flatMap(displayedIn).length` against
+    // `Σ new Set(displayedIn(body)).size`, which is the same number by
+    // construction for any implementation — `displayedIn` already
+    // deduplicates. It held at 0 = 0 with the matcher returning nothing, and at
+    // 38 = 38 with 151 of the 189 blocks dropped, so the corpus-wide count its
+    // own message advertised was never asserted at all. `matchedIn` keeps the
+    // repeats, which is what makes the comparison mean something.
     const blocksIn = (body: string) => body.split('<Scripture').length - 1
-    const written = bodies.reduce((total, body) => total + blocksIn(body), 0)
-    const found = bodies.flatMap(displayedIn)
+    const written = [...BODIES.values()].reduce((total, body) => total + blocksIn(body), 0)
     expect(written, 'the corpus stopped setting Scripture out in blocks').toBeGreaterThan(150)
-    // Distinct per body, so the two counts differ only by repeats within a page.
-    expect(new Set(found).size).toBeLessThanOrEqual(written)
-    expect(found.length, 'a block the reference pattern no longer matches').toBe(
-      bodies.reduce((total, body) => total + new Set(displayedIn(body)).size, 0),
-    )
+
+    const unparsed: string[] = []
     for (const [id, body] of BODIES) {
-      if (blocksIn(body) > 0) {
-        expect(
-          displayedIn(body).length,
-          `${id} sets out blocks none of which parse`,
-        ).toBeGreaterThan(0)
+      const matched = matchedIn(body).length
+      if (matched !== blocksIn(body)) {
+        unparsed.push(`${id}: ${blocksIn(body)} blocks written, ${matched} parsed`)
       }
     }
+    expect(unparsed, 'a block the reference pattern no longer matches').toEqual([])
   })
 })

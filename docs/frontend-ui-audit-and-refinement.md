@@ -1958,6 +1958,50 @@ runs no script, so a form inside the search dialog's mounted branch is invisible
 it compares a set of actions, so a second form posting to `/api/feedback/`
 changes nothing; and it does not read `formaction`. None is violated today.
 
+### Gap sweep 20 (follow-up branch)
+
+One finder, pointed at sweep 19's commit. Four findings, all inside it. **Not
+clean.** Every one was green rather than red, which is the point.
+
+- **The assertion carrying the previous fix's message was a tautology.** It
+  compared `bodies.flatMap(displayedIn).length` against
+  `Σ new Set(displayedIn(body)).size`, and `displayedIn` already deduplicates,
+  so the two sides are the same number for any implementation. Measured: it
+  held at 0 = 0 with the matcher returning nothing, and at 38 = 38 with 151 of
+  the 189 blocks dropped. The corpus-wide count the commit message advertised
+  was never asserted at all; only the per-page "at least one" loop was live, so
+  S06's thirteen blocks could go down to one. `matchedIn` keeps the repeats now,
+  and the check is written-equals-parsed per page. Confirmed failing when one
+  block on one page stops matching.
+- **The sibling test ten lines below still sliced to the end of the file**, the
+  exact construct replaced above it under a seven-line comment explaining why it
+  is wrong. `@media print` is the last block in `globals.css`, so both of its
+  `!important` disclosure rules could be lifted out and appended after the
+  closing brace — where they force every disclosure and its children open on
+  screen, site-wide — and both assertions stayed green. The brace scan is a
+  shared helper now, used by both, and confirmed failing against that edit. The
+  scan itself was checked against the real stylesheet: no brace inside a quoted
+  string, none inside a `url()`.
+- **The privacy and corrections lists are exhaustive claims and omitted three
+  stored fields.** The route persists an id, a status and `createdAt` alongside
+  what the reader types. `createdAt` is load-bearing: the retention promise on
+  the same page — deleted within twenty-four months of being resolved — is
+  measured against a timestamp the reader was told was not kept. Both lists name
+  all three now. The commit that rewrote them to add `headingId` had not
+  re-derived them from `StoredSubmission`.
+- **And the heading check put a filesystem read on the request path.**
+  `/corrections/` renders per request, and `loadSection` does five things where
+  one was wanted: `readFileSync` with no memo, then eleven chained whole-body
+  regexes, a reading-time count and two registry walks, for bodies averaging
+  8.5kB — to answer one question about a set of ids. Every other caller is
+  statically generated. The ids cannot change without a rebuild, so they are
+  computed once per section per process now.
+
+Checked and clean by the same finder: reading both appendices for the first time
+exposed no `citedBy` disagreement in either direction, `extractHeadings` matches
+`github-slugger` on all 40 bodies with zero mismatches, and the `/passages/`
+sentence rewritten last sweep is accurate.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

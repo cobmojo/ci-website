@@ -58,8 +58,9 @@ export default function PrivacyPage() {
                   ordinary form, so its term travels in the address, as with any link.
                 </li>
                 <li>
-                  The correction form is the only thing the site keeps on purpose, and it keeps only
-                  what you type, plus the part and heading you arrived from.
+                  The correction form is the only thing the site keeps on purpose. It keeps what you
+                  type, the part and heading you arrived from, and the arrival time, reference and
+                  status listed below.
                 </li>
               </ul>
             </section>
@@ -174,9 +175,9 @@ export default function PrivacyPage() {
               </h2>
               <p className="m-0 mb-3">
                 The <Link href="/corrections/">corrections form</Link> is the only thing this site
-                keeps on purpose. It keeps what you type into it, and the part and heading you
-                arrived from, both listed below. A search term from the full results page also
-                reaches the server, in the address, and is not kept.
+                keeps on purpose. It keeps what you type into it, the part and heading you arrived
+                from, and the three things it adds itself, all listed below. A search term from the
+                full results page also reaches the server, in the address, and is not kept.
               </p>
 
               <h3 className="mt-6 mb-2">What it collects</h3>
@@ -196,8 +197,13 @@ export default function PrivacyPage() {
                   arrive from a link on a section page, and a heading anchor if the address you
                   arrived with carries one. These are a short code such as S04 and an anchor such as
                   in-brief, and they exist so that a correction can be matched to the place it is
-                  about. No link on this site puts a heading in the address today; the field is read
-                  if one is there.
+                  about. No link on this site puts a heading in the address today, and an anchor is
+                  read only when the address also names a part it belongs to.
+                </li>
+                <li>
+                  <strong>Added by the server:</strong> the time the submission arrived, a reference
+                  for it, and its place in the queue. The arrival time is what the retention promise
+                  below is measured against, so it has to be kept for that promise to mean anything.
                 </li>
               </ul>
               <p className="m-0 mb-3">
