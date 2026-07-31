@@ -545,7 +545,7 @@ Re-measured on the final tree, after main — carrying PR #6 — was merged in.
 | Command | Result |
 |---|---|
 | `bun install --frozen-lockfile` | exit 0, no changes |
-| `CI=1 bun run validate` | **exit 0** — 1,035 unit and component tests across 46 files |
+| `CI=1 bun run validate` | **exit 0** — 1,041 unit and component tests across 46 files |
 | `CI=1 bun run test:coverage` | **exit 0**, every threshold met without moving one |
 | `bun run seo:matrix` | **exit 0** — 120 routes, no finding |
 | `bun run perf:routes` | **exit 0** — four sources reconciled |

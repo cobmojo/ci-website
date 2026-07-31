@@ -20,7 +20,8 @@
  *   which is an operator asserting that the volume survives a deploy.
  * - `http`, for everywhere else. It POSTs each record to an endpoint the
  *   operator owns, which is the only durable option that is not tied to one
- *   vendor and adds no dependency.
+ *   vendor and adds no dependency. In production it requires
+ *   `FEEDBACK_STORE_FIRST_PARTY=1`, for the reason set out at that check.
  * - `memory`, for tests, and refused in production by name.
  *
  * A configuration that does not resolve does not throw here. The endpoint
@@ -58,6 +59,7 @@ export interface FeedbackEnv {
   readonly FEEDBACK_STORE_DIR?: string | undefined
   readonly FEEDBACK_STORE_DURABLE?: string | undefined
   readonly FEEDBACK_STORE_URL?: string | undefined
+  readonly FEEDBACK_STORE_FIRST_PARTY?: string | undefined
   readonly FEEDBACK_STORE_TOKEN?: string | undefined
   readonly FEEDBACK_TRUSTED_PROXY_HOPS?: string | undefined
   readonly FEEDBACK_NOTIFY_EMAIL?: string | undefined
@@ -134,6 +136,35 @@ export function resolveFeedbackConfig(env: FeedbackEnv): FeedbackConfig {
           'chose to give them, a name and an email address; those do not travel in clear.',
       )
     }
+    /*
+     * The endpoint has to be the site owner's, and only the site owner knows.
+     *
+     * `/corrections/` tells a reader that "no third party is contacted" and
+     * that submissions are "stored on the site's own server". `/privacy/` says
+     * "there is no third party involved in receiving, storing or reading a
+     * submission". Those are commitments, and this adapter is the one place in
+     * the codebase that could break them: it POSTs the whole record — the
+     * message, and the name and email address if the reader gave them — to
+     * whatever URL is configured.
+     *
+     * Nothing in the code can tell a collector the author runs on their own
+     * infrastructure from a hosted form service. It is a fact about the
+     * deployment, so the deployment states it, exactly as it states that a
+     * filesystem directory is durable. Without the statement the store is
+     * refused and the endpoint answers 503, which is a visible failure — the
+     * alternative is a site that quietly contradicts its own privacy page.
+     */
+    if (deployed && env.FEEDBACK_STORE_FIRST_PARTY !== '1') {
+      return unusable(
+        'http',
+        'FEEDBACK_STORE=http posts each submission, including any name and email address the ' +
+          'reader gave, to FEEDBACK_STORE_URL. /corrections/ and /privacy/ both promise that no ' +
+          'third party receives a submission, and no code can check whether that endpoint is ' +
+          'yours. Set FEEDBACK_STORE_FIRST_PARTY=1 to state that it is a service you operate — ' +
+          'or change the promise. See docs/launch-runbook.md.',
+      )
+    }
+
     return {
       ...base,
       kind: 'http',

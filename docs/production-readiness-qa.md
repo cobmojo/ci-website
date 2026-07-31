@@ -414,6 +414,23 @@ for the correction to GAP-12 above.
 | GAP2-9 | **P3.** Dependabot's `@playwright/test` rule ignored major and minor but not patch, and the client version and the pinned container tag have to move together | Patch ignored too |
 | GAP2-10 | **P2/P3.** Fourteen documentation numbers had drifted again during the round-one fixes — test counts, screenshot counts, page counts, the external-link total, the bundle medians, and the canonical-check verification figure | Every one recomputed from the final tree |
 
+### From the automated review on this pull request
+
+Codex reviewed commit `e1bc03e` — a mid-branch state — and raised eight points.
+Seven were already closed by later commits in the same pass and are recorded
+above under their own identifiers: the Turborepo pass-through for
+`FEEDBACK_STORE_DURABLE` (GAP-2), the same variable in the browser test
+server, the Linux visual baselines, the launch runbook the validated code
+names, the `docs-check` exemption for the deliberately untracked private
+artefacts, the removal of the server-only Vercel origin fallbacks (GAP-1), and
+the coverage thresholds, which are measured floors rather than zeros.
+
+The eighth was open, and it is the most interesting finding on the branch.
+
+| Id | Finding | Resolution |
+|---|---|---|
+| REV-1 | **P1.** `FEEDBACK_STORE=http` posts every submission in full — the message, and the reader's name and email address if they gave them — to whatever `FEEDBACK_STORE_URL` names. `/corrections/` tells the reader "no third party is contacted" and that submissions are "stored on the site's own server"; `/privacy/` says "there is no third party involved in receiving, storing or reading a submission". The runbook then recommended "a spreadsheet webhook, a form service" for exactly this configuration. Nothing was lying yet, because no deployment exists — but the documented, recommended setup would have made two published pages false | The endpoint is refused in production unless `FEEDBACK_STORE_FIRST_PARTY=1` states that the collector is a service the site owner operates. The same shape as `FEEDBACK_STORE_DURABLE`: a fact the code cannot check, so the deployment states it, and a missing statement is a visible 503 rather than a quiet contradiction. The runbook now says a hosted form product is not an option without first changing those two pages — a decision that remains available, and is now a decision rather than a configuration detail. Four tests hold the gate and three more hold the pages to the promise it protects, so the pair cannot drift apart |
+
 ### Rejected, with evidence
 
 | Candidate | Why it was rejected |

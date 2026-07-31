@@ -65,6 +65,7 @@ short version of what production needs:
 | `FEEDBACK_STORE_DIR` | filesystem only | runtime | Endpoint answers 503 |
 | `FEEDBACK_STORE_DURABLE` | filesystem only | runtime | Endpoint answers 503 |
 | `FEEDBACK_STORE_URL` | http only | runtime | Endpoint answers 503 |
+| `FEEDBACK_STORE_FIRST_PARTY` | http only | runtime | Endpoint answers 503 |
 | `FEEDBACK_STORE_TOKEN` | http, if the endpoint needs it | runtime | Collector rejects the write |
 | `FEEDBACK_TRUSTED_PROXY_HOPS` | no (default 1) | runtime | Rate limiting keyed wrongly |
 | `FEEDBACK_NOTIFY_EMAIL` | no | runtime | One log line per submission, or none |
@@ -85,14 +86,31 @@ option. Use:
 ```
 FEEDBACK_STORE=http
 FEEDBACK_STORE_URL=https://your-collector.example/feedback
+FEEDBACK_STORE_FIRST_PARTY=1
 FEEDBACK_STORE_TOKEN=…
 ```
 
 The collector is any endpoint that accepts `POST` of one JSON record and stores
-it durably: a serverless function writing to a managed database, a spreadsheet
-webhook, a form service. It must answer 2xx only when the record is safe. The
+it durably — a serverless function writing to a managed database, a small
+service of your own — and it must answer 2xx only when the record is safe. The
 site treats any other status, and any timeout beyond five seconds, as a failure
 and tells the reader nothing was stored.
+
+**It has to be yours.** `FEEDBACK_STORE_FIRST_PARTY=1` is you stating that,
+and it is required in production for the same reason `FEEDBACK_STORE_DURABLE`
+is: the code cannot check it. Every submission goes to that URL in full — the
+message, and the reader's name and email address if they gave them — while
+`/corrections/` tells them "no third party is contacted" and that submissions
+are "stored on the site's own server", and `/privacy/` says "there is no third
+party involved in receiving, storing or reading a submission".
+
+So a hosted form product, a spreadsheet webhook, or anything else run by
+somebody else is **not** an option here without first changing those two pages.
+That is a real decision and it is available — but it is a decision, not a
+configuration detail, and the endpoint refuses to start until one of the two
+has been made. `resolveFeedbackConfig` holds the gate and
+`config.test.ts` holds the pages to the promise it protects, so the pair cannot
+drift apart quietly.
 
 **On a persistent server with a real volume**, prove all of the following
 before setting the acknowledgement:

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { type FeedbackConfig, resolveFeedbackConfig } from '../config'
 
@@ -76,17 +78,68 @@ describe('resolveFeedbackConfig, deployed', () => {
     expect(problemOf(config)).toMatch(/memory/i)
   })
 
-  it('accepts an http store with an https endpoint', () => {
+  it('accepts an http store with an https endpoint the operator has claimed', () => {
     const config = resolveFeedbackConfig({
       ...PROD,
       FEEDBACK_STORE: 'http',
       FEEDBACK_STORE_URL: 'https://collector.example/records',
+      FEEDBACK_STORE_FIRST_PARTY: '1',
     })
     expect(config).toMatchObject({
       kind: 'http',
       endpoint: 'https://collector.example/records',
       usable: true,
     })
+  })
+
+  /*
+   * The one configuration that could make the site lie about itself.
+   *
+   * `/corrections/` says "no third party is contacted" and that submissions
+   * are "stored on the site's own server"; `/privacy/` says "there is no third
+   * party involved in receiving, storing or reading a submission". This
+   * adapter posts the whole record — the message, and the name and email
+   * address if the reader gave them — to whatever URL is set, and no code can
+   * tell a collector the author runs from a hosted form product. So the
+   * deployment has to say, in the same way it says a directory is durable.
+   */
+  it('refuses an http store nobody has claimed as their own', () => {
+    const config = resolveFeedbackConfig({
+      ...PROD,
+      FEEDBACK_STORE: 'http',
+      FEEDBACK_STORE_URL: 'https://collector.example/records',
+    })
+    expect(config.usable).toBe(false)
+    expect(problemOf(config)).toMatch(/FEEDBACK_STORE_FIRST_PARTY/)
+    // The message has to name the pages whose promise it is protecting, or the
+    // operator reads it as a formality and sets it to make the error go away.
+    expect(problemOf(config)).toMatch(/third party/i)
+    expect(problemOf(config)).toMatch(/\/privacy\//)
+  })
+
+  it('does not accept a value other than 1 as the claim', () => {
+    for (const value of ['0', 'true', 'yes', '']) {
+      const config = resolveFeedbackConfig({
+        ...PROD,
+        FEEDBACK_STORE: 'http',
+        FEEDBACK_STORE_URL: 'https://collector.example/records',
+        FEEDBACK_STORE_FIRST_PARTY: value,
+      })
+      expect(config.usable, `FEEDBACK_STORE_FIRST_PARTY=${JSON.stringify(value)}`).toBe(false)
+    }
+  })
+
+  it('asks for the claim after the endpoint is valid, not instead of checking it', () => {
+    // A plaintext endpoint is refused for being plaintext, whether or not the
+    // operator has claimed it: the two checks protect different things.
+    const config = resolveFeedbackConfig({
+      ...PROD,
+      FEEDBACK_STORE: 'http',
+      FEEDBACK_STORE_URL: 'http://collector.example/records',
+      FEEDBACK_STORE_FIRST_PARTY: '1',
+    })
+    expect(config.usable).toBe(false)
+    expect(problemOf(config)).toMatch(/https/i)
   })
 
   it('refuses an http store with no endpoint', () => {
@@ -148,5 +201,34 @@ describe('the notification switch says what it actually does', () => {
     expect(
       resolveFeedbackConfig({ ...DEV, FEEDBACK_NOTIFY_EMAIL: 'a@b.example' }).notifyEmail,
     ).toBe('a@b.example')
+  })
+})
+
+describe('the promise the http store is gated on', () => {
+  /*
+   * The gate and the promise live in different files and neither imports the
+   * other, so nothing connects them. Renaming or softening either would leave
+   * a refusal protecting a claim the site no longer makes, or — far worse — a
+   * claim with nothing protecting it, and every test still green.
+   *
+   * This is not asserting that a particular sentence is good copy. It is
+   * asserting that the pages still say the thing `resolveFeedbackConfig`
+   * refuses an unclaimed endpoint in order to keep true. If that changes, this
+   * fails, and whoever changed it decides which of the two to move.
+   */
+  const read = (file: string) => readFileSync(path.resolve(__dirname, '../../../app', file), 'utf8')
+
+  it('/corrections/ still tells the reader no third party is contacted', () => {
+    expect(read('corrections/page.tsx')).toMatch(/no third party is contacted/)
+  })
+
+  it('/corrections/ still tells the reader submissions stay on this server', () => {
+    expect(read('corrections/page.tsx')).toMatch(/stored on the site’s own server/)
+  })
+
+  it('/privacy/ still rules a third party out of receiving or storing one', () => {
+    expect(read('privacy/page.tsx')).toMatch(
+      /no third party involved in receiving, storing or reading a[\s\S]{0,20}submission/,
+    )
   })
 })
