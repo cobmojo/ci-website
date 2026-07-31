@@ -155,8 +155,12 @@ header handling; a localhost run cannot.
 Then by hand, once:
 
 - [ ] `curl -I https://preview.example/` — `Strict-Transport-Security` present
-- [ ] `curl https://preview.example/robots.txt` — a preview says `Disallow: /`
-- [ ] `curl -I https://preview.example/` — `X-Robots-Tag: noindex` on a preview
+- [ ] `curl -I https://preview.example/` — `X-Robots-Tag: noindex, nofollow` on a
+      preview. This is the directive that keeps a preview out of the index
+- [ ] `curl https://preview.example/robots.txt` — a preview **allows** crawling
+      and names no sitemap and no host. The allow is deliberate: a crawler that
+      is blocked never reads the `X-Robots-Tag` above, and an already-discovered
+      URL then stays eligible for a URL-only result
 - [ ] `https://preview.example/sitemap.xml` — entries use the canonical origin
 - [ ] Open the print dialog on `/full-case/` — disclosures are open on paper
 - [ ] Submit one correction, and confirm the record arrives in the real store

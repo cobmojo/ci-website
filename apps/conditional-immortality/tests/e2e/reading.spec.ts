@@ -199,13 +199,18 @@ test('a visitor can locate the source behind an early church claim', async ({ pa
     .first()
   await expect(citation).toBeVisible()
   /*
-   * The accessible name begins with the visible marker and the full citation
-   * follows it. WCAG 2.2 SC 2.5.3 asks that the visible label be contained in
-   * the name, and it was not: the name used to open "Source: Irenaeus of
-   * Lyons. Against Heresies…", interleaving the work and the year between the
-   * two halves of the visible "[Lyons, Book II, chapter 34, section 3]".
+   * The accessible name leads with the *visible* marker and only then gives the
+   * full citation. That order is WCAG 2.2 SC 2.5.3 Label in Name: someone
+   * saying "click Lyons, Book Two" must be saying something their speech
+   * software can match against the control's name. It used to open "Source:
+   * Irenaeus of Lyons. Against Heresies…", interleaving the work and the year
+   * between the two halves of the visible marker. Anchoring the assertion,
+   * rather than merely asserting containment, is what stops the order
+   * silently reverting.
    */
-  await expect(citation).toHaveAccessibleName(/Source: Irenaeus of Lyons/)
+  await expect(citation).toHaveAccessibleName(
+    /^Lyons, Book II, chapter 34, section 3\. Source: Irenaeus of Lyons\. Against Heresies/,
+  )
   // Once, not twice: `formatCitation` appends the record's own locator, so
   // repeating the marker's locator in the tail said it two or three times.
   const spoken = (await citation.getAttribute('aria-label')) ?? ''
@@ -369,10 +374,18 @@ test('a visitor can submit a correction for S04', async ({ page }, testInfo) => 
 
   await form.getByRole('button', { name: 'Send submission' }).click()
 
-  const receipt = page.getByText(/Received\./)
-  await expect(receipt).toBeVisible()
-  await expect(receipt.locator('xpath=..')).toContainText('Your submission has been recorded')
-  await expect(receipt.locator('xpath=..').getByRole('link', { name: 'changelog' })).toBeVisible()
+  /*
+   * Scoped to the live region on purpose. The page carries a second, identical
+   * receipt in `#submission-received`: the no-JavaScript fallback, revealed by
+   * `:target` when the native form post redirects to it. Both are real and both
+   * say "Received.", so an unscoped match finds two elements and resolves to
+   * the hidden one. This asserts the scripted path, which is the one the click
+   * above took.
+   */
+  const status = page.locator('[aria-live="polite"]').filter({ hasText: 'Received.' })
+  await expect(status.getByText(/Received\./)).toBeVisible()
+  await expect(status).toContainText('Your submission has been recorded')
+  await expect(status.getByRole('link', { name: 'changelog' })).toBeVisible()
 
   // A recorded submission clears the field, so the same text cannot be sent twice
   // by accident.

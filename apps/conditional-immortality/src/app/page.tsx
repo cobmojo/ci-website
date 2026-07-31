@@ -6,8 +6,8 @@ import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ClickToLoadVideo } from '@/components/media/click-to-load-video'
-import { JsonLd, pageMetadata } from '@/lib/metadata'
-import { absoluteUrl, siteConfig } from '@/lib/site-config'
+import { JsonLd, pageMetadata, websiteJsonLd } from '@/lib/metadata'
+import { siteConfig } from '@/lib/site-config'
 
 export const metadata: Metadata = pageMetadata({
   title: siteConfig.homepageTitle,
@@ -162,24 +162,9 @@ export default function HomePage() {
     (topic): topic is NonNullable<typeof topic> => Boolean(topic),
   )
 
-  const websiteJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: siteConfig.name,
-    url: siteConfig.url,
-    description: siteConfig.description,
-    inLanguage: siteConfig.language,
-    author: { '@type': 'Person', name: siteConfig.author.name },
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${absoluteUrl('/search/')}?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
-  }
-
   return (
     <>
-      <JsonLd data={websiteJsonLd} />
+      <JsonLd data={websiteJsonLd()} />
 
       {/* ---------------- Hero ---------------- */}
       <section className="border-b border-border bg-paper-raised">

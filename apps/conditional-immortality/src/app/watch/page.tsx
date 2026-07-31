@@ -7,8 +7,7 @@ import { Breadcrumbs, type Crumb, FeedbackCta } from '@/components/article/artic
 import { NewTabLink } from '@/components/content/new-tab-link'
 import { ClickToLoadVideo } from '@/components/media/click-to-load-video'
 import { formatLongDate, formatTimestamp, isoDuration } from '@/lib/format'
-import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
-import { absoluteUrl, siteConfig } from '@/lib/site-config'
+import { breadcrumbJsonLd, JsonLd, pageMetadata, videoJsonLd } from '@/lib/metadata'
 import { cuesToParagraphs, transcriptSegments } from '@/lib/transcript'
 
 const ROUTE = '/watch/'
@@ -55,37 +54,10 @@ export default function WatchPage() {
     .map(id => getSource(id))
     .filter((source): source is NonNullable<typeof source> => Boolean(source))
 
-  const videoJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'VideoObject',
-    name: video.siteTitle,
-    alternateName: video.originalTitle,
-    description: video.description,
-    thumbnailUrl: [
-      absoluteUrl(
-        `/og/?title=${encodeURIComponent(video.siteTitle)}&category=${encodeURIComponent('Video overview')}`,
-      ),
-    ],
-    uploadDate: video.publishedAt,
-    duration: isoDuration(video.durationSeconds),
-    embedUrl: `${siteConfig.video.embedHost}/embed/${siteConfig.video.youtubeId}`,
-    contentUrl: siteConfig.video.watchUrl,
-    creator: { '@type': 'Person', name: siteConfig.author.name },
-    inLanguage: siteConfig.language,
-    isAccessibleForFree: true,
-    hasPart: video.chapters.map(chapter => ({
-      '@type': 'Clip',
-      name: chapter.title,
-      startOffset: chapter.start,
-      endOffset: chapter.end,
-      url: absoluteUrl(`${ROUTE}#${chapter.id}`),
-    })),
-  }
-
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(CRUMBS)} />
-      <JsonLd data={videoJsonLd} />
+      <JsonLd data={videoJsonLd()} />
 
       <div className="mx-auto max-w-[80rem] px-4 py-8 sm:px-6 sm:py-10">
         <Breadcrumbs trail={CRUMBS} />
