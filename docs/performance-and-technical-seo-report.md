@@ -22,8 +22,13 @@ documents. Both Lighthouse modes. Local production builds throughout; there is
 no deployed origin (see [External limitations](#external-limitations)).
 
 - **Baseline commit** `20e0e0b`, the head of the production-readiness branch
-  before this work, with the full-site SEO branch merged in at `e020539`.
-- **Final commit** — see the pull request.
+  before this work, with the full-site SEO branch merged in at `e020539`. Every
+  baseline number below was taken on `e020539`.
+- **Whole-site sweep and every "after" number** were taken on `0d0d42d`, which
+  is `e020539` plus the one production change described here.
+- **Final commit** is the head of `claude/production-readiness-qa-launch-59185d`;
+  everything after `0d0d42d` is documentation and gate wiring, with no change to
+  what is served.
 
 ## The instrument
 
