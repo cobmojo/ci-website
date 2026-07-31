@@ -30,20 +30,34 @@ import { useEffect } from 'react'
 export function PrintDisclosures() {
   useEffect(() => {
     /** Disclosures this opened, so only those are closed again. */
-    let opened: HTMLDetailsElement[] = []
+    const opened = new Set<HTMLDetailsElement>()
+    /**
+     * A real print fires both signals, not one: `beforeprint` and the media
+     * query change. Both are subscribed on purpose, because engines differ over
+     * which they send. Without this guard the second call found everything
+     * already open, collected nothing, and replaced the record of what to close
+     * — so `restore` closed nothing and the reader's page kept every aside
+     * sprung open for the rest of the session, on every print after the first
+     * as well.
+     */
+    let printing = false
 
     const openAll = () => {
-      opened = [...document.querySelectorAll<HTMLDetailsElement>('details')].filter(details => {
-        // Anything the print stylesheet drops entirely stays as it is.
-        if (details.classList.contains('print:hidden') || details.open) return false
+      if (printing) return
+      printing = true
+      for (const details of document.querySelectorAll<HTMLDetailsElement>('details')) {
+        // Anything print drops entirely stays as it is, and so does anything
+        // the reader opened themselves: closing that would be its own defect.
+        if (details.classList.contains('print:hidden') || details.open) continue
         details.open = true
-        return true
-      })
+        opened.add(details)
+      }
     }
 
     const restore = () => {
+      printing = false
       for (const details of opened) details.open = false
-      opened = []
+      opened.clear()
     }
 
     window.addEventListener('beforeprint', openAll)

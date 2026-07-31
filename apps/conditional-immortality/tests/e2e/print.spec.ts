@@ -22,9 +22,27 @@ const PAGES_WITH_DISCLOSURES = [
   '/case/biblical-language/destruction/',
 ]
 
+/** Which disclosures are open, by summary, so a print can be shown to restore. */
+function openStates() {
+  return [...document.querySelectorAll<HTMLDetailsElement>('details')].map(details => ({
+    summary: (details.querySelector('summary')?.textContent ?? '').trim().slice(0, 40),
+    open: details.open,
+  }))
+}
+
 for (const route of PAGES_WITH_DISCLOSURES) {
   test(`every disclosure prints its contents on ${route}`, async ({ page }) => {
     await page.goto(route)
+
+    // What the disclosures looked like before, so the restore can be checked.
+    // Captured on screen: switching to print media is itself one of the two
+    // signals, so reading after it would record the opened state as "before"
+    // and the restore assertion would compare the wrong thing.
+    const openBefore = await page.evaluate(openStates)
+
+    // A real print fires both signals. Driving only the media query exercises
+    // half the wiring, and the half that works in isolation.
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')))
     await page.emulateMedia({ media: 'print' })
 
     const printed = await page.evaluate(() =>
@@ -34,7 +52,11 @@ for (const route of PAGES_WITH_DISCLOSURES) {
         .map(details => ({
           summary: (details.querySelector('summary')?.textContent ?? '').trim().slice(0, 40),
           height: Math.round(details.getBoundingClientRect().height),
-          characters: (details.textContent ?? '').replace(/\s+/g, ' ').trim().length,
+          // `innerText`, not `textContent`: the latter reads the whole subtree
+          // whether or not any of it is laid out, so it returned 4,848 for a
+          // disclosure printing 29 characters of summary. An assertion on it
+          // passed against exactly the defect this file exists to catch.
+          characters: (details.innerText ?? '').replace(/\s+/g, ' ').trim().length,
         })),
     )
 
@@ -49,5 +71,13 @@ for (const route of PAGES_WITH_DISCLOSURES) {
         200,
       )
     }
+
+    // And the reader's page is as they left it. Opening the disclosures is how
+    // this works in Firefox, so it has to put them back: it did not, because a
+    // print fires two signals and the second one wiped the record of what the
+    // first had opened.
+    await page.emulateMedia({ media: 'screen' })
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+    expect(await page.evaluate(openStates), 'printing left disclosures open').toEqual(openBefore)
   })
 }

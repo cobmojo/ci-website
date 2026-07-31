@@ -1343,6 +1343,44 @@ form and the video poster are identical everywhere. Firefox lacking
 nothing. WebKit not tabbing to links is Safari's own preference, not a site
 defect.
 
+### Gap sweep 14 (completed tree)
+
+Two angles over the tree at `ea67178`. The pattern recurred a ninth time, and
+this time it was in the print fix from one sweep earlier — along with both
+tests written to guard it.
+
+- **The print handler never closed what it opened.** A real print fires two
+  signals, `beforeprint` and the media-query change, and the component
+  subscribes to both on purpose because engines differ over which they send.
+  The open pass reassigned its record rather than adding to it, so the second
+  signal found everything already open, collected nothing, and replaced the
+  record with an empty one. Restoring then closed nothing. Measured through
+  Chromium's real print pipeline: a disclosure at 52px before, 4,073px after,
+  and every subsequent print left it that way. Its own docstring stated the
+  requirement it broke — "a reader who prints and carries on reading should
+  find the page as they left it". `/search/`'s filter panel was affected too:
+  a reader who collapsed it and printed found it open afterwards, permanently.
+- **The new print suite could not see it, by construction.** It drove only
+  `emulateMedia`, which dispatches no `beforeprint` — the one signal that
+  works in isolation — and never looked at the page again afterwards. It now
+  drives both signals and asserts the disclosures return to how it found them.
+  Confirmed failing against the reverted handler in Chromium and Firefox
+  before being accepted.
+- **Its content assertion could not fail either.** `textContent` reads the
+  whole subtree whether or not any of it is laid out, so a disclosure printing
+  29 characters of summary measured 4,848. Both pages cleared the threshold in
+  the broken state; only the height check was doing anything. It reads
+  `innerText` now, which measures 29 against 5,050. **The "5,612 characters"
+  quoted as evidence in the previous sweep's commit message was that same
+  inert number.**
+- **The poster href and a plain click disagreed again, after Back.** The href
+  derives from state written on mount and on each seek; the click reads the
+  address bar live. They agree only while history moves forward. Pressing Back
+  after a timestamp left the href pointing at the moment the reader had just
+  undone — the divergence the previous sweep closed, with the polarity
+  reversed. The offset resyncs on `popstate`, and the guard follows the reader
+  back rather than only forward.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

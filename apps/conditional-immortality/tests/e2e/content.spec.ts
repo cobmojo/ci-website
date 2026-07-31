@@ -577,10 +577,16 @@ test('the poster link goes where a click on it would go', async ({ page }) => {
   expect(requested).toBeTruthy()
 
   await timestamp.click()
-  await expect(page.locator('a.video-play')).toHaveAttribute(
-    'href',
-    new RegExp(`[?&]t=${requested}$`),
-  )
+  const poster = page.locator('a.video-play')
+  await expect(poster).toHaveAttribute('href', new RegExp(`[?&]t=${requested}$`))
+
+  // And after Back, which is an ordinary "undo that". The href comes from
+  // state and the click reads the address bar, so they agreed only while the
+  // history moved forward: Back left the href pointing at the moment the
+  // reader had just undone.
+  await page.goBack()
+  await expect(page).toHaveURL(/\/watch\/$/)
+  await expect(poster).not.toHaveAttribute('href', /[?&]t=\d/)
 })
 
 /**

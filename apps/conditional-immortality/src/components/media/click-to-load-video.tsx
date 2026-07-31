@@ -91,10 +91,22 @@ export function ClickToLoadVideo({
    * player that replaced the control.
    */
   useEffect(() => {
+    const sync = () =>
+      setOffset(startSeconds && startSeconds > 0 ? Math.floor(startSeconds) : startFromLocation())
+
     setScripted(true)
     // Read after hydration, so the route stays prerendered and the markup the
     // server sent still matches what the browser first renders.
-    setOffset(startSeconds && startSeconds > 0 ? Math.floor(startSeconds) : startFromLocation())
+    sync()
+
+    // And again on Back. The href comes from state and the click reads the
+    // address bar live, so they agree only while the history is moving
+    // forward: pressing Back after a timestamp left the href pointing at the
+    // moment the reader had just undone, while a plain click on the same
+    // element went where the URL now said. That is the divergence this href
+    // was rewritten to close, with the polarity reversed.
+    window.addEventListener('popstate', sync)
+    return () => window.removeEventListener('popstate', sync)
   }, [startSeconds])
 
   useEffect(() => {
