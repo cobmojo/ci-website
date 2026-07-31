@@ -30,8 +30,15 @@ test('a closed disclosure keeps its content on paper', async ({ page }) => {
   await page.goto(DISCLOSURE_ROUTE)
 
   const closed = page.locator('details:not([open])').first()
-  const count = await page.locator('details:not([open])').count()
-  test.skip(count === 0, 'this route has no closed disclosure to check')
+  /*
+   * Asserted, not skipped. A conditional skip here would turn "the page no
+   * longer has a disclosure" — which would mean the claim under test has
+   * quietly stopped applying — into a green run.
+   */
+  await expect(
+    page.locator('details:not([open])'),
+    'no closed disclosure on the page this test exists for',
+  ).not.toHaveCount(0)
 
   const hiddenText = await closed.evaluate(element => {
     const body = element.querySelector(':scope > *:not(summary)')
