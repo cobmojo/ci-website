@@ -1,10 +1,10 @@
 'use client'
 
 import { cn } from '@ci/ui'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
+import { Link } from '@/components/navigation/link'
 import { FOOTER_NAV, isActiveRoute, PRIMARY_NAV, WATCH_CTA } from '@/lib/navigation'
 
 /**

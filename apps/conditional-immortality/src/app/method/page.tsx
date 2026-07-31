@@ -7,13 +7,13 @@ import {
   reviewStatuses,
 } from '@ci/content-schema'
 import { Badge } from '@ci/ui'
-import Link from 'next/link'
 import {
   Breadcrumbs,
   type Crumb,
   OnThisPage,
   ReviewStatusBadge,
 } from '@/components/article/article-chrome'
+import { Link } from '@/components/navigation/link'
 import { RelatedPages } from '@/components/navigation/related-pages'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 

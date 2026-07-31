@@ -1,6 +1,6 @@
 import { MATCH_FIELD_LABELS, SEARCH_DOC_TYPE_LABELS, type SearchResult } from '@ci/search'
 import { Badge } from '@ci/ui'
-import Link from 'next/link'
+import { Link } from '@/components/navigation/link'
 import { HighlightedText, MarkedText } from '@/components/search/highlighted-text'
 
 /**

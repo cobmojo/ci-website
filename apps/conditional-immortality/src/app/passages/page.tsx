@@ -1,8 +1,8 @@
 import { passageRoute, passages } from '@ci/content/passages'
 import { PASSAGE_ROLE_LABELS, type PassageRecord } from '@ci/content-schema'
 import { Badge } from '@ci/ui'
-import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { Link } from '@/components/navigation/link'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 

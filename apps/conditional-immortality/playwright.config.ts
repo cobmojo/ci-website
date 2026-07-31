@@ -20,21 +20,94 @@ import { defineConfig, devices } from '@playwright/test'
  * no undocumented build step in front of it.
  */
 
-/** Deliberately not the 3210 `next dev` uses, or a dev server gets adopted. */
-const PORT = 3211
-const BASE_URL = `http://localhost:${PORT}`
+/**
+ * Where the suite points.
+ *
+ * `PLAYWRIGHT_BASE_URL` switches the whole run to an already-deployed origin: a
+ * preview deployment, a staging host, or a production server started by hand.
+ * Nothing is built and no local server is started, because there is nothing
+ * local to serve — see `test:preview` in `package.json`. Without it the suite
+ * serves its own production build on `PORT`.
+ */
+const DEPLOYED_BASE_URL = process.env.PLAYWRIGHT_BASE_URL?.trim().replace(/\/+$/, '') || ''
+const isDeployedRun = DEPLOYED_BASE_URL.length > 0
+
+/**
+ * Deliberately not the 3210 `next dev` uses, or a dev server gets adopted.
+ *
+ * Overridable because the port is the one piece of global state a run owns: two
+ * checkouts of this repository testing at once would otherwise collide on it,
+ * and the loser either fails to start or — worse, if the other server is still
+ * coming down — measures the wrong build.
+ */
+const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3211)
+const BASE_URL = isDeployedRun ? DEPLOYED_BASE_URL : `http://localhost:${PORT}`
 
 /**
  * The correction endpoint appends every submission to disk. Tests write to a
  * throwaway directory so a test run never leaves records inside the repository.
+ * Keyed by port for the same reason the port is overridable: two concurrent
+ * runs must not share a store, or one run's rate-limit state is the other's.
  */
-const FEEDBACK_STORE_DIR = path.join(os.tmpdir(), 'ci-playwright-feedback-store')
+const FEEDBACK_STORE_DIR = path.join(os.tmpdir(), `ci-playwright-feedback-store-${PORT}`)
 
 /** The accessibility spec belongs to the two accessibility projects. */
 const A11Y_SPEC = /a11y\.spec\.ts$/
 /** The geometry spec belongs to the three focused browser projects. */
 const GEOMETRY_SPEC = /text-geometry\.spec\.ts$/
+/** The served-build guard belongs to its own project, which every other one waits for. */
+const SETUP_SPEC = /served-build\.setup\.ts$/
+/** Screenshots belong to one project, on one engine, at one viewport. */
+const VISUAL_SPEC = /visual\.spec\.ts$/
+/**
+ * The cross-browser and deployed-preview set: origin-agnostic, reads nothing
+ * from `.next`, and asserts the flows an engine can actually differ on.
+ */
+const SMOKE_SPECS = [/smoke\.spec\.ts$/, /security-headers\.spec\.ts$/]
+/**
+ * Origin-level SEO assertions.
+ *
+ * Deliberately not in `SMOKE_SPECS`. This spec reads served HTML through
+ * Playwright's `request` fixture, which is a Node HTTP client and never starts
+ * a browser, so `firefox-smoke` and `webkit-smoke` could only re-fetch the same
+ * bytes and reach the same conclusion at the cost of two more sweeps of every
+ * route. One chromium project runs it locally, and the `preview` project runs
+ * it against a deployed origin, which is the case that actually differs:
+ * real TLS, real edge redirects, real headers.
+ */
+const SEO_SPEC = /seo\.spec\.ts$/
+/**
+ * Interaction latency, which is a measurement rather than an assertion about
+ * markup.
+ *
+ * Its own project, on one engine, because a timing that runs in two projects at
+ * once is two workers competing for the thread whose latency is under test.
+ */
+const INTERACTION_SPEC = /interaction\.spec\.ts$/
+/**
+ * Print, in every engine.
+ *
+ * The one guarantee where the engines genuinely disagree: Firefox declines
+ * `content-visibility` on `::details-content`, so the rule that opens
+ * collapsed disclosures on paper does nothing there. A Chromium-only run reads
+ * green while a Firefox reader prints two pages of empty boxes.
+ */
 const PRINT_SPEC = /print\.spec\.ts$/
+/** Everything that is neither focused nor origin-agnostic. */
+const FOCUSED_SPECS = [
+  A11Y_SPEC,
+  GEOMETRY_SPEC,
+  SETUP_SPEC,
+  VISUAL_SPEC,
+  INTERACTION_SPEC,
+  PRINT_SPEC,
+]
+
+/**
+ * Every project depends on this one, so no suite can report a result about a
+ * server that is not this build. See `tests/e2e/served-build.setup.ts`.
+ */
+const SERVED_BUILD_GUARD = ['served-build'] as const
 
 const DESKTOP_VIEWPORT = { width: 1440, height: 900 }
 const MOBILE_VIEWPORT = { width: 375, height: 812 }
@@ -68,17 +141,27 @@ export default defineConfig({
 
   projects: [
     {
+      name: 'served-build',
+      testMatch: SETUP_SPEC,
+      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
       name: 'chromium-desktop',
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, PRINT_SPEC],
+      dependencies: [...SERVED_BUILD_GUARD],
+      testIgnore: FOCUSED_SPECS,
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'chromium-mobile',
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, PRINT_SPEC],
+      dependencies: [...SERVED_BUILD_GUARD],
+      // `SEO_SPEC` too: it asserts over HTTP responses, which do not vary by
+      // viewport, so running it here would repeat the desktop project exactly.
+      testIgnore: [...FOCUSED_SPECS, SEO_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
     {
       name: 'accessibility',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: A11Y_SPEC,
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
@@ -87,6 +170,7 @@ export default defineConfig({
       // target sizes and the sheet navigation all differ below the desktop
       // breakpoints, so a desktop-only gate could pass a mobile regression.
       name: 'accessibility-mobile',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: A11Y_SPEC,
       use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
@@ -101,56 +185,158 @@ export default defineConfig({
      * is not described as Safari anywhere. Real Safari is validated by hand;
      * the procedure is in `docs/pretext-text-geometry.md`.
      */
-    /*
-     * Print, in every engine. The one guarantee where the engines genuinely
-     * disagree: Firefox declines `content-visibility` on `::details-content`,
-     * so the rule that opens collapsed disclosures on paper does nothing
-     * there. A Chromium-only run reads green while a Firefox reader prints
-     * two pages of empty boxes.
-     */
-    {
-      name: 'print-chromium',
-      testMatch: PRINT_SPEC,
-      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
-    },
-    {
-      name: 'print-firefox',
-      testMatch: PRINT_SPEC,
-      use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
-    },
-    {
-      name: 'print-webkit',
-      testMatch: PRINT_SPEC,
-      use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
-    },
     {
       name: 'geometry-chromium',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: GEOMETRY_SPEC,
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'geometry-firefox',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: GEOMETRY_SPEC,
       use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'geometry-webkit',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: GEOMETRY_SPEC,
       use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
     },
+    /*
+     * Cross-engine smoke.
+     *
+     * Firefox and WebKit run the origin-agnostic set rather than the whole
+     * suite. Duplicating four hundred tests across four engines would mostly
+     * re-prove things no engine can differ on — metadata, redirects, content —
+     * while the flows that *can* differ are layout, focus, dialog behaviour and
+     * whether the page renders at all, which is exactly what `smoke.spec.ts`
+     * and `security-headers.spec.ts` assert.
+     *
+     * `webkit-smoke` is Playwright's WebKit build. It is not Safari and is
+     * never described as Safari; the manual Safari procedure is in
+     * docs/pretext-text-geometry.md.
+     */
+    {
+      name: 'firefox-smoke',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: SMOKE_SPECS,
+      use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'webkit-smoke',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: SMOKE_SPECS,
+      use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
+    },
+    /*
+     * Visual regression, pinned hard: one engine, one viewport, one device
+     * scale factor, reduced motion, and a light colour scheme. Anything less
+     * fixed produces a baseline that differs between two runs on one machine,
+     * and a suite whose first reflex is `--update-snapshots` protects nothing.
+     */
+    {
+      name: 'visual',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: VISUAL_SPEC,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: DESKTOP_VIEWPORT,
+        deviceScaleFactor: 1,
+        colorScheme: 'light',
+        /*
+         * Under `contextOptions`, which is where Playwright 1.62 reads it.
+         * As a top-level `use` key it is accepted and silently ignored, and a
+         * screenshot taken mid-transition is a baseline that disagrees with
+         * itself. `tsconfig.tests.json` is what surfaced that: these specs
+         * were outside every tsconfig and had never been typechecked.
+         */
+        contextOptions: { reducedMotion: 'reduce' },
+      },
+    },
+    /*
+     * Print, in the three engines, because this is the one guarantee they
+     * disagree about. See `PRINT_SPEC` above.
+     */
+    {
+      name: 'print-chromium',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'print-firefox',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'print-webkit',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
+    },
+    /*
+     * Interaction latency: the thing a navigation-only Lighthouse audit cannot
+     * see. Chromium at the desktop viewport, and the spec sets a narrow one
+     * itself for the cases that only exist there.
+     */
+    {
+      name: 'interaction',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: INTERACTION_SPEC,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: DESKTOP_VIEWPORT,
+        hasTouch: true,
+      },
+    },
+    /*
+     * A deployed origin. Selected only when `PLAYWRIGHT_BASE_URL` is set, and
+     * it runs no local server: see `webServer` below.
+     */
+    {
+      name: 'preview',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: [...SMOKE_SPECS, SEO_SPEC],
+      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
+    },
   ],
 
-  webServer: {
-    // Serve only: both tasks declare `dependsOn: ["build"]`, so building here as
-    // well ran `next build` twice. Running playwright directly needs a build.
-    command: `bunx next start --port ${PORT}`,
-    url: BASE_URL,
-    // `next start` loads its manifest at boot, so a reused server would serve
-    // whatever was built when it started rather than the code under test.
-    reuseExistingServer: false,
-    timeout: 2 * 60 * 1000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env: { FEEDBACK_STORE_DIR },
-  },
+  /*
+   * A deployed run has nothing to serve. Starting `next start` anyway would
+   * build a second, local copy of the site and then not use it, and on a
+   * machine where the port is taken it would fail the run for a reason that
+   * has nothing to do with the deployment under test.
+   */
+  webServer: isDeployedRun
+    ? undefined
+    : {
+        // Serve only: both tasks declare `dependsOn: ["build"]`, so building
+        // here as well ran `next build` twice. Running playwright directly
+        // needs a build.
+        command: `bunx next start --port ${PORT}`,
+        url: BASE_URL,
+        // `next start` loads its manifest at boot, so a reused server would
+        // serve whatever was built when it started rather than the code under
+        // test.
+        reuseExistingServer: false,
+        timeout: 2 * 60 * 1000,
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: {
+          FEEDBACK_STORE_DIR,
+          /*
+           * `next start` is a production environment, and the feedback config
+           * refuses a filesystem store in production unless someone states
+           * that the directory outlives the process. Here it does: the store
+           * is a throwaway directory in the system temp folder, created
+           * before the run and untouched by anything the run does, which is
+           * exactly the assertion the flag asks for. Without it every test
+           * that submits a correction gets a truthful 503 — which is the new
+           * behaviour working, not a test to route around.
+           */
+          FEEDBACK_STORE_DURABLE: '1',
+        },
+      },
 })

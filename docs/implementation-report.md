@@ -204,13 +204,27 @@ deployment. The build characteristics that drive them are in place.
 
 ## Deployment
 
-Everything works with no environment variables set. Set `NEXT_PUBLIC_SITE_URL`
-before a production build so canonical URLs, the sitemap, Open Graph images and
-the printed QR code point at the real domain. `FEEDBACK_STORE_DIR` and
-`FEEDBACK_NOTIFY_EMAIL` are optional.
+A release build **requires** `NEXT_PUBLIC_SITE_URL`. It decides every canonical
+URL, every sitemap entry, every Open Graph URL and the printed QR code, and a
+build that does not name it fails rather than falling back to localhost. A
+local, test or CI build declares itself instead with
+`NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1`, which is what the `validate` chain and
+the browser suites set.
 
-The in-memory rate limiter is per-instance. A multi-instance deployment should
-replace `src/lib/rate-limit.ts` with a shared store.
+The correction form's store is also explicit: `FEEDBACK_STORE` chooses between a
+filesystem store, an HTTP store and an in-memory one, and the filesystem store
+in production additionally requires an operator to state that its directory
+outlives the process. A configuration that does not resolve answers 503 rather
+than accepting a submission and losing it.
+
+The full table, with what breaks when each variable is wrong, is in
+[`.env.example`](../.env.example) and [Launch runbook](launch-runbook.md).
+
+The in-memory rate limiter is per-instance, and its key is derived from the
+forwarding header the nearest trusted proxy wrote — `FEEDBACK_TRUSTED_PROXY_HOPS`
+says how many proxies that is. A multi-instance deployment gets a per-instance
+allowance rather than a global one; for this site's traffic that is a difference
+without a consequence, and it is recorded rather than hidden.
 
 ## Known limitations
 
@@ -220,11 +234,14 @@ replace `src/lib/rate-limit.ts` with a shared store.
    They are marked in the interface, not just in a document.
 3. S34 carries `revision-needed` until someone produces a heaven-versus-hell
    count with published methodology.
-4. External links are recorded with an access date but are not fetched by CI, so
-   link rot is not detected automatically. Archive URLs are recorded where they
-   exist and are not yet complete.
-5. No visual regression testing. The text-geometry suite is not one: it compares
-   predicted and actual line counts, and says nothing about appearance.
+4. External links are fetched by `bun run content:links:external`, monthly and
+   before a release, and deliberately not by CI: a gate that fails because
+   someone else's host is down teaches people to re-run it rather than read it.
+   Archive URLs are recorded where they exist and are not yet complete.
+5. Visual regression covers thirteen surfaces — the design system and the
+   high-value layouts — and not every content page. The text-geometry suite is
+   not visual regression: it compares predicted and actual line counts, and says
+   nothing about appearance.
 6. Firefox does not get fitted search excerpts. Pretext 0.0.8 measures through
    an `OffscreenCanvas`, which in Firefox does not resolve `@font-face`, so its
    predictions there are made in the wrong font. The runtime detects this and

@@ -1,6 +1,6 @@
 import { buttonVariants, cn } from '@ci/ui'
-import Link from 'next/link'
 import { Wordmark } from '@/components/brand/wordmark'
+import { Link } from '@/components/navigation/link'
 import { MobileNavigation } from '@/components/navigation/mobile-navigation'
 import { NavLinkItem } from '@/components/navigation/nav-link-item'
 import { SearchDialogTrigger } from '@/components/search/search-dialog'

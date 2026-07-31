@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "The build, validation and audit scripts, which belonged to no tsconfig and so were never typechecked. Eleven files that gate the build and read its output, held to the same strictness as everything else.",
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["bun"],
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["../apps/conditional-immortality/src/*"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}

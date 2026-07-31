@@ -236,7 +236,11 @@ export const SOURCE_RECORDS: readonly SourceRecord[] = [
     shortName: 'Rethinking Hell',
     perspective: 'CI',
     url: 'https://rethinkinghell.com/',
-    sourceDocumentUrl: 'http://rethinkinghell.com',
+    // The scheme the source document gave, upgraded to the one the host now
+    // answers on. Same host, same page, verified by the external link audit:
+    // the plain-http form 301s here anyway, so publishing it only sent a
+    // reader's first request out in clear.
+    sourceDocumentUrl: 'https://rethinkinghell.com/',
     accessedAt: '2026-07-29',
     linkStatus: 'live',
     rightsStatus: 'link-only',
@@ -586,11 +590,25 @@ export const SOURCE_RECORDS: readonly SourceRecord[] = [
     title: 'Short link and QR code for the original document',
     shortName: 'Short link',
     perspective: 'reference',
-    sourceDocumentUrl: 'https://tinyurl.com/ECTvsCI',
+    /*
+     * The short link itself is deliberately not recorded here.
+     *
+     * It was, and `/sources/` rendered it as a link, the downloadable
+     * bibliography printed it, and the search index carried it. It resolved in
+     * one hop to the shared working document — the same file
+     * `docs/rights-audit.md` withholds because it opens with a personal email
+     * address and phone number and carries thirty editorial comments by named
+     * third parties who did not consent to publication. Publishing the
+     * shortener published the document.
+     *
+     * The record stays, because the migration ledger references the link and
+     * the fact that it was retired is worth stating. Its destination is not
+     * something a reader needs, and is not this site's to give.
+     */
     accessedAt: '2026-07-29',
     linkStatus: 'not-checked',
     rightsStatus: 'link-only',
     citedBy: [],
-    note: 'Retired. It pointed at the shared working document rather than this site. The printable handout carries a newly generated QR code for the canonical site URL instead.',
+    note: 'Retired, and deliberately not reproduced here: it pointed at the shared working document rather than at this site. The printable handout carries a newly generated QR code for the canonical site URL instead.',
   },
 ]

@@ -5,7 +5,6 @@ import { getTopic, topicRoute, topics } from '@ci/content/topics'
 import type { CaseSection, SourceRecord, TopicRecord } from '@ci/content-schema'
 import { Callout } from '@ci/ui'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
   Breadcrumbs,
@@ -14,6 +13,7 @@ import {
   SectionLinkList,
   SourcesCited,
 } from '@/components/article/article-chrome'
+import { Link } from '@/components/navigation/link'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**

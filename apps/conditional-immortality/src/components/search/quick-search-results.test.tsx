@@ -1,5 +1,5 @@
 import type { SearchDoc, SearchResult } from '@ci/search'
-import { render, waitFor } from '@testing-library/react'
+import { act, render, waitFor } from '@testing-library/react'
 import { flushSync } from 'react-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
@@ -125,7 +125,26 @@ beforeEach(() => {
   process.on('unhandledRejection', collectUnhandled)
 })
 
-afterEach(() => {
+afterEach(async () => {
+  /*
+   * Drain React's scheduler before the environment goes away.
+   *
+   * The fitter applies its result inside `startTransition`, so the render is a
+   * scheduler task rather than a synchronous commit. A test that asserts and
+   * ends can leave one of those queued, and when vitest tears the jsdom
+   * environment down at the end of the file it runs against a deleted
+   * `window` — surfacing as an uncaught `ReferenceError` that belongs to no
+   * test and reproduces only under load. Seen once on a CI runner, never
+   * locally.
+   *
+   * This is not a failure being swallowed. The component's own cancellation
+   * already prevents an update after unmount; what is missing is somewhere for
+   * the *already legitimate* update to land. If a transition ever throws, it
+   * throws here, inside the test that scheduled it.
+   */
+  await act(async () => {
+    await new Promise(resolve => setTimeout(resolve, 0))
+  })
   process.off('unhandledRejection', collectUnhandled)
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
@@ -516,5 +535,106 @@ describe('the excerpt element itself', () => {
     expect(element?.getAttribute('data-pretext-state')).toBe('fallback')
     expect(element?.getAttribute('aria-label')).toBeNull()
     expect(element?.getAttribute('aria-hidden')).toBeNull()
+  })
+})
+
+describe('closing the dialog', () => {
+  /*
+   * The panel stays painted through its 150ms exit. Dropping the fitted map
+   * the moment `open` goes false would rewrite every excerpt back to its
+   * fallback text while the reader is still looking at it, so the words would
+   * change as the dialog leaves. A later open re-measures and replaces them
+   * anyway, so there is nothing to gain by clearing early.
+   */
+  it('leaves the fitted excerpts on screen while the panel fades out', async () => {
+    const results = [result('a'), result('b')]
+    const { container, rerender } = render(
+      <QuickSearchResults results={results} open onNavigate={() => {}} runtime={runtimeWith()} />,
+    )
+    await waitForFitted(container)
+    const fittedText = excerptElements(container)[0]?.textContent
+
+    await act(async () => {
+      rerender(
+        <QuickSearchResults
+          results={results}
+          open={false}
+          onNavigate={() => {}}
+          runtime={runtimeWith()}
+        />,
+      )
+    })
+
+    const element = excerptElements(container)[0]
+    expect(element?.dataset.pretextState, 'the excerpt reverted while the panel was visible').toBe(
+      'fitted',
+    )
+    expect(element?.textContent).toBe(fittedText)
+  })
+
+  /*
+   * The other half. Once the results themselves are gone there is nothing on
+   * screen to protect, and holding the map would keep a fit for a query that
+   * no longer exists.
+   */
+  it('drops the map once there are no results left to show', async () => {
+    const { container, rerender } = render(
+      <QuickSearchResults
+        results={[result('a')]}
+        open
+        onNavigate={() => {}}
+        runtime={runtimeWith()}
+      />,
+    )
+    await waitForFitted(container)
+
+    await act(async () => {
+      rerender(
+        <QuickSearchResults results={[]} open onNavigate={() => {}} runtime={runtimeWith()} />,
+      )
+    })
+    expect(excerptElements(container)).toHaveLength(0)
+  })
+
+  /*
+   * A re-fit that lands on the same text but a different highlight has to
+   * count as a change. `sameFits` compares the ranges pair by pair, and a
+   * comparison that stopped at the text would leave the mark in the wrong
+   * place with nothing to correct it.
+   */
+  it('re-renders when only the highlight moves', async () => {
+    const shifted = (start: number): Partial<SearchResult> => ({
+      excerptCandidate: {
+        text: CANDIDATE_TEXT,
+        matchRanges: [{ start, end: start + 3 }],
+        omittedBefore: false,
+        omittedAfter: false,
+        sourceField: 'body',
+      },
+    })
+    const { container, rerender } = render(
+      <QuickSearchResults
+        results={[result('shifting', shifted(CANDIDATE_TEXT.indexOf('eee')))]}
+        open
+        onNavigate={() => {}}
+        runtime={runtimeWith()}
+      />,
+    )
+    await waitForFitted(container)
+
+    await act(async () => {
+      rerender(
+        <QuickSearchResults
+          results={[result('shifting', shifted(CANDIDATE_TEXT.indexOf('fff')))]}
+          open
+          onNavigate={() => {}}
+          runtime={runtimeWith()}
+        />,
+      )
+    })
+    await waitForFitted(container)
+
+    const marked = excerptElements(container)[0]?.querySelector('mark')
+    expect(marked, 'the highlight disappeared entirely').toBeTruthy()
   })
 })

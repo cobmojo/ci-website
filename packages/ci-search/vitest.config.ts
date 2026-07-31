@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { coverage } from '../../vitest.coverage'
 
 export default defineConfig({
   resolve: {
@@ -12,6 +13,15 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    /*
+     * Normalisation, ranking and highlighting, where an off-by-one in a
+     * grapheme boundary is invisible until a reader sees a broken excerpt.
+     * Floors measured on this tree; see `vitest.coverage.ts` for the policy.
+     */
+    coverage: coverage({
+      include: ['src/**/*.ts'],
+      thresholds: { lines: 97, statements: 95, functions: 100, branches: 89 },
+    }),
     /*
      * Several suites here are corpus-scale rather than unit-scale: they build
      * the real search index from the content registries and replay thirty real

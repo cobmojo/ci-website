@@ -10,9 +10,9 @@ import {
   type SourceType,
 } from '@ci/content-schema'
 import { Badge } from '@ci/ui'
-import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
 import { NewTabLink } from '@/components/content/new-tab-link'
+import { Link } from '@/components/navigation/link'
 import { type FilterOption, SourceFilter } from '@/components/sources/source-filter'
 import { formatLongDate, pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'

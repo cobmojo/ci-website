@@ -1,8 +1,8 @@
 'use client'
 
 import { MATCH_FIELD_LABELS, SEARCH_DOC_TYPE_LABELS, type SearchResult } from '@ci/search'
-import Link from 'next/link'
 import { type MouseEvent, useRef } from 'react'
+import { Link } from '@/components/navigation/link'
 import { FittedSearchExcerpt } from '@/components/search/fitted-search-excerpt'
 import { HighlightedText } from '@/components/search/highlighted-text'
 import {

@@ -386,6 +386,55 @@ describe('rights metadata', () => {
       expect(source.sourceDocumentUrl ?? '').not.toMatch(/^(mailto|tel):/i)
     }
   })
+
+  /**
+   * A published citation must say where it goes.
+   *
+   * `/sources/` renders every one of these URLs as a link, the downloadable
+   * bibliography prints them, and the search index carries them, so a source
+   * URL is public by construction. A shortener or a shared-drive link hides its
+   * destination behind a redirect, which means the registry cannot be reviewed
+   * by reading it — and this is not hypothetical: `tinyurl.com/ECTvsCI` was
+   * published here and resolved, in one hop, to the private working document
+   * that `docs/rights-audit.md` withholds precisely because it opens with a
+   * personal email address and phone number and carries thirty unconsented
+   * third-party comments.
+   */
+  const OPAQUE_OR_PRIVATE_HOSTS = [
+    'tinyurl.com',
+    'bit.ly',
+    'goo.gl',
+    't.co',
+    'ow.ly',
+    'is.gd',
+    'buff.ly',
+    'rebrand.ly',
+    'docs.google.com',
+    'drive.google.com',
+    'dropbox.com',
+    '1drv.ms',
+    'onedrive.live.com',
+    'sharepoint.com',
+  ]
+
+  it('never publishes a shortened or shared-drive URL, which could resolve anywhere', () => {
+    for (const source of sources) {
+      for (const [field, value] of Object.entries({
+        url: source.url,
+        archiveUrl: source.archiveUrl,
+        sourceDocumentUrl: source.sourceDocumentUrl,
+      })) {
+        if (!value) continue
+        const host = new URL(value).hostname.replace(/^www\./, '')
+        for (const forbidden of OPAQUE_OR_PRIVATE_HOSTS) {
+          expect(
+            host === forbidden || host.endsWith(`.${forbidden}`),
+            `${source.id}.${field} points at ${host}, whose destination the registry cannot show`,
+          ).toBe(false)
+        }
+      }
+    }
+  })
 })
 
 /**

@@ -1,5 +1,4 @@
 import { Callout } from '@ci/ui'
-import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import type { ComponentPropsWithoutRef } from 'react'
 import rehypeSlug from 'rehype-slug'
@@ -14,6 +13,7 @@ import {
   Hebrew,
 } from '@/components/content/language'
 import { Scripture, TranslationNote } from '@/components/content/scripture'
+import { Link } from '@/components/navigation/link'
 import { rehypeDemoteHeadings } from '@/lib/rehype-demote-headings'
 import { rehypePrefixIds } from '@/lib/rehype-prefix-ids'
 import { rehypeScrollableTables } from '@/lib/rehype-scrollable-tables'

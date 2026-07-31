@@ -1,7 +1,7 @@
 import { getSection } from '@ci/content/case'
 import { REVISION_TYPE_LABELS, type RevisionRecord } from '@ci/content-schema'
 import { Badge } from '@ci/ui'
-import Link from 'next/link'
+import { Link } from '@/components/navigation/link'
 import { formatLongDate } from '@/lib/format'
 
 /**
