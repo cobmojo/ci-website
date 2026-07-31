@@ -35,7 +35,7 @@ const TESTED: readonly TestedItem[] = [
     id: 'dialogs',
     title: 'Focus management in dialogs',
     detail:
-      'The search panel and the narrow-screen navigation both use the native dialog element, so focus containment and the Escape key are handled by the browser rather than by hand-written key handlers. Both return focus to the control that opened them when they close, which browsers do not guarantee on their own. Both were checked by opening and closing them with the keyboard alone.',
+      'The search panel and the narrow-screen navigation both use the native dialog element, so focus containment is handled by the browser rather than by hand-written code. Escape closes both. In the search panel that takes one line of script, because a search field consumes the first Escape to clear itself, which would otherwise destroy the query and leave the panel open. Both return focus to the control that opened them when they close, which browsers do not guarantee on their own. Both were checked by opening and closing them with the keyboard alone.',
   },
   {
     id: 'headings',

@@ -35,6 +35,9 @@ export interface ClickToLoadVideoProps {
 
 const FALLBACK_TITLE = 'Video overview'
 
+/** Dispatched by a transcript timestamp; carries the offset in seconds. */
+export const VIDEO_SEEK_EVENT = 'ci:video-seek'
+
 export function ClickToLoadVideo({
   title,
   durationSeconds,
@@ -57,6 +60,33 @@ export function ClickToLoadVideo({
    */
   useEffect(() => {
     if (activated) iframeRef.current?.focus()
+  }, [activated])
+
+  /**
+   * Seek when a transcript timestamp is followed after the player is running.
+   *
+   * `start` is read once, when play is pressed. That was the whole story while
+   * the only way to reach a timestamp was before playing; in the order a reader
+   * actually uses the page — press play, watch, scroll down, click a timestamp
+   * — the iframe `src` came out byte-identical, so the video carried on exactly
+   * where it was while the page pulled the reader back up to the player. One
+   * control did two different things depending on invisible prior state, and
+   * failed silently in the commoner order.
+   *
+   * The event rather than the query string: `/watch/` is prerendered, and
+   * reading `?t=` here after hydration would make the whole route render on
+   * demand to serve a control that only exists once scripting has run.
+   */
+  useEffect(() => {
+    if (!activated) return
+    const onSeek = (event: Event) => {
+      const seconds = (event as CustomEvent<unknown>).detail
+      if (typeof seconds === 'number' && Number.isFinite(seconds) && seconds >= 0) {
+        setStart(Math.floor(seconds))
+      }
+    }
+    window.addEventListener(VIDEO_SEEK_EVENT, onSeek)
+    return () => window.removeEventListener(VIDEO_SEEK_EVENT, onSeek)
   }, [activated])
 
   /**

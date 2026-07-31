@@ -222,6 +222,21 @@ export function SearchDialogTrigger() {
               value={query}
               onChange={event => setQuery(event.target.value)}
               onFocus={prewarm}
+              /**
+               * Escape closes the dialog, as it does from anywhere else in it.
+               *
+               * A `type="search"` field consumes the first Escape to clear
+               * itself, so a reader who had typed something lost the query and
+               * kept the panel: two losses from one keypress, and a second
+               * press needed to leave. With the field empty it closed on the
+               * first press, so the control changed behaviour exactly when
+               * there was something to lose.
+               */
+              onKeyDown={event => {
+                if (event.key !== 'Escape') return
+                event.preventDefault()
+                closeDialog()
+              }}
               placeholder="Search passages, sections, topics, sources"
               autoComplete="off"
               aria-describedby={statusId}

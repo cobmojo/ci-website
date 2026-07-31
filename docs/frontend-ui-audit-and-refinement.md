@@ -1167,6 +1167,47 @@ viewports, all four no-JS redirect landings, the 429 retry, the transcript
 timestamps, video activation, the skip link, both dialogs — each landing clear
 of the sticky header.
 
+The second angle walked nine complete reader journeys in a browser rather than
+reading code, at both viewports and in both motion preferences, and found five
+things ten code-focused sweeps had not:
+
+- **Printing silently dropped the contents of every collapsed disclosure**,
+  while `/accessibility/` told the reader that "disclosures are opened so that
+  nothing is lost inside a collapsed section". The print block reverts
+  `display` on the children, and the browser's own stylesheet collapses
+  `::details-content`, which no rule on the children can reach. Measured, a
+  disclosure 49px tall on paper whose content is 3,902px, 4,848 characters and
+  four tables. The stylesheet carried a comment asserting this could not
+  happen and describing exactly what it would look like if it did. The
+  pseudo-element is overridden now, and a test prints the page and fails if a
+  disclosure carries only its summary.
+- **A transcript timestamp did nothing once the video was playing.** The start
+  offset is read when play is pressed, so in the order a reader actually uses
+  the page — press play, watch, scroll down, click a timestamp — the iframe
+  was rebuilt with a byte-identical source. The video carried on where it was
+  while the page pulled the reader back up to the player, and nothing said the
+  seek had not happened. One control did two different things depending on
+  invisible prior state, and failed silently in the commoner order.
+- **Filtering the Scripture index left forty-four book links pointing at
+  hidden sections.** Forty-three of them moved nothing, added a fragment to
+  the address bar, and said nothing about why.
+- **A filter matching nothing left two headings counting references that were
+  not there** — "Old Testament, 64 references" above an empty space.
+  `/search/` answers the same situation in prose; this one now does too.
+- **Escape in the search panel destroyed the query instead of closing the
+  panel.** A search field consumes the first Escape to clear itself, so a
+  reader who had typed something lost it and kept the panel, needing a second
+  press to leave — and the behaviour changed precisely when there was
+  something to lose. **This reverses a decision recorded in the test suite**,
+  that the clearing is the platform's affordance and the dialog should not
+  fight it. Driven as a reader uses it, the dismissal is worth more than the
+  clear, and it is what the ARIA authoring practices describe. The
+  accessibility statement says what the one line of script is for.
+
+The same sweep confirmed 2,715 fragment links across 120 routes with none
+broken, the full 38-page previous and next chain, all three search paths, and
+no console error on any journey.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

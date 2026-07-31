@@ -448,3 +448,80 @@ test.describe('the correction form without scripting', () => {
     await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')
   })
 })
+
+/* ------------------------------------------------------------------ *
+ * What the reader actually gets
+ * ------------------------------------------------------------------ */
+
+test('a collapsed disclosure prints its contents', async ({ page }) => {
+  // `/accessibility/` promises "disclosures are opened so that nothing is lost
+  // inside a collapsed section". The browser's own stylesheet puts
+  // `content-visibility: hidden` on `::details-content`, which no rule on the
+  // children can reach, so every closed disclosure printed as its summary and
+  // nothing else: a 49px box where the content is 3,902px and four tables.
+  await page.emulateMedia({ media: 'print' })
+  await page.goto('/case/biblical-language/body-and-soul/')
+
+  const printed = await page.evaluate(() =>
+    [...document.querySelectorAll('details')]
+      // The contents panel is `print:hidden` and correctly prints nothing.
+      .filter(details => details.getBoundingClientRect().height > 0)
+      .map(details => ({
+        open: details.open,
+        height: Math.round(details.getBoundingClientRect().height),
+        contentVisibility: getComputedStyle(details, '::details-content').contentVisibility,
+        characters: (details.textContent ?? '').replace(/\s+/g, ' ').trim().length,
+      })),
+  )
+
+  expect(printed.length).toBeGreaterThan(0)
+  for (const details of printed) {
+    expect(details.contentVisibility, 'a printed disclosure is still collapsed').not.toBe('hidden')
+    expect(details.characters, 'a printed disclosure carries only its summary').toBeGreaterThan(200)
+  }
+})
+
+test('a transcript timestamp seeks a video that is already playing', async ({ page }) => {
+  await page.goto('/watch/')
+  await page.getByRole('button', { name: /Press play/ }).click()
+
+  const player = page.locator('iframe.video-frame')
+  await expect(player).toBeVisible()
+  // Nothing in the src said where to start, because the reader had not asked
+  // for a timestamp yet.
+  await expect(player).not.toHaveAttribute('src', /start=/)
+
+  // Not the first: the opening chapter starts at zero, which appends nothing
+  // and would let this pass against a player that never seeks. The href
+  // carries the focus fragment too, so the exclusion has to allow for it.
+  await page.locator('a[href^="?t="]:not([href^="?t=0#"])').first().click()
+
+  // Without this the src came back byte-identical: the video carried on where
+  // it was while the page pulled the reader up to the player, and nothing said
+  // the seek had not happened.
+  await expect(player).toHaveAttribute('src', /[?&]start=\d+/)
+})
+
+test('filtering the Scripture index leaves nothing pointing at hidden sections', async ({
+  page,
+}) => {
+  await page.goto('/scripture/')
+
+  const jumpNav = page.locator('[data-book-jump]')
+  await expect(jumpNav).toBeVisible()
+
+  await page.getByLabel(/Reference contains/i).fill('matthew 10')
+
+  // Forty-four book links stayed clickable while forty-three of them pointed at
+  // `display: none` sections: the address bar gained a fragment and the page
+  // did not move, with nothing to say why.
+  await expect(jumpNav).toBeHidden()
+  await expect(page.locator('[data-book-group]:visible')).toHaveCount(1)
+  await expect(page.locator('[data-testament]:visible')).toHaveCount(1)
+
+  // And a filter matching nothing says so, rather than leaving two headings
+  // counting references that are not there.
+  await page.getByLabel(/Reference contains/i).fill('zzzqqq')
+  await expect(page.locator('[data-testament]:visible')).toHaveCount(0)
+  await expect(page.getByText(/Nothing in the index matches that/)).toBeVisible()
+})

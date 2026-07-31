@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Breadcrumbs, type Crumb, FeedbackCta } from '@/components/article/article-chrome'
 import { NewTabLink } from '@/components/content/new-tab-link'
 import { ClickToLoadVideo } from '@/components/media/click-to-load-video'
-import { FocusOnArrivalLink } from '@/components/navigation/focus-on-arrival-link'
+import { TranscriptTimestamp } from '@/components/media/transcript-timestamp'
 import { formatLongDate, formatTimestamp, isoDuration } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { absoluteUrl, siteConfig } from '@/lib/site-config'
@@ -177,9 +177,8 @@ export default function WatchPage() {
             {segments.map(segment => (
               <section key={segment.id} id={segment.id} className="mt-8">
                 <h3 className="mt-0 mb-2 text-[1.08rem]">
-                  <FocusOnArrivalLink
-                    href={`?t=${segment.start}`}
-                    focusId="video-player"
+                  <TranscriptTimestamp
+                    seconds={segment.start}
                     className="no-underline hover:underline"
                   >
                     <time
@@ -189,7 +188,7 @@ export default function WatchPage() {
                       {formatTimestamp(segment.start)}
                     </time>
                     {segment.title}
-                  </FocusOnArrivalLink>
+                  </TranscriptTimestamp>
                 </h3>
 
                 {segment.chapter?.visualDescription ? (

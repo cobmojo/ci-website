@@ -43,6 +43,7 @@ export function FocusOnArrivalLink({
   className,
   rel,
   children,
+  onNavigate,
 }: {
   href: string
   /** Element to focus once the navigation lands. It needs `tabIndex={-1}`. */
@@ -50,6 +51,12 @@ export function FocusOnArrivalLink({
   className?: string
   rel?: string
   children: ReactNode
+  /**
+   * Run when this link is actually followed in place, after the modified-click
+   * guard. For a destination that has to do something beyond existing — the
+   * video player, which must seek rather than merely be scrolled to.
+   */
+  onNavigate?: () => void
 }) {
   const onClick = useCallback(
     (event: MouseEvent<HTMLAnchorElement>) => {
@@ -61,8 +68,9 @@ export function FocusOnArrivalLink({
       // the second pass covers a subtree that re-rendered on the new params.
       focus()
       requestAnimationFrame(focus)
+      onNavigate?.()
     },
-    [focusId],
+    [focusId, onNavigate],
   )
 
   return (

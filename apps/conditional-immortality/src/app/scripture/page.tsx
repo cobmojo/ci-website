@@ -112,6 +112,7 @@ export default function ScriptureIndexPage() {
 
         <nav
           aria-labelledby="jump-to-book"
+          data-book-jump
           className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
         >
           <h2
@@ -146,6 +147,7 @@ export default function ScriptureIndexPage() {
           <section
             key={testament.key}
             id={testament.key}
+            data-testament
             aria-labelledby={`${testament.key}-title`}
             className="mt-12"
           >

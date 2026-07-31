@@ -1037,12 +1037,21 @@
   }
 
   /*
-   * Nothing collapses `::details-content`, so no pseudo-element override is
-   * needed here. If a disclosure animation is ever reinstated, it will need one:
-   * `display: revert` on the children above cannot reach a pseudo-element, so a
-   * collapsed `::details-content` would silently delete the content of every
-   * disclosure from the printed page.
+   * The pseudo-element the rule above cannot reach.
+   *
+   * This block used to assert that nothing collapses `::details-content`, and
+   * to describe precisely what would happen if something did. Something does:
+   * the browser's own stylesheet gives a closed disclosure
+   * `content-visibility: hidden` there, and `display: revert` on the children
+   * cannot touch a pseudo-element. So every collapsed disclosure printed as its
+   * summary and nothing else — measured, a `<details>` 49px tall on paper whose
+   * content is 3,902px and four tables — while `/accessibility/` told the
+   * reader that "disclosures are opened so that nothing is lost inside a
+   * collapsed section".
    */
+  details::details-content {
+    content-visibility: visible !important;
+  }
 
   .scripture-block {
     border-inline-start: 2pt solid #000;
