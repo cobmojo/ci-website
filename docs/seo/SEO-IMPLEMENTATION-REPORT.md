@@ -108,6 +108,36 @@ interactions from real users, and a Lighthouse or Playwright number would not be
 INP. The existing bundle-budget gate is unchanged and still passes; no SEO change
 added client JavaScript.
 
+## Final measured results
+
+Every number below is read off the CI run for the final commit, not from a
+local run and not from an earlier estimate.
+
+| Gate | Result |
+| --- | --- |
+| Vitest | **949 passed**, 39 files (`@ci/search` 336, app 497, `@ci/content` 65, `@ci/content-schema` 51) |
+| Playwright — end-to-end (`chromium-desktop`, `chromium-mobile`) | **381 passed** |
+| Playwright — accessibility (2 viewports, axe WCAG 2.0/2.1/2.2 AA) | **65 passed** |
+| Playwright — cross-browser smoke (Gecko, WebKit) | **45 passed** |
+| Playwright — text geometry (Chromium, Gecko, WebKit) | **70 passed** |
+| Playwright — visual regression | **14 passed** |
+| Prerendered pages / orphans | 121 / **0** |
+| Generated-file drift | none |
+
+Playwright total: **575**. Browser engines are Chromium, Gecko and Playwright's
+WebKit. WebKit is not Safari and is not described as Safari anywhere.
+
+### A note on local runs
+
+Two local runs went red and neither was a code defect. `bun run ci` drives all
+ten Playwright projects at a single `next start`, and on this Windows machine
+that process dies partway through: every failure in both runs was
+`ERR_CONNECTION_REFUSED` or its Gecko and WebKit equivalents, and everything
+before the death passed. Run the same suites the way CI does — separately — and
+they are green: geometry alone gives 70/70 locally, matching CI exactly, and a
+retries-disabled burn-in of the three tests that had looked flaky gave 181
+passed, 0 failed. No retry is hiding a real failure.
+
 ## Content integrity
 
 The only prose edited anywhere on the site is two sentences on `/privacy/`,
