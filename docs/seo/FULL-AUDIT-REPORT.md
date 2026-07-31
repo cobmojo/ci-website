@@ -339,6 +339,8 @@ did not exist before.
 | `meta keywords` | Absent, and now guarded. |
 | Framework error documents | `/_not-found/` answers **404** and `/_global-error/` answers **500**. Both are real entries in the route manifest and both are prerendered, and `_global-error.html` has no title — but neither is servable as a 200, so neither can become the title-less soft 404 that gets indexed and then sits in Search Console as an unexplained quality problem. Verified by request and now gated. |
 | 404 handling | An address that never existed answers a true 404, not a styled 200. |
+| External links | 188 catalogued and deliberately **not** fetched in pull-request CI. `.github/workflows/external-links.yml` fetches every one of them monthly and on demand, with `bun run content:links:external`. Keeping third-party servers out of the deterministic path is correct: a gate that fails because someone else's host is down teaches people to re-run it rather than read it. |
+| Redirect chains | An alias takes two permanent hops — `/annihilationism` → `/annihilationism/` → `/topics/annihilationism/` — because `trailingSlash: true` normalises before the alias table matches. Asserted deliberately in `smoke.spec.ts`. Removing the hop would mean `skipTrailingSlashRedirect` and hand-rolled normalisation, which is what the entire canonical contract rests on; two 308s on a hand-shared alias is well inside what crawlers follow. Considered and kept. |
 
 ---
 
@@ -383,6 +385,16 @@ human editorial authority. None is deferred code work.
    defect. It is written up as an owner decision, not implemented unilaterally.
 6. **Specialist theological review.** Sections carrying a review-pending label
    keep it. Nothing was relabelled to look more authoritative.
+
+## Stability
+
+The three tests that appeared flaky in a local all-projects run were re-run as a
+burn-in with **retries disabled**: 181 tests, 0 failures, 1.4 minutes. The
+original flakes — and 92 hard failures in the same run — were
+`net::ERR_CONNECTION_REFUSED`: the single `next start` process died partway
+through, because `bun run ci` drives all ten Playwright projects at one server.
+CI runs `validate`, `test:e2e` and `test:a11y` as separate steps and is green.
+No retry is hiding a real failure.
 
 ## What was deliberately not touched
 
