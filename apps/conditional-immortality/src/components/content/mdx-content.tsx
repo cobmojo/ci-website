@@ -14,6 +14,7 @@ import {
   Hebrew,
 } from '@/components/content/language'
 import { Scripture, TranslationNote } from '@/components/content/scripture'
+import { rehypeDemoteHeadings } from '@/lib/rehype-demote-headings'
 import { rehypePrefixIds } from '@/lib/rehype-prefix-ids'
 import { rehypeScrollableTables } from '@/lib/rehype-scrollable-tables'
 
@@ -65,8 +66,10 @@ function InternalOrExternalLink({ href, children, ...rest }: ComponentPropsWitho
 }
 
 const components = {
-  // No `group` class: `heading-anchor` keys off `:is(h2, h3):hover` directly,
-  // so the marker class is no longer load bearing.
+  // No `group` class: `heading-anchor` keys off `:is(h2, h3, h4):hover`
+  // directly, so the marker class is no longer load bearing. The `h4` entry
+  // exists for the continuous edition: authored headings stop at `###`, but
+  // demotion turns those into `h4`, and a demoted heading keeps its anchor.
   h2: ({ children, id, ...rest }: ComponentPropsWithoutRef<'h2'>) => (
     <h2 id={id} {...rest}>
       {children}
@@ -78,6 +81,12 @@ const components = {
       {children}
       <HeadingAnchor id={id} />
     </h3>
+  ),
+  h4: ({ children, id, ...rest }: ComponentPropsWithoutRef<'h4'>) => (
+    <h4 id={id} {...rest}>
+      {children}
+      <HeadingAnchor id={id} />
+    </h4>
   ),
   a: InternalOrExternalLink,
   Scripture,
@@ -93,6 +102,27 @@ const components = {
 }
 
 /**
+ * The rehype demotion step only reaches markdown headings: literal JSX stays
+ * an `mdxJsxFlowElement` in the tree and renders its heading at React time.
+ * So the components that render their own headings are demoted here, in the
+ * substitution map, and both mechanisms always move together.
+ */
+const DEMOTED_CALLOUT_LEVEL = { h2: 'h3', h3: 'h4', h4: 'h5', h5: 'h5', p: 'p' } as const
+
+const demotedComponents = {
+  ...components,
+  Callout: ({ as = 'h3', ...rest }: ComponentPropsWithoutRef<typeof Callout>) => (
+    <Callout {...rest} as={DEMOTED_CALLOUT_LEVEL[as]} />
+  ),
+  ECTReading: (props: ComponentPropsWithoutRef<typeof ECTReading>) => (
+    <ECTReading {...props} as="h5" />
+  ),
+  CIReading: (props: ComponentPropsWithoutRef<typeof CIReading>) => (
+    <CIReading {...props} as="h5" />
+  ),
+}
+
+/**
  * Render an MDX body.
  *
  * Compiled on the server at build time. The rendered output is plain HTML with
@@ -102,6 +132,7 @@ const components = {
 export function MdxContent({
   source,
   idPrefix,
+  demoteHeadings = false,
 }: {
   source: string
   /**
@@ -110,23 +141,29 @@ export function MdxContent({
    * sections deliberately reuse heading text.
    */
   idPrefix?: string
+  /**
+   * Push every heading in the body down one level. Needed only where the
+   * rendering page has already used the body's top level for its own section
+   * titles, as on the continuous edition.
+   */
+  demoteHeadings?: boolean
 }) {
+  // Unified calls a plugin with its options and uses the return value as the
+  // transformer, so options go in a tuple. Passing an already-applied factory
+  // hands it the transformer instead, which it then calls with no tree.
+  const rehypePlugins: NonNullable<
+    NonNullable<Parameters<typeof MDXRemote>[0]['options']>['mdxOptions']
+  >['rehypePlugins'] = [rehypeSlug, rehypeScrollableTables]
+  if (idPrefix) rehypePlugins.push([rehypePrefixIds, idPrefix])
+  if (demoteHeadings) rehypePlugins.push(rehypeDemoteHeadings)
+
   return (
     <MDXRemote
       source={source}
-      components={components}
+      components={demoteHeadings ? demotedComponents : components}
       options={{
         parseFrontmatter: false,
-        mdxOptions: {
-          remarkPlugins: [remarkGfm],
-          // Unified calls a plugin with its options and uses the return value
-          // as the transformer, so options go in a tuple. Passing an
-          // already-applied factory hands it the transformer instead, which it
-          // then calls with no tree.
-          rehypePlugins: idPrefix
-            ? [rehypeSlug, rehypeScrollableTables, [rehypePrefixIds, idPrefix]]
-            : [rehypeSlug, rehypeScrollableTables],
-        },
+        mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins },
       }}
     />
   )

@@ -27,8 +27,10 @@ export interface CalloutProps {
   /**
    * Heading level for the callout title. Callouts inside an article body must
    * not break the document outline, so this is explicit rather than assumed.
+   * `h5` exists for the continuous edition, which demotes every authored
+   * heading by one level.
    */
-  as?: 'h2' | 'h3' | 'h4' | 'p'
+  as?: 'h2' | 'h3' | 'h4' | 'h5' | 'p'
   id?: string
 }
 

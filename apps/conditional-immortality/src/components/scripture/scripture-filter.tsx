@@ -94,7 +94,7 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
             id={bookFieldId}
             value={book}
             onChange={event => setBook(event.target.value)}
-            className="min-h-11 w-full max-w-[16rem] rounded-md border border-border bg-paper px-3 font-sans text-[0.95rem] text-ink"
+            className="min-h-11 w-full max-w-[16rem] rounded-md border border-border bg-paper px-3 font-sans text-[1rem] text-ink"
           >
             <option value="">Every book</option>
             {books.map(name => (
@@ -119,7 +119,7 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
             onChange={event => setQuery(event.target.value)}
             autoComplete="off"
             placeholder="For example, Matthew 10"
-            className="min-h-11 w-full max-w-[18rem] rounded-md border border-border bg-paper px-3 font-sans text-[0.95rem] text-ink"
+            className="min-h-11 w-full max-w-[18rem] rounded-md border border-border bg-paper px-3 font-sans text-[1rem] text-ink"
           />
         </div>
 
@@ -135,7 +135,10 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
         </button>
       </div>
 
-      <p aria-live="polite" className="m-0 mt-3 font-sans text-[0.88rem] text-ink-subtle">
+      <p
+        aria-live="polite"
+        className="m-0 mt-3 font-sans text-[0.88rem] text-ink-subtle tabular-nums"
+      >
         {active
           ? `Showing ${shown} of ${total} references.`
           : `Showing all ${total} references. Filtering only hides rows; nothing is removed from the page.`}

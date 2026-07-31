@@ -257,14 +257,21 @@ test('nothing is requested from YouTube until the reader presses play', async ({
   expect(contacted).toEqual([])
   await expect(page.locator('iframe')).toHaveCount(0)
 
-  const play = page.getByRole('button', { name: /play the .*overview video/i })
+  const play = page.getByRole('button', { name: /press play to load it from youtube/i })
   await expect(play).toBeVisible()
+  // Label in name: the poster shows the video's title, so the accessible name
+  // must carry it too, or a speech-input user reading the title aloud cannot
+  // address the control.
+  await expect(play).toHaveAccessibleName(/video overview/i)
   await play.click()
 
   const frame = page.locator('iframe')
   await expect(frame).toHaveCount(1)
   await expect(frame).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//)
   await expect(frame).toHaveAttribute('title', /.+/)
+  // The control the reader pressed no longer exists; the player that replaced
+  // it takes its focus rather than dropping the reader at the document body.
+  await expect(frame).toBeFocused()
 })
 
 test('video chapters can be reached and activated from the keyboard', async ({ page }) => {
@@ -361,6 +368,25 @@ test('a visitor can submit a correction for S04', async ({ page }, testInfo) => 
   await expect(form.getByLabel('Your correction, counterargument or report')).toHaveValue('')
 })
 
+test('an invalid submission moves focus to the field that needs fixing', async ({ page }) => {
+  await page.goto('/corrections/#form')
+
+  const form = page.locator('form#form')
+  await expect(form).toBeVisible()
+
+  const message = form.getByLabel('Your correction, counterargument or report')
+  await message.fill('Too short.')
+  await form.getByRole('button', { name: 'Send submission' }).click()
+
+  // Focus lands on the first invalid control, whose accessible description
+  // carries the error, so the failure is announced without a live region.
+  await expect(message).toBeFocused()
+  await expect(message).toHaveAttribute('aria-invalid', 'true')
+  await expect(form.getByText(/at least a sentence or two/)).toBeVisible()
+  // The reader's text is never thrown away on failure.
+  await expect(message).toHaveValue('Too short.')
+})
+
 /* ------------------------------------------------------------------ *
  * 12. Moving through the case
  * ------------------------------------------------------------------ */
@@ -419,6 +445,12 @@ test.describe('narrow viewport navigation', () => {
 
     await expect(dialog.getByRole('link', { name: /The Case/ }).first()).toBeVisible()
 
+    // The sheet marks where the reader is, exactly as the desktop nav does:
+    // this page lives under The Case, so that entry carries aria-current.
+    const current = dialog.locator('[aria-current="page"]')
+    await expect(current.first()).toBeVisible()
+    await expect(current.first()).toContainText('The Case')
+
     await page.keyboard.press('Escape')
 
     await expect(dialog).toBeHidden()
@@ -431,15 +463,18 @@ test('closing the search dialog returns focus to its trigger', async ({ page }) 
   await page.goto('/')
 
   const trigger = page.getByRole('link', { name: 'Search', exact: true })
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
   await trigger.click()
 
   const dialog = page.getByRole('dialog', { name: 'Search this site' })
   await expect(dialog).toBeVisible()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
   await expect(dialog.getByRole('searchbox', { name: 'Search terms' })).toBeFocused()
 
   await dialog.getByRole('button', { name: 'Close search' }).click()
   await expect(dialog).toBeHidden()
   await expect(trigger).toBeFocused()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
   // Escape has to do the same thing, since that is what a keyboard reader
   // reaches for first.
@@ -448,6 +483,26 @@ test('closing the search dialog returns focus to its trigger', async ({ page }) 
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
   await expect(trigger).toBeFocused()
+})
+
+test('the keyboard shortcut opens the search dialog and closes it again', async ({ page }) => {
+  await page.goto('/')
+
+  // The shortcut handler exists only after hydration, and `aria-expanded`
+  // appears on the trigger at the same moment, so waiting for it keeps the
+  // keypress from racing the handler's registration.
+  const trigger = page.getByRole('link', { name: 'Search', exact: true })
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await page.keyboard.press('Control+k')
+  await expect(dialog).toBeVisible()
+  // The dialog focuses its own text field on open, and the shortcut must
+  // still close it from there: a toggle that only works with focus somewhere
+  // else is not a toggle.
+  await expect(dialog.getByRole('searchbox', { name: 'Search terms' })).toBeFocused()
+  await page.keyboard.press('Control+k')
+  await expect(dialog).toBeHidden()
 })
 
 /* ------------------------------------------------------------------ *

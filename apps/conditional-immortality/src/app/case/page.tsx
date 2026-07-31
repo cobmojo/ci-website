@@ -7,6 +7,7 @@ import {
 } from '@ci/content/case'
 import type { CaseGroup, CaseSection } from '@ci/content-schema'
 import { buttonVariants } from '@ci/ui'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   Breadcrumbs,
@@ -36,7 +37,7 @@ const CRUMBS: readonly Crumb[] = [
   { href: '/case/', label: 'The Case' },
 ]
 
-export const metadata = pageMetadata({
+export const metadata: Metadata = pageMetadata({
   title: 'The Case',
   description:
     'A map of the cumulative biblical case for conditional immortality: the method, the six principal claims, a twelve page essential path, and all forty parts grouped by the work they do.',
@@ -286,7 +287,7 @@ export default function CaseHubPage() {
                     <p className="m-0 text-[0.98rem] text-ink-muted">{section.shortSummary}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <EvidenceRoleBadge section={section} />
-                      <ReviewStatusBadge section={section} />
+                      <ReviewStatusBadge status={section.reviewStatus} />
                     </div>
                     <p className="m-0 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-sans text-[0.82rem] text-ink-subtle">
                       <span>Approximately {readingMinutesFor(section)} minutes</span>

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { FeedbackSubmissionInputSchema } from '@ci/content-schema'
+import { type FeedbackFieldError, FeedbackSubmissionInputSchema } from '@ci/content-schema'
 import { clientAddress, rateLimit } from '@/lib/rate-limit'
 import { siteConfig } from '@/lib/site-config'
 
@@ -221,17 +221,11 @@ export async function POST(request: Request): Promise<Response> {
   if (!result.success) {
     if (!wantsJson) return redirect(FAILURE_REDIRECT)
     // Field paths and schema messages only. No submitted value is echoed back.
-    return json(
-      {
-        ok: false,
-        error: 'invalid',
-        fieldErrors: result.error.issues.map(issue => ({
-          field: issue.path.join('.') || 'form',
-          message: issue.message,
-        })),
-      },
-      400,
-    )
+    const fieldErrors: FeedbackFieldError[] = result.error.issues.map(issue => ({
+      field: issue.path.join('.') || 'form',
+      message: issue.message,
+    }))
+    return json({ ok: false, error: 'invalid', fieldErrors }, 400)
   }
 
   const value = result.data

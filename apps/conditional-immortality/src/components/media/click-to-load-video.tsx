@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { formatTimestamp } from '@/lib/format'
 import { siteConfig } from '@/lib/site-config'
 
@@ -40,13 +41,20 @@ export function ClickToLoadVideo({
 }: ClickToLoadVideoProps) {
   const [activated, setActivated] = useState(false)
   const [start, setStart] = useState(0)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const minutes = durationSeconds ? Math.floor(durationSeconds / 60) : null
-  const playLabel = minutes
-    ? `Play the ${minutes} minute overview video`
-    : 'Play the overview video'
   const frameTitle = title ?? FALLBACK_TITLE
   const watchUrl = siteConfig.video.watchUrl
+
+  /**
+   * Pressing play unmounts the button the reader just activated. Without a
+   * new home, keyboard and screen-reader focus falls back to the document
+   * body and the reader's place on the page is lost, so focus moves to the
+   * player that replaced the control.
+   */
+  useEffect(() => {
+    if (activated) iframeRef.current?.focus()
+  }, [activated])
 
   /**
    * Chapter links on the watch page are plain `?t=` links, so a reader who
@@ -74,6 +82,7 @@ export function ClickToLoadVideo({
       <div className="video-embed relative aspect-video w-full overflow-hidden rounded-md border border-border bg-panel print:hidden">
         {activated ? (
           <iframe
+            ref={iframeRef}
             src={source}
             title={frameTitle}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
@@ -86,7 +95,10 @@ export function ClickToLoadVideo({
         ) : (
           <button
             type="button"
-            aria-label={playLabel}
+            // No aria-label: the visible poster text, including the video's
+            // title and "Press play to load it from YouTube", is the
+            // accessible name, so what a speech-input user reads aloud is
+            // what the control answers to (WCAG 2.5.3).
             onClick={() => {
               setStart(resolveStart())
               setActivated(true)
@@ -128,9 +140,7 @@ export function ClickToLoadVideo({
       <p className="mt-3 mb-0 font-sans text-[0.86rem] leading-snug text-ink-muted">
         This video is loaded from YouTube only when you choose to play it. Nothing is requested from
         YouTube before then, and the privacy-enhanced player is used when it is.{' '}
-        <a href={watchUrl} rel="noopener noreferrer" target="_blank">
-          Watch it on YouTube directly: {watchUrl}
-        </a>
+        <NewTabLink href={watchUrl}>Watch it on YouTube directly: {watchUrl}</NewTabLink>
       </p>
     </div>
   )

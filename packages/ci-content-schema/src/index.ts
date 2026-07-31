@@ -356,11 +356,11 @@ export type RightsStatus = z.infer<typeof RightsStatusSchema>
 
 export const RIGHTS_STATUS_LABELS: Record<RightsStatus, string> = {
   'public-domain': 'Public domain',
-  cleared: 'Cleared',
-  'permission-needed': 'Permission needed',
-  'quoted-briefly': 'Quoted briefly',
-  paraphrased: 'Paraphrased',
-  'link-only': 'Linked, not quoted',
+  cleared: 'Cleared for use',
+  'permission-needed': 'Permission needed before quoting',
+  'quoted-briefly': 'Quoted briefly with attribution',
+  paraphrased: 'Paraphrased rather than quoted',
+  'link-only': 'Linked rather than quoted',
 }
 
 export const RIGHTS_STATUS_DEFINITIONS: Record<RightsStatus, string> = {
@@ -378,11 +378,11 @@ export const LinkStatusSchema = z.enum(linkStatuses)
 export type LinkStatus = z.infer<typeof LinkStatusSchema>
 
 export const LINK_STATUS_LABELS: Record<LinkStatus, string> = {
-  live: 'Live',
-  redirected: 'Redirects',
-  'archived-only': 'Archived copy only',
-  dead: 'Dead link',
-  'not-checked': 'Not checked',
+  live: 'Link checked and live',
+  redirected: 'Link redirects to a new location',
+  'archived-only': 'Available through an archive only',
+  dead: 'Link no longer resolves',
+  'not-checked': 'Link not checked',
 }
 
 /** Shown where a source record leaves `perspective` unset. */
@@ -547,7 +547,19 @@ export const FeedbackSubmissionInputSchema = z
       .trim()
       .min(20, 'Please give us at least a sentence or two so we can act on it.')
       .max(8000, 'Please keep submissions under 8000 characters.'),
-    sourceUrl: z.union([z.string().url(), z.literal('')]).optional(),
+    sourceUrl: z
+      .union([
+        // Web addresses only. The form's client-side validator refuses any
+        // other scheme, and this schema is documented as its mirror; without
+        // the protocol constraint a no-JS submission could store a
+        // `javascript:` URL.
+        z.url({
+          protocol: /^https?$/,
+          error: 'Please give a web address beginning with http:// or https://.',
+        }),
+        z.literal(''),
+      ])
+      .optional(),
     name: z.string().trim().max(120).optional(),
     email: z.union([z.email(), z.literal('')]).optional(),
     publicationConsent: PublicationConsentSchema,

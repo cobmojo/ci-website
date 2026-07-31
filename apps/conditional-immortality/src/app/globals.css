@@ -447,7 +447,7 @@
   .status-message,
   .mount-reveal,
   .video-frame {
-    animation: reveal-fade var(--motion-reveal) ease;
+    animation: reveal-fade var(--motion-reveal) var(--ease-out-quad);
   }
 
   /*
@@ -473,10 +473,26 @@
       opacity: 0;
     }
 
-    :is(h2, h3):hover > .heading-anchor,
+    /* h4 appears only on the continuous edition, where demotion turns an
+       authored h3 into one; a demoted heading keeps its anchor. */
+    :is(h2, h3, h4):hover > .heading-anchor,
     .heading-anchor:focus-visible {
       opacity: 1;
     }
+  }
+
+  /*
+   * Disclosure summaries.
+   *
+   * The padding gives the summary itself a hit area at or above the 44px
+   * floor, and the negative margin hands the space back to the layout, so
+   * the rendered geometry is unchanged. One class, because the trick is easy
+   * to get subtly wrong and every disclosure on the site should share it.
+   */
+  .summary-hit-area {
+    cursor: pointer;
+    margin-block: -0.75rem;
+    padding-block: 0.75rem;
   }
 
   /* Long-form article typography. Applied to rendered MDX bodies. */
@@ -650,8 +666,9 @@
     --search-excerpt-lines: 2;
     --search-excerpt-line-height: 1.375;
 
-    /* `display` is set with the clamp below, which needs -webkit-box. */
-    font-family: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
+    /* `display` is set with the clamp below, which needs -webkit-box.
+       The token resolves to the exact stack Pretext measures. */
+    font-family: var(--font-serif);
     font-style: normal;
     font-weight: 400;
     font-size: 0.9rem;
@@ -722,7 +739,7 @@
    */
   .quick-search-excerpt mark {
     padding: 0;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     background: var(--color-ochre-soft);
     color: var(--color-ink);
     font-weight: inherit;
@@ -852,6 +869,11 @@
     }
 
     .video-play:active .video-play__glyph {
+      /* Tier 2 presses share one clock and one curve. The hover growth above
+         keeps the Tier 1 feedback timing; the press itself takes the press
+         token and the press curve, exactly as `.pressable` does. */
+      transition-duration: var(--motion-press);
+      transition-timing-function: var(--ease-out-quad);
       scale: 0.97;
     }
 

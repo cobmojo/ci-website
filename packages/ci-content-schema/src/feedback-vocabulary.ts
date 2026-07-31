@@ -38,6 +38,18 @@ export const publicationConsents = ['do-not-publish', 'anonymous', 'publish-name
 
 export type PublicationConsent = (typeof publicationConsents)[number]
 
+/**
+ * One rejected field in a 400 response from `POST /api/feedback/`.
+ *
+ * The server builds this from its Zod issues and the form renders it in the
+ * failure status message. Declared here, in the dependency-free vocabulary
+ * both sides already import, so the wire shape cannot drift between them.
+ */
+export interface FeedbackFieldError {
+  readonly field: string
+  readonly message: string
+}
+
 export const feedbackStatuses = [
   'new',
   'reviewing',

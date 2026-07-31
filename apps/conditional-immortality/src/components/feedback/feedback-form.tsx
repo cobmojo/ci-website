@@ -6,6 +6,7 @@
 // 369,610 bytes of it, for a form that works with scripting switched off.
 import {
   FEEDBACK_TYPE_LABELS,
+  type FeedbackFieldError,
   type FeedbackType,
   feedbackTypes,
   type PublicationConsent,
@@ -65,6 +66,26 @@ const CONSENT_OPTIONS: readonly ConsentOption[] = [
 
 const MESSAGE_MIN = 20
 const MESSAGE_MAX = 8000
+
+/**
+ * The visible label for every field, keyed by wire name.
+ *
+ * One map serves both the rendered labels and the server-error report, so a
+ * server-side validation failure names each rejected field with exactly the
+ * words the reader sees above it.
+ */
+const FIELD_LABELS = {
+  type: 'What kind of feedback is this?',
+  message: 'Your correction, counterargument or report',
+  sourceUrl: 'Source web address',
+  name: 'Your name',
+  email: 'Your email',
+  publicationConsent: 'If this leads to a change, what may be published?',
+} as const
+
+function fieldLabel(field: string): string {
+  return field in FIELD_LABELS ? FIELD_LABELS[field as keyof typeof FIELD_LABELS] : 'Form'
+}
 
 /**
  * The trailing slash is load bearing. `trailingSlash: true` answers a POST to
@@ -258,8 +279,28 @@ function FeedbackFormFields({
         }
 
         if (response.status === 400) {
+          // The server names each rejected field. Surfacing its report is the
+          // only honest option here: a 400 from a scripted submit means the
+          // client-side validators disagreed with the server, so "check the
+          // fields marked below" would point at fields nothing has marked.
+          let report = ''
+          try {
+            const data = (await response.json()) as {
+              fieldErrors?: readonly FeedbackFieldError[]
+            }
+            if (Array.isArray(data.fieldErrors) && data.fieldErrors.length > 0) {
+              report = data.fieldErrors
+                .map(entry => `${fieldLabel(entry.field)}: ${entry.message}`)
+                .join(' ')
+            }
+          } catch {
+            // A 400 without a readable body still gets the generic sentence.
+          }
           setStatus('invalid')
-          setDetail('The server could not accept those values. Check the fields marked below.')
+          setDetail(
+            report ||
+              'The server could not accept those values. Check that the message is at least twenty characters and that any web address is complete, then send it again.',
+          )
           return
         }
 
@@ -324,7 +365,18 @@ function FeedbackFormFields({
           // browser performs the native POST above.
           event.preventDefault()
           event.stopPropagation()
-          void form.handleSubmit()
+          const formElement = event.currentTarget
+          void form.handleSubmit().then(() => {
+            // If validation stopped the submit, move focus to the first
+            // rejected control. Its label, description and error are all in
+            // its accessible description, so landing there is what announces
+            // the failure; without this, pressing Send with an invalid form
+            // does nothing a screen reader can hear.
+            requestAnimationFrame(() => {
+              const invalid = formElement.querySelector<HTMLElement>('[aria-invalid="true"]')
+              invalid?.focus()
+            })
+          })
         }}
         className="space-y-6"
       >
@@ -361,7 +413,7 @@ function FeedbackFormFields({
                 htmlFor={ids.type}
                 className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
               >
-                What kind of feedback is this?
+                {FIELD_LABELS.type}
               </label>
               <select
                 id={ids.type}
@@ -398,7 +450,7 @@ function FeedbackFormFields({
                   htmlFor={ids.message}
                   className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
                 >
-                  Your correction, counterargument or report
+                  {FIELD_LABELS.message}
                 </label>
                 <p
                   id={ids.messageHint}
@@ -453,7 +505,7 @@ function FeedbackFormFields({
                   htmlFor={ids.sourceUrl}
                   className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
                 >
-                  Source web address <span className="text-ink-subtle">(optional)</span>
+                  {FIELD_LABELS.sourceUrl} <span className="text-ink-subtle">(optional)</span>
                 </label>
                 <p
                   id={ids.sourceUrlHint}
@@ -507,7 +559,7 @@ function FeedbackFormFields({
                     htmlFor={ids.name}
                     className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
                   >
-                    Your name <span className="text-ink-subtle">(optional)</span>
+                    {FIELD_LABELS.name} <span className="text-ink-subtle">(optional)</span>
                   </label>
                   <p
                     id={ids.nameHint}
@@ -558,7 +610,7 @@ function FeedbackFormFields({
                     htmlFor={ids.email}
                     className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
                   >
-                    Your email <span className="text-ink-subtle">(optional)</span>
+                    {FIELD_LABELS.email} <span className="text-ink-subtle">(optional)</span>
                   </label>
                   <p
                     id={ids.emailHint}
@@ -596,7 +648,7 @@ function FeedbackFormFields({
           {field => (
             <fieldset className="m-0 rounded-md border border-border p-4">
               <legend className="px-1 font-sans text-[0.95rem] font-medium text-ink">
-                If this leads to a change, what may be published?
+                {FIELD_LABELS.publicationConsent}
               </legend>
               <div className="mt-2 space-y-3">
                 {CONSENT_OPTIONS.map(option => {

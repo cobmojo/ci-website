@@ -60,7 +60,7 @@ export default function ObjectionsIndexPage() {
                 id={section.id}
                 className="rounded-md border border-border bg-paper-raised p-5"
               >
-                <h3 className="mt-0 mb-2 text-[1.14rem] leading-snug">
+                <h3 className="mt-0 mb-2 text-[1.1rem] leading-snug">
                   <Link href={section.route} className="font-sans">
                     {section.question ?? section.title}
                   </Link>
@@ -68,7 +68,7 @@ export default function ObjectionsIndexPage() {
                 <p className="m-0 text-[1.02rem] text-ink-muted">{section.shortSummary}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <EvidenceRoleBadge section={section} />
-                  <ReviewStatusBadge section={section} />
+                  <ReviewStatusBadge status={section.reviewStatus} />
                 </div>
                 <p className="m-0 mt-3 font-sans text-[0.88rem]">
                   <Link href={section.route}>

@@ -87,8 +87,9 @@ unknown reference fails the build. Do not work around this by typing the verse.
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-1,154 tests: 765 unit, 288 end-to-end across desktop and mobile, 32
-accessibility, and 69 text-geometry across Chromium, Firefox and WebKit.
+1,249 tests: 808 unit, 308 end-to-end across desktop and mobile, 64
+accessibility across desktop and mobile viewports, and 69 text-geometry
+across Chromium, Firefox and WebKit.
 They run on every push; see `.github/workflows/ci.yml`.
 
 ## Conventions

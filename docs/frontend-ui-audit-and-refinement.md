@@ -1,0 +1,552 @@
+# Frontend, UX and UI audit and refinement
+
+One complete audit of the rendered site against its own design contracts, followed
+in the same pass by the implementation of every finding that survived the evidence
+gate. This is a refinement of the existing site, **not a redesign**: the warm-paper
+editorial identity, the information architecture, the permanent section
+identifiers and the entire motion system of `docs/motion-brief.md` are preserved
+exactly as they stand.
+
+## 1. Executive summary
+
+**What was audited.** All 129 static pages across every route family, the shared
+component layer (`packages/ui` and `src/components`), the global stylesheet and
+design tokens, both native dialogs, the correction form, search in both surfaces,
+the two index filters, the video and transcript surfaces, print output, and the
+no-JavaScript behaviour of every interactive control. Inspection combined full
+source reads of every component and route file with rendered inspection of the
+production build in a browser.
+
+**Current strengths.** This site is in unusually good shape, because it has
+already survived three audits: PR #2 closed a twelve-finding codebase audit and
+added four CI gates, PR #3 unified every hand-rolled button surface onto shared
+`buttonVariants`, and PR #4 built and tested the five-tier motion system. The
+token discipline is real (two radius tokens, five motion tokens, semantic colours
+throughout), the accessibility floor is high (axe-clean on 15 routes plus both
+open dialogs, one `h1` per page, named landmarks, focus restoration on both
+dialogs), and the reading experience is the point of the design rather than a
+casualty of it.
+
+**Main opportunities.** What remains is drift at the edges, most of it in the
+places the three earlier PRs did not reach: one hand-rolled header CTA that
+escaped PR #3, ARIA state and focus management gaps in two client components,
+sub-16px mobile field text in the index filters, a server-error path in the
+correction form that drops the field detail the server provides, and a handful of
+single-instance inconsistencies (an untokenised radius, a press duration on the
+wrong motion token, a dead package export, dead component state). Every accepted
+finding is a correction toward a contract the repository itself already states.
+
+**The motion system is preserved.** No tier changes, no new animation, no
+reinstated exclusions. The only motion changes in this pass move two existing
+declarations onto the tokens the brief already assigns them: the video-glyph
+press onto the Tier 2 duration and curve, and the shared `reveal-fade` arrival
+onto the Tier 3 curve. Both are conformance, not redesign, and both are now
+held by the motion contract test.
+
+**Baseline verification.** At the base commit, `CI=1 bun run validate` passes
+completely (formatting, lint, typecheck, content validation, content audit, docs
+check, 281 unit tests, production build, PII scan, link check, bundle budget),
+and the end-to-end and accessibility suites pass (see section 10 for counts).
+
+## 2. Repository state
+
+| Item | Value |
+|---|---|
+| Base branch | `main` |
+| Base commit | `b05b7ce` (Merge pull request #4) |
+| Working branch | `claude/ci-site-audit-refinement-9ce21d` (worktree) |
+| PR #1 | MERGED. Unit tests for the app's pure lib modules |
+| PR #2 | MERGED. Codebase audit closed: 12 findings, 4 new gates, 123 → 455 tests |
+| PR #3 | MERGED. Hand-rolled button surfaces moved onto shared `buttonVariants` |
+| PR #4 | MERGED. The motion system: five tiers, two variants, tested |
+| Motion base | PR #4 is fully contained in `main`; no branch surgery was needed |
+| Bun | 1.3.14 |
+| Node (Playwright host) | 24.11.1 |
+| Next.js | 16.2.12 (App Router, static generation) |
+| React | 19.2.8 |
+| Tailwind CSS | 4.3.3 |
+| TypeScript | 5.9.3 |
+| Biome | 2.5.6 |
+| Playwright | 1.62.0 (Chromium desktop 1440×900, Chromium mobile 375×812) |
+| Platform | Windows 11 Pro, `core.autocrlf=input` |
+
+PR ancestry was confirmed with `gh pr list --state all` and
+`git log --oneline --decorate --graph`: all four PRs are merged and `main` is
+their union. This audit branch was created from `main` at `b05b7ce`.
+
+## 3. Sources consulted
+
+**Repository documentation** (all read in full): `README.md`,
+`docs/authoring-brief.md`, `docs/routing-brief.md`, `docs/motion-brief.md`
+(binding), `docs/maintenance-guide.md`, `docs/implementation-report.md`,
+`docs/content-migration-report.md`, `docs/source-verification-report.md`,
+`docs/rights-audit.md`, `.github/workflows/ci.yml`, `playwright.config.ts`,
+`biome.json`, `turbo.json`, every `package.json`, the five content-audit scripts
+under `scripts/conditional-immortality/`, `src/app/globals.css`, all of
+`packages/ui/src`, every component under `src/components`, every route under
+`src/app`, and the five end-to-end spec files.
+
+**Pull requests**: #1, #2, #3, #4 inspected via `gh pr list`/`git log`; PR #4's
+motion work and its review fix-ups (`27aafb5`) read in the history.
+
+**External skills** (retrieved 2026-07-30 from their main branches):
+
+- shadcn official skill (`shadcn-ui/ui` → `skills/shadcn/SKILL.md`)
+- shadcn `/improve` (`shadcn/improve` → `skills/improve/SKILL.md`)
+- UI Skills (`ibelick/ui-skills`): `improve-ui`, `baseline-ui`,
+  `fixing-accessibility`, `fixing-motion-performance`
+- Anthropic frontend-design skill (`anthropics/skills`)
+- Vercel Web Interface Guidelines (`vercel-labs/web-interface-guidelines`)
+
+**Normative sources**: WCAG 2.2 (AA as the hard requirement; 2.5.3 Label in
+Name, 2.5.8 Target Size Minimum, 2.4.3 Focus Order, 1.4.4/1.4.10 zoom and
+reflow), WAI-ARIA Authoring Practices for dialog and disclosure patterns,
+Core Web Vitals thresholds (LCP ≤ 2.5 s, INP ≤ 200 ms field, CLS ≤ 0.1), and
+the Next.js 16 / Tailwind 4 documentation for the installed versions.
+
+Where an external skill conflicts with a repository decision, the repository
+wins. Conflicts encountered and refused are recorded in section 7.
+
+## 4. Existing design language
+
+Reconstructed from tokens, components and rendered output before any change was
+considered.
+
+**Audience and purpose.** Readers investigating conditional immortality:
+skeptical evangelicals, people worried about one passage, people who want the
+whole case. The product is a reference work; the main reader tasks are reading
+long arguments in full, looking up a passage or term, comparing interpretations,
+watching the overview, and submitting corrections.
+
+**Personality.** A professionally edited theological reference book: calm,
+warm, precise, unhurried. The interface recedes; the argument carries the page.
+
+**Palette** (all in `@theme`, `globals.css:91-137`; raw hex is forbidden in
+components): warm paper `#f7f4ed` ground, raised cream `#fffdf8` surfaces, quiet
+panels `#eee9df`/`#e4ddd0`, deep ink text `#1c242b` with muted `#4c5763` and
+subtle `#57606d` steps (both AA-clear on every surface they sit on), navy
+headings `#233a4d`/`#16283a`, copper accents `#9a6431`/`#7d4f22` for links and
+identity, restrained borders `#d4ccbe`/`#bdb3a1`, ochre caution pair, affirm
+green pair, deny red pair. Meaning is never colour-alone; every status carries a
+text label and usually a glyph.
+
+**Type.** Source Serif 4 (self-hosted, subset, `font-display: swap`) for body
+prose at 1.1875rem/1.68; Inter for headings, navigation, controls, labels and
+metadata. Headings are Inter 600 with slight negative tracking and
+`text-wrap: balance`; body paragraphs get `text-wrap: pretty`. Prose links are
+underlined, offset 0.16em, thickness 0.06em rising to 0.11em on hover.
+
+**Scale and layout.** Page container `max-w-[80rem] px-4 sm:px-6`; reading
+measure `--spacing-measure: 42rem` with a `min(42rem, 39em)` cap on supporting
+prose inside full-width containers (`measure-prose`); article template is a
+three-column grid at `xl` (chapter rail 14rem, article, page rail 13.5rem),
+two-column at `lg`, single below. Radii are two tokens only (0.25rem, 0.375rem).
+Shadows are absent; hierarchy is done with borders and surface steps.
+
+**Components.** `packages/ui` owns `Button`/`buttonVariants` (six variants,
+`min-h-11` floor, `pressable`), `Badge` (six tones, glyph optional and
+decorative), `Callout` (six tones with text glyph so print survives greyscale),
+and `cn()`. The app owns the article chrome (breadcrumbs, header, on-this-page,
+previous/next, feedback CTA), chapter navigation (list + `<details>`
+disclosure), MDX rendering with `rehype-slug`, scrollable-table and id-prefix
+plugins, Scripture/Greek/Hebrew/Cite/Compare content components, two native
+`<dialog>` overlays, the correction form (TanStack Form, progressive
+enhancement), click-to-load video, reading progress, and two
+progressive-enhancement index filters.
+
+**Motion.** Five tiers per `docs/motion-brief.md`, all durations tokenised
+(130/100/200/150/180 ms), two easing tokens, everything that moves inside
+`prefers-reduced-motion: no-preference`, reduced variants keep meaning
+(crossfades), enforced by a source-level contract test, a component test and a
+browser-level sweep. Tier 0 (all content) is never animated.
+
+**Ownership map** (who owns what a change must go through):
+
+| Concern | Owner |
+|---|---|
+| Body/heading typography, tokens, motion, print | `src/app/globals.css` |
+| Button surfaces | `packages/ui/src/button.tsx` (`buttonVariants`) |
+| Badges, callouts | `packages/ui/src/badge.tsx`, `callout.tsx` |
+| Article shell | `src/components/article/section-page.tsx` |
+| Breadcrumbs, article header, on-this-page, prev/next, feedback CTA | `src/components/article/article-chrome.tsx` |
+| Chapter rail and narrow-screen contents | `src/components/article/chapter-navigation.tsx` |
+| Header, primary nav, current-page state | `site-header.tsx`, `nav-link-item.tsx` |
+| Mobile sheet | `mobile-navigation.tsx` |
+| Search dialog and page results | `search-dialog.tsx`, `search-results.tsx`, `app/search/page.tsx` |
+| Index filters | `scripture-filter.tsx`, `source-filter.tsx` |
+| Correction form | `feedback-form.tsx` (+ `app/api/feedback/route.ts`) |
+| MDX content and article components | `mdx-content.tsx`, `scripture.tsx`, `language.tsx`, `cite.tsx` |
+| Video | `click-to-load-video.tsx` |
+| Nav model | `src/lib/navigation.ts` |
+
+## 5. Route and surface coverage
+
+129 static pages, generated from the App Router files below. Every unique
+template was inspected in the rendered production build; the representative set
+covered at minimum one instance of every template plus the outliers named in the
+matrix.
+
+| Route family | Routes | Template / owners | Primary reader task |
+|---|---|---|---|
+| Homepage | `/` | bespoke orientation page; `buttonVariants`, `ClickToLoadVideo` | orient, choose an entry point |
+| Start Here | `/start/` + 3 children | article-style pages; compare table on `/start/compare-the-views/` | first contact with the argument |
+| Case hub | `/case/` | section inventory with essential path, `ReadingProgress` | choose and track sections |
+| Case sections | 40 pages under `/case/…`, `/objections/…`, `/appendix/…` | `SectionPage` → `ArticleHeader`, chapter rail, `OnThisPage`, `MdxContent`, sources, revisions, prev/next, `FeedbackCta` | deep reading |
+| Objections hub | `/objections/` | index of objection sections | find a specific objection |
+| Passages | `/passages/` + 18 detail pages | passage template: Scripture block, ECT reading, CI reading, agreements, disagreement | study one passage |
+| Scripture index | `/scripture/` | 208-entry filterable table (`ScriptureFilter`) | find every use of a text |
+| Topics | `/topics/` + 27 detail | topic template with distinctions | understand a term |
+| Glossary | `/glossary/` | 20-term list with jump list | quick definition |
+| Sources | `/sources/` | 33-source filterable library (`SourceFilter`) | inspect the evidence base |
+| Watch | `/watch/` | video + 279-cue transcript with chapters | watch, follow along |
+| Full case | `/full-case/` | continuous edition, id-prefixed bodies | read everything, print |
+| Method/About | `/method/`, `/about/` | article-style | assess credibility |
+| Corrections | `/corrections/` | `FeedbackForm` | submit a correction |
+| Changelog | `/changelog/` + 13 per-section | revision lists | see what changed |
+| Original document | `/original-document/`, `/download/` | provenance and download cards | verify the source |
+| Search | `/search/` (noindex) | server-rendered form + client results | find anything |
+| Meta | `/accessibility/`, `/privacy/`, 404 | article-style | policy, recovery |
+| Handlers | `/search-index.json`, `/download/*.txt|html`, `/og`, sitemap, robots, `POST /api/feedback` | route handlers | n/a |
+
+Global surfaces audited on every template: sticky header (60px, blur), skip
+link, desktop nav with `aria-current`, mobile sheet, search trigger and dialog,
+footer (4 groups), focus treatment (3px copper), print output.
+
+## 6. Findings
+
+Every finding below passed the evidence gate: a stated contract, runtime or
+source proof with exact locations, one deterministic correction, and a real
+user impact. Findings are grouped by root owner. Priorities: P1 = defect a
+reader can hit, P2 = verified inconsistency or gap with real impact, P3 =
+high-confidence, low-risk polish.
+
+| ID | Pri | Surface | Problem | Contract | Evidence | Root owner | Correction | Reach | Motion tier | Risk |
+|---|---|---|---|---|---|---|---|---|---|---|
+| F1 | P2 | Button `size="sm"` | `min-h-9` (36px) contradicts the variant's own 44px doc comment; sole consumer overrides it back | button.tsx:8-9 vs :33 | reading-progress.tsx:120 re-adds `min-h-11` | `packages/ui/src/button.tsx` | `sm` floor becomes `min-h-11`; drop the override | shared | n/a | low |
+| F2 | P3 | `@ci/ui` package | The `./styles.css` export maps to a `src` file that does not exist | exports must resolve | the mapped file is absent from the package | `packages/ui/package.json` | remove the dead export | shared | n/a | low |
+| F3 | P2 | Video play glyph press | Tier 2 press runs at `--motion-feedback` (130ms) instead of `--motion-press` (100ms); the site's two press confirmations run on different clocks | motion brief Tier 2 | globals.css:731-745 vs :648-658 | `globals.css` | `:active` override at `--motion-press` | shared | Tier 2 | low |
+| F4 | P3 | `reveal-fade` easing | Tier 3 arrival uses keyword `ease` where the brief assigns `--ease-out-quad`; sibling `status-in` uses the token | motion brief Tier 3 | globals.css:450 vs :722-726 | `globals.css` | use `var(--ease-out-quad)` | shared | Tier 3 | low |
+| F5 | P1 | Header Watch CTA | Hand-rolled near-copy of `copperSoft` (border /40 vs /45) and the only header control under 44px (measured 41.6px vs 44px sibling) | PR #3 buttonVariants contract; 44px floor | site-header.tsx:44; runtime measure | `site-header.tsx` | compose from `buttonVariants({variant:'copperSoft'})` keeping compact text | header, all pages | Tier 1+2 | low |
+| F6 | P2 | Mobile nav sheet | Never marks the current page; desktop nav does (`aria-current` + panel fill) | same surface, same state | mobile-navigation.tsx:110-158 vs nav-link-item.tsx:26-33 | `mobile-navigation.tsx` | `aria-current="page"` + active style on matching links | all pages < xl | n/a | low |
+| F7 | P2 | Search dialog trigger | No `aria-expanded` while the sibling menu trigger has it; the `open` state's only read is dead code `{open ? null : null}` | ARIA disclosure pattern; sibling parity | search-dialog.tsx:83-93, :235 | `search-dialog.tsx` | wire `aria-expanded={open}`, delete dead expression | all pages | n/a | low |
+| F8 | P3 | Landmark names | `aria-label="Primary navigation"` / `"Footer navigation"` repeat the role; sheet dialog names itself by `aria-label` while its visible h2 goes unreferenced | APG: do not repeat role; dialog naming parity | site-header.tsx:30, site-footer.tsx:10, mobile-navigation.tsx:76+92 | three files | labels "Primary"/"Footer"; sheet `aria-labelledby` its h2 | all pages | n/a | low |
+| F9 | P3 | Dialog close buttons | Sheet close carries dead `text-[0.88rem]` on an icon-only button; glyph sizes differ 18 vs 16 | sibling parity | mobile-navigation.tsx:96-106 vs search-dialog.tsx:139-149 | both dialogs | drop dead class, one glyph size (18) | overlays | Tier 2 kept | low |
+| F10 | P3 | Sheet secondary links | ~41px targets under the primary links' ~47px | 44px floor for button-shaped rows | mobile-navigation.tsx:151 | `mobile-navigation.tsx` | `py-2` → `py-2.5` | sheet | n/a | low |
+| F11 | P3 | Footer nav links | Same `FOOTER_NAV` data renders underlined in the footer, `no-underline` in the sheet; every other nav list is `no-underline` with a hover cue | one treatment per nav-list family | site-footer.tsx:22 vs mobile-navigation.tsx:151 | `site-footer.tsx` | `no-underline hover:underline` | footer, all pages | Tier 1 | low |
+| F12 | P3 | Watch CTA copy | Label/description hardcoded in header and sheet against navigation.ts's single-source claim | navigation.ts:4-5 | site-header.tsx:42-47, mobile-navigation.tsx:127-137 | `navigation.ts` | export `WATCH_CTA`, consume in both | header+sheet | n/a | low |
+| F13 | P2 | Search dialog panel | `rounded-lg` (0.5rem) is the only radius outside the two-token scale in the app | token discipline | search-dialog.tsx:117; grep 1 hit | `search-dialog.tsx` | `rounded-md` | dialog | n/a | low |
+| F14 | P3 | Search dialog input | `border-border` where the form-field family uses `border-border-strong` | one field recipe | search-dialog.tsx:134 vs search/page.tsx:136, feedback-form fields | `search-dialog.tsx` | `border-border-strong` | dialog | n/a | low |
+| F15 | P2 | Index filter fields | 0.95rem (15.2px) fields zoom the viewport on iOS focus; book select also drops `text-ink` | 16px mobile input floor; field family | scripture-filter, source-filter, search/page.tsx:206; measured 15.2px | three files | `text-[1rem] text-ink` | all index/search | n/a | low |
+| F16 | P3 | Ctrl/Cmd+K | Text-field guard runs before the open-dialog branch, so the documented toggle never fires from the dialog's own input | the handler's own doc (search-dialog.tsx:58-62) | search-dialog.tsx:63-74 | `search-dialog.tsx` | check `dialogRef.current?.open` first | global shortcut | n/a | low |
+| F17 | P3 | Search dialog input | `statusId` live region minted but never referenced | complete the evident wiring | search-dialog.tsx:23,154 | `search-dialog.tsx` | `aria-describedby={statusId}` on the input | dialog | n/a | low |
+| F18 | P3 | Dialog footer link | "Full search page" is a bare ~22px control in a bar of 44px controls | 44px floor for standalone controls | search-dialog.tsx:225-230 | `search-dialog.tsx` | `inline-flex min-h-11 items-center` | dialog | n/a | low |
+| F19 | P3 | Search page filters | Checkbox label sizes differ within one form (0.9 vs 0.88rem); "More filters" summary is the only regular-weight summary and a ~25px target | internal consistency; 44px disclosure floor | search/page.tsx:152 vs :180, :168 | `search/page.tsx` | 0.9rem both; summary `font-medium` + padded hit area | /search/ | n/a | low |
+| F20 | P3 | Live counters | Filter status lines and dialog count lack `tabular-nums`, so digits reflow as counts change per keystroke | no-layout-shift on changing numbers | scripture-filter, source-filter status; search-dialog footer | three files | add `tabular-nums` | indexes+dialog | Tier 0 (no motion) | low |
+| F21 | P2 | Correction form errors | Client-side validation failure announces nothing and moves focus nowhere; server 400 discards the `fieldErrors` the API returns while claiming "fields marked below" | WCAG 2.4.3/3.3.1; honest status copy | feedback-form.tsx:260-264, 322-328; route.ts fieldErrors | `feedback-form.tsx` | focus first invalid control after failed submit; render server field errors in the status message | /corrections/ | Tier 3 kept | med |
+| F22 | P2 | sourceUrl validation | Server schema accepts any URL scheme while the client "mirror" allows only http/https; a no-JS submission can store a `javascript:` URL | validators declared mirrors (feedback-form.tsx:78-79) | schema index.ts:550 vs feedback-form.tsx:94-106 | `ci-content-schema` | server schema requires http/https | API | n/a | low |
+| F23 | P2 | Video activation | Play button unmounts on click with no focus management; keyboard/SR focus drops to body | WCAG 2.4.3 | click-to-load-video.tsx:75-125 | `click-to-load-video.tsx` | focus the iframe on activation | video surfaces | n/a | low |
+| F24 | P2 | Play button name | `aria-label` replaces visible text; the video title is absent from the accessible name (WCAG 2.5.3) | label-in-name | click-to-load-video.tsx:44-48, :89 vs :108-123 | `click-to-load-video.tsx` | drop `aria-label`; visible content is the name | video surfaces | n/a | low |
+| F25 | P2 | New-tab links | Seven hand-written `target="_blank"` links across four routes lack the site's sr-only "opens in a new tab" note | site's own convention (section-page.tsx:113) | section-page.tsx:79-85; sources ×3; watch ×2; full-case ×1 | four files | add the sr-only note | four routes | n/a | low |
+| F26 | P1 | 404 page | Says the case has "thirty-nine parts"; every other surface says 37; root cause is hand-duplicated nav copy | one navigation model; factual copy | not-found.tsx:34 vs navigation.ts:17 | `not-found.tsx` | correct to thirty-seven + registry guard test | 404 | n/a | low |
+| F27 | P2 | /start part count | "The full case runs to 40 parts" contradicts the 37-part framing used by home, nav and the hub | one orientation story | start/page.tsx:171-175 vs case/page.tsx:93-95 | `start/page.tsx` | mirror the hub's "37 parts plus preface and appendices" framing | /start/ | n/a | low |
+| F28 | P2 | Corrections count | Renders `{n} changes are recorded` without `pluralise`, so n=1 reads wrongly; both changelog pages use the helper | sibling parity | corrections/page.tsx:130 vs changelog pages | `corrections/page.tsx` | use `pluralise` | /corrections/ | n/a | low |
+| F29 | P2 | Revision entry card | Triplicated ~60-line card across corrections + two changelog routes, already drifted (h3 1.08 vs h2 1.12) | shared-owner rule; proven drift | corrections:138-211, changelog:147, changelog/[id]:108 | new `revision-entry.tsx` | extract shared component with heading-level prop | three routes | n/a | med |
+| F30 | P2 | Sources label maps | Page re-declares `RIGHTS_STATUS_LABELS`/`LINK_STATUS_LABELS` under a comment claiming the schema has none; schema exports both and wordings have diverged | single source of truth; false comment | sources/page.tsx:39-58 vs schema index.ts:357-389 | schema + `sources/page.tsx` | move the page's reader-facing wording into the schema maps and import them | /sources/ | n/a | low |
+| F31 | P2 | Method contents nav | Hand-rolls the shared OnThisPage markup with drifted link size (0.9 vs 0.85rem) | shared-owner rule | method/page.tsx:76-80 vs article-chrome.tsx:174 | `method/page.tsx` | reuse `OnThisPage` | /method/ | n/a | low |
+| F32 | P3 | Review-status badge | The tone/glyph decision is re-implemented in glossary and method | shared-owner rule | glossary:51-62, method:319-330 vs article-chrome:66-79 | `article-chrome.tsx` | badge accepts a bare status; both consume | three routes | n/a | low |
+| F33 | P3 | Section link list | Byte-identical section-list markup in topics detail and passages detail | shared-owner rule | topics/[slug]:52-65 vs passages/[slug]:217-228 | shared component | extract once, consume twice | two templates | n/a | low |
+| F34 | P3 | Sources-cited list | Same citation ol in three templates with heading drift (1.18 vs 1.2rem) | shared-owner rule | section-page:96-124, passages:256-281, topics:210-235 | shared component | extract `SourcesCited` | three templates | n/a | med |
+| F35 | P3 | Related-pages nav | Identical footer nav block hand-copied in 8 routes | shared-owner rule | 8 files, identical class strings | shared component | extract `RelatedPages` | 8 routes | n/a | low |
+| F36 | P2 | OnThisPage at xl | The template's stated keyboard-first ordering is false at xl: the only visible TOC sits after the article in source order | the component's own doc (section-page.tsx:26-30) | section-page.tsx:52,175; no order classes | `section-page.tsx` | move sidebar TOC before the article with explicit grid placement | 40 article pages | n/a | med |
+| F37 | P3 | Disclosure summaries | Three summary styles (0.95/0.92/0.9rem, mixed weight) and ~25px hit areas | one disclosure recipe; 44px floor | language.tsx:98, chapter-navigation.tsx:63, search:168 | three files | shared padding/weight recipe, ≥44px hit area | articles+search | n/a | low |
+| F38 | P3 | Interpretation panels | Agreements/disagreement panels break the site's soft-surface pairing (`bg-affirm-soft` with plain `border-border`) | Badge/Callout tone pairing | passages/[slug]:151,166 vs callout.tsx:14-19 | passage template | `border-affirm/30`, `border-ochre/40` | 18 passage pages | n/a | low |
+| F39 | P3 | Index cards | Same-role card titles at 1.14/1.1/1.1/1.08rem; changelog card alone uses p-3 | same-role consistency | objections:63, passages:114, topics:62, sources:165, changelog:103 | four files | title 1.1rem; p-4 | index family | n/a | low |
+| F40 | P3 | Panel headings | Card-panel h2 sizes drift (1.08/1.12/1.18) against a 1.12 modal value; border-t reference h2s drift 1.2 vs 1.18 | same-role consistency | section-page:70, watch:116, passages:213-258 | three files | panels 1.12rem; reference sections 1.18rem | article family | n/a | low |
+| F41 | P3 | Small-caps labels | RelatedSections column labels 0.8rem vs the 0.78rem recipe used by every sibling | one label recipe | section-page:205,221 vs article-chrome:165 | `section-page.tsx` | 0.78rem | articles | n/a | low |
+| F42 | P3 | Scroll wrappers | Hand-rolled wrappers on original-document drop `overscroll-x-contain`; rehype table wrapper announces `role="region"` against ScrollRegion's documented `role="group"` decision | scroll-region.tsx:13-16 | original-document:163,328,396; rehype-scrollable-tables.ts:92 | two files | add the class; align the role | tables sitewide | n/a | low |
+| F43 | P2 | Full-case outline | Section titles and their own body headings are both h2, flattening the 54k-word document's outline | heading hierarchy | full-case:137-149; MDX bodies start `##` | new rehype step | demote body headings one level on the continuous edition | /full-case/ | n/a | med |
+| F44 | P3 | Accessibility/print claims | The 44px claim overstates (checkboxes, dense TOCs); the print claim says search controls are removed but /search/'s form and pagination print | honest policy copy | accessibility:160-164, :79; search/page.tsx | two files | narrow the claim to button-shaped controls; `print:hidden` the search form and pagination | policy + /search/ | n/a | low |
+| F45 | P3 | Objections description | Metadata hard-codes "Seven" against a data-driven listing | data-driven copy | objections/page.tsx:25-26 | `objections/page.tsx` | interpolate the registry count | /objections/ | n/a | low |
+| F46 | P3 | Case-map comment | Claims print parity but the diagram is `hidden lg:block`, absent at A4 print width | honest comments | case-map:16-20 vs :215 | `case-map/page.tsx` | correct the comment (the list alternative is what prints) | source only | n/a | low |
+| F47 | P3 | Case hub metadata | Only audited route without the `Metadata` type annotation | sibling parity | case/page.tsx:39 | `case/page.tsx` | annotate | source only | n/a | low |
+| F48 | P3 | Privacy `code` | Forced `font-sans` on one code element; sibling keeps monospace | element consistency | privacy:144 vs original-document:158 | `privacy/page.tsx` | drop the override | /privacy/ | n/a | low |
+| F49 | P3 | Watch column | Sole 54rem content column against the sitewide 52rem | one utility-column width | watch:92 vs seven 52rem siblings | `watch/page.tsx` | 52rem | /watch/ | n/a | low |
+| F50 | P3 | Menu trigger hover | The only header control with no hover feedback | Tier 1 on every interactive surface | mobile-navigation.tsx:58 vs search-dialog.tsx:88 | `mobile-navigation.tsx` | `hover:border-navy` | header | Tier 1 | low |
+| F51 | P2 | A11y gate coverage | Accessibility project runs desktop-only; mobile regressions can pass the gate | gate honesty | playwright.config.ts:52-68 | playwright config | add a mobile accessibility project | CI | n/a | low |
+| F52 | P3 | Stale header comment | site-header claims a `<details>` fallback for the menu that does not exist (the footer is the documented no-JS path) | honest comments | site-header.tsx:12-14 vs mobile-navigation.tsx:16-17 | `site-header.tsx` | correct the comment | source only | n/a | low |
+| F53 | P3 | Registry count guards | "37 parts", "Twelve pages", "Seven objections" claims have no guard against registry drift | maintenance-guide gate philosophy | copy across 5 surfaces | new unit test | assert the registry counts the copy relies on | tests | n/a | low |
+
+## 7. Rejected candidates
+
+Recorded because restraint is part of the deliverable. Each was investigated
+and rejected for the reason given.
+
+| Candidate | Why rejected |
+|---|---|
+| Homepage tab title duplicates the site name | **Refuted at runtime.** `document.title` renders exactly "A Biblical Case for Conditional Immortality" in the production build; no template suffix is applied. |
+| Closed `<details>` content lost in Chromium print | **Refuted at runtime.** Print-media emulation shows the closed disclosure's content at 434px height, visible; the `display: revert` rules work as documented. |
+| Search page intro runs to 80rem | **Refuted at runtime.** The global `measure-prose` cap on `main` limits the paragraph; adding a header wrapper would change nothing measurable. |
+| Align passage/topic body prose (1.05rem) and method/about (1.06rem) to `--text-base` | Measured 74–78 CPL at those sizes, inside the comfortable range; each template's denser ramp is internally consistent (headings sized to match). Re-ranking whole templates would invent product intent without a readability failure. |
+| Case hub h2s below the base clamp | All four hub h2s share 1.35rem; a deliberate, internally consistent control-page density, not drift. |
+| Serif correction-form textarea | Long-form prose written by the reader in the reading serif is a defensible editorial choice; two valid designs, no deterministic correction. |
+| 20px form radios | Labels extend the effective target; WCAG 2.5.8 passes. Enlarging native radios is a visual change with no proven gain. |
+| No-JS corrections submission loses `?section` context | Real, but unfixable without making the page dynamically rendered, which would break the static-generation contract. Recorded as a known limitation. |
+| Restyle search pagination onto a stock variant | The quiet bordered look matches no variant; forcing `outline` (navy border) changes the design, and a new variant needs multiple consumers. |
+| Unify topic chips / glossary jump chips / search chips | Different semantic roles (route navigation vs in-page jump) at different densities; sameness would be false uniformity. |
+| Homepage hero kicker/lede one-off sizes | The hero is the one deliberate scale moment on the site; its tracking and lede size are internally motivated. |
+| `pressable` on homepage topic pills | Added deliberately by PR #4 (button-shaped chips); confirmed via history. |
+| Badge definitions only in `title` | Documented mitigation: full definitions repeated on /method/. |
+| Compare (MDX) heading at 0.86rem vs panel 0.95rem | Width-driven: half-column cards vs full-width panels, each internally consistent. |
+| ci.yml "121 pages" comment | Accurate: the link checker counts 121 HTML pages; 129 counts routes including handlers. |
+| Dense TOC/footer links below 44px | Inline-text exception applies; the repo's own 24px-spacing e2e gate covers them; the 44px floor is for button-shaped controls. |
+| "S22 Title" vs "S22. Title" formats | Context-appropriate variety with no demonstrated reader impact. |
+| Search dialog result rows without Badges | Deliberate density: a 12-result palette is not the full results page. |
+| Watch transcript link vs download button | Different affordance contexts (inline panel vs download card page); both idiomatic. |
+| Homepage corrections panel vs shared FeedbackCta | Deliberately richer composition (size-lg button, changelog note, measure cap). |
+| Topic pages og:type "article" | The metadata principle says OG describes what the page is; topics are term entries, not articles. |
+| not-found derives copy from PRIMARY_NAV | The 404's sentence-length descriptions are richer than the nav model's; replacing them would flatten deliberate copy. Only the factual error is corrected (F26). |
+| ECT/CI panels onto `Callout` | `Callout` renders an `<aside>`; the two readings are core argument content and must not become asides. Only the soft-border pairing is corrected (F38). |
+
+## 8. Ordered implementation plan
+
+Executed in this order, testing after each group (failing test first where a
+test can express the contract).
+
+1. **Group 1 — shared tokens and primitives**: F1, F2, F3, F4.
+2. **Group 2 — header, navigation, footer**: F5, F6, F7, F8, F9, F10, F11, F12, F50, F52.
+3. **Group 3 — search surfaces**: F13, F14, F15, F16, F17, F18, F19, F20, F44 (print part).
+4. **Group 4 — forms**: F21, F22.
+5. **Group 5 — video**: F23, F24.
+6. **Group 6 — article shell**: F36, F37, F40, F41, F25 (section-page), F34, F33, F32.
+7. **Group 7 — route families**: F26, F27, F28, F29, F30, F31, F35, F38, F39, F42, F43, F45, F46, F47, F48, F49, F44 (claims), F25 (remaining), F53.
+8. **Group 8 — test infrastructure**: F51.
+9. **Full validation** and section 9-10 updates.
+
+## 9. Implementation log
+
+Every accepted finding was implemented; none had to be withdrawn after
+measurement. Notes record where an implementation detail was decided during
+the work.
+
+| ID | Status | Note |
+|---|---|---|
+| F1 | Implemented | `sm` now inherits the base `min-h-11` floor rather than restating it |
+| F2 | Implemented | |
+| F3 | Implemented | `:active` override carries `--motion-press`; contract test added |
+| F4 | Implemented | contract test added |
+| F5 | Implemented | `cn(buttonVariants({variant:'copperSoft'}), 'hidden px-3 text-[0.88rem] sm:inline-flex')` keeps the compact header look |
+| F6 | Implemented | active-route logic extracted to `isActiveRoute` in navigation.ts, shared with `NavLinkItem`; e2e asserts the sheet marks The Case |
+| F7 | Implemented | e2e asserts `aria-expanded` through the open/close cycle |
+| F8 | Implemented | sheet's visible title renamed to "Site navigation" and referenced by `aria-labelledby`, so the five existing e2e name lookups hold |
+| F9 | Implemented | both closes use the 18px glyph; dead text class dropped |
+| F10 | Implemented | |
+| F11 | Implemented | |
+| F12 | Implemented | `WATCH_CTA` exported from navigation.ts |
+| F13 | Implemented | |
+| F14 | Implemented | |
+| F15 | Implemented | filter fields and the book select at 16px with `text-ink` |
+| F16 | Implemented | open-dialog branch now precedes the text-field guard; e2e toggle test added |
+| F17 | Implemented | |
+| F18 | Implemented | footer bar padding rebalanced (py-1) so the 44px link does not thicken the bar |
+| F19 | Implemented | |
+| F20 | Implemented | dialog count and both filter status lines |
+| F21 | Implemented | focus moves to the first `[aria-invalid]` control after a failed submit; 400 responses render the server's own field report; e2e added |
+| F22 | Implemented | schema `.refine` to http/https; five-case unit test added |
+| F23 | Implemented | iframe focused on activation; e2e asserts it |
+| F24 | Implemented | `aria-label` removed; visible poster text is the name; e2e name updated |
+| F25 | Implemented | seven links across section-page, sources, watch, full-case |
+| F26 | Implemented | copy corrected to thirty-seven; guarded by the F53 test |
+| F27 | Implemented | mirrors the hub's "thirty-seven parts, with a preface and two appendices" |
+| F28 | Implemented | |
+| F29 | Implemented | `components/changelog/revision-entry.tsx`; heading normalised at 1.08rem; footer-link wording unified on "Every change to {id}" |
+| F30 | Implemented | reader wording moved into the schema maps so rendered output is unchanged; `PERSPECTIVE_UNSTATED_LABEL` now the single source |
+| F31 | Implemented | method's contents list reshaped as `ExtractedHeading[]` |
+| F32 | Implemented | `ReviewStatusBadge` accepts `status`; glossary and method consume it |
+| F33 | Implemented | `SectionLinkList` in article-chrome |
+| F34 | Implemented | `SourcesCited` in article-chrome; passage page keeps its own divider via the className prop |
+| F35 | Implemented | `components/navigation/related-pages.tsx`, eight consumers |
+| F36 | Implemented | sidebar TOC moved before the article with explicit `col-start`/`row-start`; template comment updated to match |
+| F37 | Implemented | negative-margin/padding trick keeps the rendered layout identical |
+| F38 | Implemented | |
+| F39 | Implemented | objections 1.14→1.1, sources 1.08→1.1, changelog card p-3→p-4 |
+| F40 | Implemented | panel h2s at 1.12; reference-section h2s at 1.18 |
+| F41 | Implemented | |
+| F42 | Implemented | wrappers gain `overscroll-x-contain`; rehype wrapper role aligned to `group` with its unit test updated |
+| F43 | Implemented | `rehype-demote-headings.ts` + unit tests; applied only on `/full-case/` |
+| F44 | Implemented | claim narrowed to button-shaped controls; `/search/` form and pagination now `print:hidden`, which makes the print claim true |
+| F45 | Implemented | |
+| F46 | Implemented | |
+| F47 | Implemented | |
+| F48 | Implemented | |
+| F49 | Implemented | |
+| F50 | Implemented | |
+| F51 | Implemented | `accessibility-mobile` project at 375×812 with touch; `test:a11y` runs both |
+| F52 | Implemented | |
+| F53 | Implemented | `orientation-copy.test.ts` pins 37/34/3/40/12 and the nav description |
+
+### Post-review refinements
+
+After implementation, an adversarial code review (ten independent finder
+angles, one verifier per candidate, and a gap sweep) confirmed 28 residual
+findings against the implementation itself, all corrected in a follow-up
+commit:
+
+- **Continuous-edition outline completed.** The rehype demotion only reached
+  markdown headings; component-rendered headings (`Callout`, `ECTReading`,
+  `CIReading`) are now demoted through the substitution map in `MdxContent`,
+  and demoted `h4` headings keep their copy-link anchors (new `h4` entry and
+  a widened anchor-reveal selector).
+- **Tier 2 fully unified.** The video-glyph press also takes
+  `--ease-out-quad`; the contract test now asserts token and curve.
+- **Single sources of truth.** The form's visible labels drive the
+  server-error report (`FIELD_LABELS`); the 400 wire shape is a shared
+  `FeedbackFieldError` type; the sourceUrl rule uses `z.url({ protocol })`;
+  `ReviewStatusBadge` takes one required `status`; `SourcesCited` exposes a
+  `divider` flag instead of a className override.
+- **Duplication removed.** Shared `NewTabLink` (seven external links, plus
+  the one the first pass missed), shared `DialogCloseButton` (both
+  overlays), one `.summary-hit-area` class (three disclosures), and
+  `ScrollRegion` used on the original-document tables.
+- **A latent outline flaw surfaced and fixed at its root.** Both appendix
+  bodies opened with a caution `Callout as="h3"` before any `##` heading, a
+  pre-existing h1-to-h3 skip on their own pages that no tested route covered;
+  demotion turned it into an h2-to-h4 skip on the continuous edition and the
+  structure gate caught it. The authored level is now `h2`, which is sound on
+  both surfaces, and the callout's rendered title is identical at any level.
+- **Guards made real.** The numbered-arguments count is counted rather than
+  derived; the objections and Watch-CTA numbers are pinned to their
+  registries; the transient `scheduled_tasks.lock` session file is untracked
+  and ignored; the Playwright comment and this document's motion summary were
+  corrected.
+
+Three confirmed review findings were deliberately not applied, with reasons:
+the method page's badge tooltip duplicating its adjacent definition (fixing
+it would add a single-call-site boolean prop, the same altitude smell the
+review flagged elsewhere; the tooltip is the badge's uniform contract), the
+watch page's video-sources list joining `SourcesCited` (its "Open
+youtube.com" affordance is deliberately different from "View original"), and
+the mobile sheet reusing `NavLinkItem` (the shared logic already lives in
+`isActiveRoute`; the components differ structurally).
+
+## 10. Final verification
+
+All commands were run on the finished branch, on Windows 11 with Bun 1.3.14,
+against a production build.
+
+| Check | Result |
+|---|---|
+| `bun run format:check` | Pass |
+| `bun run lint` | Pass |
+| `bun run typecheck` | Pass (all five workspaces) |
+| `bun run content:validate` | Pass |
+| `bun run content:audit` | Pass, ledger exports unchanged |
+| `bun run content:docs` | Pass |
+| `bun run test` | **808 unit tests pass** on the merged tree (281 at the audit base; this branch added 21: button contract ×3, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×7; the balance arrived with PR #5's merge) |
+| `bun run build` | Pass, 129 static pages |
+| `bun run content:pii` | Pass: no source contact details in 1,745 built or 248 committed files |
+| `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
+| `bun run content:bundle` | Pass: every route within budget; `/corrections` 644.0 kB against its 664.1 kB allowance (+1.3 kB for the new error handling) |
+| `bun run test:e2e` | **308 tests, 0 failures** on the merged tree (224 at the audit base + 4 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
+| `bun run test:a11y` | **64 tests, 0 failures** (32 at base, desktop only; now 32 × desktop + 32 × mobile via the new `accessibility-mobile` project) |
+
+**Rendered sweep** (production build, before and after): 360 loads over all
+120 sitemap routes at 1280/375/320 px — zero console errors, zero page
+errors, zero horizontal page overflow, exactly one `h1` and one `main`
+everywhere, no duplicate ids, no non-200 response. Print-media emulation
+confirms closed disclosures keep their content on paper.
+
+**Runtime spot checks on the new build**: the header Watch CTA measures
+exactly 44px with the `copper/45` variant border; footer navigation links
+rest without underlines; filter fields compute 16px.
+
+**Screenshots**: the full before/after archetype set (28 routes × 5 widths)
+was captured and reviewed; the highest-risk surfaces (the three-column
+article template after the source-order change, the shared revision cards,
+the mobile homepage) were inspected individually and render correctly.
+Screenshots are session evidence and are not committed, per repository
+convention.
+
+**Content and privacy integrity**: no permanent id, route, slug, Scripture
+text, source relationship, migration-ledger entry or transcript cue changed;
+the PII scan is clean; no third-party request was introduced (the sweep
+recorded zero external requests before a play activation).
+
+**Remaining limitations** (pre-existing, documented): field Core Web Vitals
+still require a real deployment; the no-JS corrections submission cannot
+carry `?section` context without abandoning static generation (recorded as a
+rejected candidate); video visual descriptions remain outstanding as the
+accessibility statement says.
+
+### Gap sweep 1 (merged tree)
+
+A six-angle adversarial sweep of the merged tree (merge seams, search
+contracts, motion/routing contracts, ledger accuracy, fix regressions,
+repository hygiene) confirmed sixteen residual findings, none refuted, all
+corrected:
+
+- **Search dialog robustness and interaction** (five): a failed index fetch
+  now renders a recovery message instead of an unhandled rejection and a
+  blank pane; the dialog closes on route change exactly as the sheet does,
+  so it cannot survive browser Back; backdrop dismissal on both overlays now
+  requires the press to begin on the backdrop, so a text-selection drag that
+  ends outside the panel no longer closes it; the live region pluralises
+  "1 result"; and Ctrl/Cmd+K is suppressed while another modal is open
+  rather than stacking two.
+- **Token discipline** (three): the OG image's `inkSubtle` mirror caught up
+  with the contrast-fixed token; the quick-search excerpt's serif stack goes
+  through `var(--font-serif)` (which resolves to the exact stack Pretext
+  measures); its mark radius joins the radius scale.
+- **Documentation accuracy** (eight): README and the implementation report
+  carry measured merged-tree counts; the motion brief's Tier 3 prose matches
+  the shipped shared tokens (200ms in / 150ms out for both overlays); two
+  Playwright config comments count the actual seven projects and two
+  accessibility projects; this ledger's own unit-count note is corrected
+  (orientation copy is seven tests) and section 11 is committed rather than
+  left as a working-tree edit.
+
+One finder (fix regressions) died on a transient network error; its angle is
+re-run in gap sweep 2.
+
+## 11. PR #5 compatibility
+
+PR #5 (Pretext quick-search excerpts) merged into `main` after this branch
+was cut, and the two touch the same search surfaces. `origin/main` was merged
+into this branch rather than copied from, so PR #5's behaviour arrives
+exactly as it shipped.
+
+**Conflicts and resolutions** (three files, both intents kept whole):
+
+- `search-dialog.tsx`: only the import block conflicted; the bodies
+  interleave. Main's prewarm-on-intent, `QuickSearchResults` rows and excerpt
+  candidates compose with this branch's `aria-expanded` wiring, the
+  deterministic Ctrl/Cmd+K toggle, the shared `DialogCloseButton`, the token
+  radius, the described-by status region and the tabular footer count. The
+  `Highlighted` import was dropped because main moved row rendering into
+  `QuickSearchResults`.
+- `playwright.config.ts`: this branch's `accessibility-mobile` project sits
+  alongside main's three `geometry-*` projects; the project-inventory
+  comment lists all seven.
+- `package.json`: `test:a11y` runs both accessibility projects; main's
+  `test:browser` aggregate gains `accessibility-mobile`.
+
+**Contracts verified on the merged tree**: Pretext stays behind its
+intent-gated lazy load and never blocks results; the excerpt fitter's
+fallback path and the server-rendered `/search/` page are untouched by this
+branch; ranking behaviour is held by PR #5's own `ranking-baseline` and
+invariants suites, which pass unchanged; the geometry suite runs in all
+three engines (Playwright WebKit is reported as Playwright WebKit, not
+Safari, per `docs/pretext-text-geometry.md`). No merge order remains: this
+branch now contains `main`, so PR #6 merges cleanly on top of PR #5.
+
+**Merged-tree verification** (after the merge commit): `CI=1 bun run
+validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
+`test:a11y` 64 tests (63 + 1 axe timing flake retried green), 0 failures;
+`test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
+(67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
+Total automated coverage on the merged tree: 1,249 tests.
+
+**Review threads**: the automated review on the first commit raised two P2
+findings (permalink loss on demoted headings; component-rendered headings
+not demoted). Both had already been found by this branch's own adversarial
+review and fixed in `3fa2727`/`d1a9adc`; each thread carries a reply naming
+the resolving commit and is resolved.

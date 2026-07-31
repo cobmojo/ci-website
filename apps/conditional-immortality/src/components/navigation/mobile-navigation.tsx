@@ -1,9 +1,11 @@
 'use client'
 
+import { cn } from '@ci/ui'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { FOOTER_NAV, PRIMARY_NAV } from '@/lib/navigation'
+import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
+import { FOOTER_NAV, isActiveRoute, PRIMARY_NAV, WATCH_CTA } from '@/lib/navigation'
 
 /**
  * Primary navigation for narrow viewports.
@@ -19,6 +21,7 @@ import { FOOTER_NAV, PRIMARY_NAV } from '@/lib/navigation'
 export function MobileNavigation() {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const backdropPressRef = useRef(false)
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
@@ -43,6 +46,9 @@ export function MobileNavigation() {
 
   if (!mounted) return null
 
+  const currentPath = pathname ?? '/'
+  const watchActive = isActiveRoute(currentPath, WATCH_CTA.href)
+
   return (
     <>
       <button
@@ -55,7 +61,7 @@ export function MobileNavigation() {
           dialogRef.current?.showModal()
           setOpen(true)
         }}
-        className="pressable inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border border-border-strong bg-paper-raised px-2 font-sans text-[0.88rem] font-medium text-navy sm:px-3 xl:hidden"
+        className="pressable inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border border-border-strong bg-paper-raised px-2 font-sans text-[0.88rem] font-medium text-navy hover:border-navy sm:px-3 xl:hidden"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
           <path
@@ -73,14 +79,21 @@ export function MobileNavigation() {
       <dialog
         ref={dialogRef}
         id={dialogId}
-        aria-label="Site navigation"
+        aria-labelledby={`${dialogId}-title`}
         onClose={() => {
           setOpen(false)
           triggerRef.current?.focus()
         }}
+        onPointerDown={event => {
+          // A click whose press and release land on different elements is
+          // retargeted to their common ancestor, so a drag that starts inside
+          // the sheet and ends on the backdrop would read as a backdrop click.
+          // Only a press that begins on the backdrop itself may dismiss.
+          backdropPressRef.current = event.target === dialogRef.current
+        }}
         onClick={event => {
           // Clicking the backdrop (the dialog element itself) closes the sheet.
-          if (event.target === dialogRef.current) close()
+          if (event.target === dialogRef.current && backdropPressRef.current) close()
         }}
         // `overlay-sheet` slides in from the right edge the sheet is anchored
         // to, and carries the backdrop wash on the panel's own clock. Under
@@ -89,49 +102,51 @@ export function MobileNavigation() {
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h2 className="m-0 font-sans text-[0.95rem] font-semibold text-navy">Navigation</h2>
-            <button
-              type="button"
-              onClick={close}
-              className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-[0.88rem] text-ink-muted hover:bg-panel"
+            <h2
+              id={`${dialogId}-title`}
+              className="m-0 font-sans text-[0.95rem] font-semibold text-navy"
             >
-              <span className="sr-only">Close navigation</span>
-              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
-                <path
-                  d="M4 4l10 10M14 4L4 14"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
+              Site navigation
+            </h2>
+            <DialogCloseButton label="Close navigation" onClick={close} />
           </div>
 
           <nav aria-label="Primary" className="flex-1 overflow-y-auto px-4 py-4">
             <ul className="space-y-1">
-              {PRIMARY_NAV.map(item => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="block rounded-md px-3 py-2.5 font-sans text-[1rem] font-medium text-navy no-underline hover:bg-panel"
-                  >
-                    {item.label}
-                    {item.description ? (
-                      <span className="mt-0.5 block text-[0.84rem] font-normal text-ink-subtle">
-                        {item.description}
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
-              ))}
+              {PRIMARY_NAV.map(item => {
+                const isActive = isActiveRoute(currentPath, item.href)
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={cn(
+                        'block rounded-md px-3 py-2.5 font-sans text-[1rem] font-medium no-underline',
+                        isActive ? 'bg-panel text-navy' : 'text-navy hover:bg-panel',
+                      )}
+                    >
+                      {item.label}
+                      {item.description ? (
+                        <span className="mt-0.5 block text-[0.84rem] font-normal text-ink-subtle">
+                          {item.description}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </li>
+                )
+              })}
               <li>
                 <Link
-                  href="/watch/"
-                  className="block rounded-md px-3 py-2.5 font-sans text-[1rem] font-medium text-copper-deep no-underline hover:bg-panel"
+                  href={WATCH_CTA.href}
+                  aria-current={watchActive ? 'page' : undefined}
+                  className={cn(
+                    'block rounded-md px-3 py-2.5 font-sans text-[1rem] font-medium no-underline',
+                    watchActive ? 'bg-panel text-copper-deep' : 'text-copper-deep hover:bg-panel',
+                  )}
                 >
-                  Watch the Overview
+                  {WATCH_CTA.label}
                   <span className="mt-0.5 block text-[0.84rem] font-normal text-ink-subtle">
-                    28 minutes, with chapters and a full transcript
+                    {WATCH_CTA.description}
                   </span>
                 </Link>
               </li>
@@ -144,16 +159,23 @@ export function MobileNavigation() {
                     {group.title}
                   </h3>
                   <ul className="space-y-0.5">
-                    {group.links.map(link => (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          className="block rounded px-3 py-2 font-sans text-[0.92rem] text-ink-muted no-underline hover:bg-panel"
-                        >
-                          {link.label}
-                        </Link>
-                      </li>
-                    ))}
+                    {group.links.map(link => {
+                      const isActive = isActiveRoute(currentPath, link.href)
+                      return (
+                        <li key={link.href}>
+                          <Link
+                            href={link.href}
+                            aria-current={isActive ? 'page' : undefined}
+                            className={cn(
+                              'block rounded px-3 py-2.5 font-sans text-[0.92rem] no-underline',
+                              isActive ? 'bg-panel text-navy' : 'text-ink-muted hover:bg-panel',
+                            )}
+                          >
+                            {link.label}
+                          </Link>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               ))}

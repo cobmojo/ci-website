@@ -4,6 +4,7 @@ import { cn } from '@ci/ui'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { isActiveRoute } from '@/lib/navigation'
 
 /**
  * Primary nav item that marks itself with `aria-current="page"` when the
@@ -19,8 +20,7 @@ export function NavLinkItem({
   className?: string
 }) {
   const pathname = usePathname() ?? '/'
-  const normalised = pathname.endsWith('/') ? pathname : `${pathname}/`
-  const isActive = href === '/' ? normalised === '/' : normalised.startsWith(href)
+  const isActive = isActiveRoute(pathname, href)
 
   return (
     <Link

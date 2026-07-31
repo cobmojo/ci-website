@@ -1,6 +1,7 @@
 import { buttonVariants } from '@ci/ui'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { siteConfig } from '@/lib/site-config'
@@ -157,9 +158,11 @@ export default function AccessibilityPage() {
               </h2>
               <p className="m-0 mb-3">
                 The target is the Web Content Accessibility Guidelines, version 2.2, at Level AA.
-                Two decisions go beyond it deliberately: interactive controls are at least
-                forty-four pixels in their smallest dimension, which is more than the Level AA
-                target size requires, and the focus indicator is never suppressed anywhere.
+                Two decisions go beyond it deliberately: buttons and button-shaped controls are at
+                least forty-four pixels in their smallest dimension, which is more than the Level AA
+                target size requires, and the focus indicator is never suppressed anywhere. Links
+                inside prose and dense reference lists keep their normal text size, with the spacing
+                between them held at or above the Level AA minimum instead.
               </p>
               <p className="m-0 rounded-md border border-ochre/40 bg-ochre-soft p-4">
                 <strong className="font-semibold">This is not a conformance claim.</strong> Full
@@ -267,22 +270,17 @@ export default function AccessibilityPage() {
             </section>
           </div>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/privacy/">What this site stores, and what it does not</Link>
-              </li>
-              <li>
-                <Link href="/changelog/">Accessibility changes already made</Link>
-              </li>
-              <li>
-                <Link href="/method/">The editorial method in full</Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/privacy/">What this site stores, and what it does not</Link>
+            </li>
+            <li>
+              <Link href="/changelog/">Accessibility changes already made</Link>
+            </li>
+            <li>
+              <Link href="/method/">The editorial method in full</Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

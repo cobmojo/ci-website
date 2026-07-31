@@ -1,6 +1,6 @@
 import { getSection } from '@ci/content/case'
 import { revisionsForSection } from '@ci/content/revisions'
-import { formatCitation, sourcesForSection } from '@ci/content/sources'
+import { sourcesForSection } from '@ci/content/sources'
 import { chaptersForSection, videoTimestampUrl } from '@ci/content/video'
 import { REVISION_TYPE_LABELS } from '@ci/content-schema'
 import Link from 'next/link'
@@ -10,12 +10,14 @@ import {
   FeedbackCta,
   OnThisPage,
   PreviousNextNavigation,
+  SourcesCited,
 } from '@/components/article/article-chrome'
 import {
   CaseChapterDisclosure,
   CaseChapterNavigation,
 } from '@/components/article/chapter-navigation'
 import { MdxContent } from '@/components/content/mdx-content'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { formatLongDate, formatTimestamp } from '@/lib/format'
 import { passageBySlugOrReference } from '@/lib/passages'
 import type { LoadedSection } from '@/lib/sections'
@@ -24,9 +26,11 @@ import type { LoadedSection } from '@/lib/sections'
  * The shared article template for every RB, S and APP page.
  *
  * Layout on wide screens is three columns: chapter navigation, article, and
- * "On this page". The on-page contents appears *before* the article in source
- * order so keyboard and screen-reader users reach it first, and is positioned
- * to the right visually with CSS ordering.
+ * "On this page". Whichever copy of the on-page contents is visible appears
+ * *before* the article in source order so keyboard and screen-reader users
+ * reach it first: the sidebar copy sits between the chapter rail and the
+ * article in the DOM and is placed in the right-hand column with explicit
+ * grid coordinates.
  */
 export function SectionPage({ loaded }: { loaded: LoadedSection }) {
   const { section, body, headings, readingMinutes, previous, next, crumbs } = loaded
@@ -41,10 +45,16 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
       <div className="reading-layout gap-8 lg:grid lg:grid-cols-[var(--spacing-chapter-nav)_minmax(0,1fr)] xl:grid-cols-[var(--spacing-chapter-nav)_minmax(0,1fr)_var(--spacing-page-nav)]">
         <CaseChapterNavigation
           currentId={section.id}
-          className="hidden lg:block lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:max-h-[calc(100dvh-var(--header-height)-3rem)] lg:overflow-y-auto lg:pr-2 print:hidden"
+          className="hidden lg:col-start-1 lg:row-start-1 lg:block lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:max-h-[calc(100dvh-var(--header-height)-3rem)] lg:overflow-y-auto lg:pr-2 print:hidden"
         />
 
-        <div className="min-w-0">
+        <OnThisPage
+          headings={headings}
+          titleId="on-this-page-sidebar"
+          className="hidden xl:col-start-3 xl:row-start-1 xl:block xl:sticky xl:top-[calc(var(--header-height)+1.5rem)] xl:max-h-[calc(100dvh-var(--header-height)-3rem)] xl:overflow-y-auto print:hidden"
+        />
+
+        <div className="min-w-0 lg:col-start-2 lg:row-start-1">
           <ArticleHeader section={section} readingMinutes={readingMinutes} />
 
           <CaseChapterDisclosure currentId={section.id} />
@@ -67,7 +77,7 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
               aria-labelledby="watch-this-section"
               className="mt-10 rounded-md border border-border bg-paper-raised p-5 print:hidden"
             >
-              <h2 id="watch-this-section" className="mt-0 mb-2 text-[1.08rem]">
+              <h2 id="watch-this-section" className="mt-0 mb-2 text-[1.12rem]">
                 Watch this part of the overview
               </h2>
               <ul className="m-0 list-none space-y-1 p-0">
@@ -76,13 +86,10 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
                     <Link href={`/watch/#${chapter.id}`}>{chapter.title}</Link>{' '}
                     <span className="text-ink-subtle">
                       (
-                      <a
-                        href={videoTimestampUrl(chapter.start)}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
+                      <NewTabLink href={videoTimestampUrl(chapter.start)}>
                         {formatTimestamp(chapter.start)}
-                      </a>
+                        <span className="sr-only"> on YouTube</span>
+                      </NewTabLink>
                       )
                     </span>
                   </li>
@@ -93,35 +100,11 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
 
           <RelatedSections loaded={loaded} />
 
-          {sources.length > 0 ? (
-            <section
-              aria-labelledby="page-sources-cited"
-              className="mt-10 border-t border-border pt-6"
-            >
-              <h2 id="page-sources-cited" className="mt-0 mb-3 text-[1.18rem]">
-                Sources cited on this page
-              </h2>
-              <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">
-                {sources.map(source => (
-                  <li key={source.id} id={`source-${source.id}`}>
-                    {formatCitation(source)}
-                    {source.url ? (
-                      <>
-                        {' '}
-                        <a href={source.url} rel="noopener noreferrer" target="_blank">
-                          View original
-                          <span className="sr-only"> of {source.title}, opens in a new tab</span>
-                        </a>
-                      </>
-                    ) : null}{' '}
-                    <Link href={`/sources/#${source.id}`} className="text-ink-subtle">
-                      Details
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          ) : null}
+          <SourcesCited
+            sources={sources}
+            headingId="page-sources-cited"
+            title="Sources cited on this page"
+          />
 
           {revisions.length > 0 ? (
             <section aria-labelledby="revision-history" className="mt-8">
@@ -171,12 +154,6 @@ export function SectionPage({ loaded }: { loaded: LoadedSection }) {
           <PreviousNextNavigation previous={previous} next={next} />
           <FeedbackCta sectionId={section.id} />
         </div>
-
-        <OnThisPage
-          headings={headings}
-          titleId="on-this-page-sidebar"
-          className="hidden xl:block xl:sticky xl:top-[calc(var(--header-height)+1.5rem)] xl:max-h-[calc(100dvh-var(--header-height)-3rem)] xl:overflow-y-auto print:hidden"
-        />
       </div>
     </div>
   )
@@ -202,7 +179,7 @@ function RelatedSections({ loaded }: { loaded: LoadedSection }) {
       <div className="grid gap-6 sm:grid-cols-2">
         {related.length > 0 ? (
           <div>
-            <h3 className="mt-0 mb-2 font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
+            <h3 className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
               Sections
             </h3>
             <ul className="m-0 list-none space-y-1 p-0 font-sans text-[0.92rem]">
@@ -218,7 +195,7 @@ function RelatedSections({ loaded }: { loaded: LoadedSection }) {
         ) : null}
         {passages.length > 0 ? (
           <div>
-            <h3 className="mt-0 mb-2 font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
+            <h3 className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
               Passages
             </h3>
             <ul className="m-0 list-none space-y-1 p-0 font-sans text-[0.92rem]">

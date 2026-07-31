@@ -2,8 +2,11 @@
 
 import { type SearchIndex, search } from '@ci/search'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
+import { pluralise } from '@/lib/format'
 import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
 
 /**
@@ -26,21 +29,31 @@ export function SearchDialogTrigger() {
   const inputRef = useRef<HTMLInputElement>(null)
   const dialogId = useId()
   const statusId = useId()
+  const backdropPressRef = useRef(false)
 
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [index, setIndex] = useState<SearchIndex | null>(null)
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
   const [query, setQuery] = useState('')
+  const pathname = usePathname()
 
   useEffect(() => setMounted(true), [])
 
   const loadIndex = useCallback(async () => {
     if (index || loading) return
     setLoading(true)
+    setFailed(false)
     try {
       const response = await fetch('/search-index.json')
-      if (response.ok) setIndex((await response.json()) as SearchIndex)
+      if (!response.ok) throw new Error(`search index ${response.status}`)
+      setIndex((await response.json()) as SearchIndex)
+    } catch {
+      // A dropped connection must not surface as an unhandled rejection and a
+      // silently blank pane. The failure line below names the recovery path,
+      // and the next open or keystroke of search intent retries.
+      setFailed(true)
     } finally {
       setLoading(false)
     }
@@ -73,19 +86,39 @@ export function SearchDialogTrigger() {
     triggerRef.current?.focus()
   }, [])
 
+  // Close on route change, exactly as the navigation sheet does: without this
+  // the dialog survives browser Back and Forward and stays modally open over
+  // the page the reader just navigated to.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reacting to pathname is the point
+  useEffect(() => {
+    if (dialogRef.current?.open) {
+      dialogRef.current.close()
+      setOpen(false)
+    }
+  }, [pathname])
+
   /**
    * Keyboard shortcut. Deliberately requires a modifier, so it cannot swallow
-   * a plain keystroke a screen reader or voice control user is typing, and it
-   * is ignored while focus is in any text field.
+   * a plain keystroke a screen reader or voice control user is typing. While
+   * the dialog is open it always toggles closed, because the dialog focuses
+   * its own text field on open and the field must not eat the shortcut; while
+   * it is closed, focus in any other text field suppresses it, and so does
+   * any other open modal: opening search over the navigation sheet would
+   * stack two modals and strand focus between them.
    */
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'k' || !(event.metaKey || event.ctrlKey)) return
+      if (dialogRef.current?.open) {
+        event.preventDefault()
+        closeDialog()
+        return
+      }
+      if (document.querySelector('dialog[open]')) return
       const target = event.target as HTMLElement | null
       if (target?.closest('input, textarea, select, [contenteditable="true"]')) return
       event.preventDefault()
-      if (dialogRef.current?.open) closeDialog()
-      else openDialog()
+      openDialog()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
@@ -110,6 +143,7 @@ export function SearchDialogTrigger() {
         ref={triggerRef}
         href="/search/"
         aria-haspopup={mounted ? 'dialog' : undefined}
+        aria-expanded={mounted ? open : undefined}
         aria-controls={mounted ? dialogId : undefined}
         className="search-trigger pressable inline-flex min-h-11 items-center gap-2 rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[0.88rem] text-ink-muted no-underline hover:border-navy hover:text-navy"
         onPointerEnter={() => {
@@ -140,13 +174,21 @@ export function SearchDialogTrigger() {
             setOpen(false)
             triggerRef.current?.focus()
           }}
+          onPointerDown={event => {
+            // A click whose press and release land on different elements is
+            // retargeted to their common ancestor, so a text-selection drag
+            // that starts inside the panel and ends on the backdrop would
+            // read as a backdrop click. Only a press that begins on the
+            // backdrop itself may dismiss.
+            backdropPressRef.current = event.target === dialogRef.current
+          }}
           onClick={event => {
-            if (event.target === dialogRef.current) closeDialog()
+            if (event.target === dialogRef.current && backdropPressRef.current) closeDialog()
           }}
           // `overlay-panel` carries the enter and exit, and the backdrop wash
           // that used to be a utility class here: the panel and its backdrop
           // have to share one duration and one curve to read as one object.
-          className="overlay-panel m-0 mx-auto mt-[6vh] w-[min(42rem,calc(100vw-2rem))] max-w-none rounded-lg border border-border bg-paper p-0"
+          className="overlay-panel m-0 mx-auto mt-[6vh] w-[min(42rem,calc(100vw-2rem))] max-w-none rounded-md border border-border bg-paper p-0"
         >
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
             <h2 id={`${dialogId}-title`} className="sr-only">
@@ -164,23 +206,10 @@ export function SearchDialogTrigger() {
               onFocus={prewarm}
               placeholder="Search passages, sections, topics, sources"
               autoComplete="off"
-              className="min-h-11 w-full rounded-md border border-border bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+              aria-describedby={statusId}
+              className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
             />
-            <button
-              type="button"
-              onClick={closeDialog}
-              className="pressable inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-sans text-ink-muted hover:bg-panel"
-            >
-              <span className="sr-only">Close search</span>
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                <path
-                  d="M3.5 3.5l9 9M12.5 3.5l-9 9"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
+            <DialogCloseButton label="Close search" onClick={closeDialog} />
           </div>
 
           <div className="max-h-[62vh] overflow-y-auto px-4 py-3">
@@ -194,12 +223,23 @@ export function SearchDialogTrigger() {
               {loading
                 ? 'Loading the search index.'
                 : outcome
-                  ? `${outcome.total} results for ${query}.`
+                  ? `${outcome.total} ${pluralise(outcome.total, 'result')} for ${query}.`
                   : ''}
             </p>
 
             {!index && loading ? (
               <p className="py-4 font-sans text-[0.92rem] text-ink-subtle">Loading search…</p>
+            ) : null}
+
+            {!index && !loading && failed ? (
+              <p className="py-4 font-sans text-[0.92rem] text-ink-muted">
+                Search could not load, which usually means the connection dropped. Reopen search to
+                try again, or use the{' '}
+                <Link href="/search/" onClick={closeDialog}>
+                  full search page
+                </Link>
+                .
+              </p>
             ) : null}
 
             {outcome && outcome.results.length > 0 ? (
@@ -221,8 +261,10 @@ export function SearchDialogTrigger() {
             ) : null}
           </div>
 
-          <div className="flex items-center justify-between border-t border-border px-4 py-2.5 font-sans text-[0.82rem] text-ink-subtle">
-            <span>
+          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-1 font-sans text-[0.82rem] text-ink-subtle">
+            {/* Tabular figures: the count re-renders on every keystroke and
+                proportional digits would make the line quiver. */}
+            <span className="tabular-nums">
               {outcome && outcome.total > outcome.results.length
                 ? `Showing ${outcome.results.length} of ${outcome.total}`
                 : 'Search runs locally in your browser'}
@@ -230,6 +272,7 @@ export function SearchDialogTrigger() {
             <Link
               href={query ? `/search/?q=${encodeURIComponent(query)}` : '/search/'}
               onClick={closeDialog}
+              className="inline-flex min-h-11 items-center"
             >
               Full search page
             </Link>

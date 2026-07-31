@@ -106,16 +106,16 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-1,154 tests, all passing.
+1,249 tests, all passing.
 
 | Suite | Count |
 |---|---|
-| Unit, `@ci/content-schema` | 46 |
+| Unit, `@ci/content-schema` | 51 |
 | Unit, `@ci/content` | 64 |
-| Unit, `@ci/search` | 329 |
-| Unit and component, `conditional-immortality` | 326 |
-| End-to-end, desktop and mobile | 288 |
-| Accessibility, axe plus structural | 32 |
+| Unit, `@ci/search` | 336 |
+| Unit and component, `conditional-immortality` | 357 |
+| End-to-end, desktop and mobile | 308 |
+| Accessibility, axe plus structural, desktop and mobile viewports | 64 |
 | Text geometry, Chromium, Firefox and WebKit | 69 |
 
 Plus seven gates that fail the build: content validation, the content audit,

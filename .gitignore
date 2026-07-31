@@ -32,3 +32,6 @@ reports/
 /.codex/
 /.opencode/
 /.gemini/
+
+# Transient per-session lock written by the scheduled-tasks tooling.
+.claude/scheduled_tasks.lock
