@@ -34,11 +34,18 @@
     "content:canonical": "bun run scripts/conditional-immortality/canonical-check.ts",
     "content:bundle": "bun run scripts/conditional-immortality/bundle-budget.ts",
     "content:docs": "bun run scripts/conditional-immortality/docs-check.ts",
+    "perf:routes": "bun run scripts/conditional-immortality/route-inventory.ts",
+    "perf:smoke": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run scripts/conditional-immortality/lighthouse-audit.ts --routes families --runs 1 --label smoke",
+    "perf:audit": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run scripts/conditional-immortality/lighthouse-audit.ts --routes all --runs 1 --label sweep --gate",
+    "perf:certify": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run scripts/conditional-immortality/lighthouse-audit.ts --routes families --runs 5 --label certify --gate",
+    "perf:deployed": "bun run scripts/conditional-immortality/lighthouse-audit.ts --routes families --runs 3 --label deployed",
+    "seo:matrix": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run scripts/conditional-immortality/seo-matrix.ts",
     "source:import": "bun run scripts/conditional-immortality/import-source.ts",
     "validate": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run format:check && bun run lint && bun run typecheck && bun run content:validate && bun run content:audit && bun run content:docs && bun run test && bun run build && bun run content:pii && bun run content:links && bun run content:canonical && bun run content:bundle",
     "qa:production": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run validate && bun run test:coverage && bun run test:browser",
     "ci": "bun run qa:production",
-    "test:smoke": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:smoke"
+    "test:smoke": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:smoke",
+    "test:interaction": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:interaction"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
@@ -47,6 +54,8 @@
     "@ci/search": "workspace:*",
     "@types/bun": "^1.3.0",
     "@vitest/coverage-v8": "4.1.10",
+    "chrome-launcher": "1.2.0",
+    "lighthouse": "13.4.1",
     "turbo": "2.10.7",
     "typescript": "5.9.3"
   },

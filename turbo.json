@@ -89,6 +89,11 @@
       "dependsOn": ["build"],
       "cache": false,
       "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:interaction": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
     }
   }
 }

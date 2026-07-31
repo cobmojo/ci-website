@@ -76,8 +76,16 @@ const SMOKE_SPECS = [/smoke\.spec\.ts$/, /security-headers\.spec\.ts$/]
  * real TLS, real edge redirects, real headers.
  */
 const SEO_SPEC = /seo\.spec\.ts$/
+/**
+ * Interaction latency, which is a measurement rather than an assertion about
+ * markup.
+ *
+ * Its own project, on one engine, because a timing that runs in two projects at
+ * once is two workers competing for the thread whose latency is under test.
+ */
+const INTERACTION_SPEC = /interaction\.spec\.ts$/
 /** Everything that is neither focused nor origin-agnostic. */
-const FOCUSED_SPECS = [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC, VISUAL_SPEC]
+const FOCUSED_SPECS = [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC, VISUAL_SPEC, INTERACTION_SPEC]
 
 /**
  * Every project depends on this one, so no suite can report a result about a
@@ -228,6 +236,21 @@ export default defineConfig({
          * were outside every tsconfig and had never been typechecked.
          */
         contextOptions: { reducedMotion: 'reduce' },
+      },
+    },
+    /*
+     * Interaction latency: the thing a navigation-only Lighthouse audit cannot
+     * see. Chromium at the desktop viewport, and the spec sets a narrow one
+     * itself for the cases that only exist there.
+     */
+    {
+      name: 'interaction',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: INTERACTION_SPEC,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: DESKTOP_VIEWPORT,
+        hasTouch: true,
       },
     },
     /*
