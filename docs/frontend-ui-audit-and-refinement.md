@@ -443,12 +443,12 @@ against a production build.
 | `bun run content:validate` | Pass |
 | `bun run content:audit` | Pass, ledger exports unchanged |
 | `bun run content:docs` | Pass |
-| `bun run test` | **835 unit tests pass** on the finished tree — 51 in `@ci/content-schema`, 80 in `@ci/content`, 336 in `@ci/search`, 368 in the app (281 at the audit base; the balance is this branch's additions and PR #5's merge) |
+| `bun run test` | **843 unit tests pass** on the finished tree — 51 in `@ci/content-schema`, 80 in `@ci/content`, 336 in `@ci/search`, 376 in the app (281 at the audit base; the balance is this branch's additions and PR #5's merge) |
 | `bun run build` | Pass, 129 routes, 121 prerendered as HTML |
 | `bun run content:pii` | Pass: no source contact details in 1,753 built or 295 committed files |
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
 | `bun run content:bundle` | Pass on the merged tree: every route within budget; `/corrections` 663.7 kB against its 664.1 kB allowance |
-| `bun run test:e2e` | **342 tests, 0 failures**, Chromium desktop 1440×900 and mobile 375×812 |
+| `bun run test:e2e` | **348 tests, 0 failures**, Chromium desktop 1440×900 and mobile 375×812 |
 | `bun run test:a11y` | **76 tests, 0 failures** (32 at base, desktop only; now 38 × desktop + 38 × mobile via the new `accessibility-mobile` project, `/accessibility/` having joined the axe routes, plus four keyboard-operation tests axe cannot express) |
 | `bun run test:print` | **6 tests, 0 failures** across Chromium, Firefox and WebKit |
 | `bun run test:text-geometry` | **69 tests, 0 failures** across Chromium, Firefox and WebKit |
@@ -1437,6 +1437,713 @@ Three findings are recorded and deliberately not implemented:
   The honest fix is to put the filter in the URL, which is a design change to
   a progressive enhancement rather than a correction to one.
 
+### Gap sweep 15 (completed tree)
+
+Two angles over the tree at `856da6f`: the pattern in the previous sweep's
+fixes, and the last unswept surface — everything the site serves that is not
+an HTML page. Instances ten and eleven of the pattern, and eight findings on
+the handlers.
+
+Both new instances were in the previous sweep's own fixes, and both had tests
+that could not see them:
+
+- **One dropped request ended search for the whole session.** The ref that
+  stopped the index being fetched twice was set before the request and released
+  nowhere, so after a failure the guard rejected every retry — while the pane
+  said "Reopen search to try again" and the code comment promised the next
+  keystroke retries. Measured: one aborted fetch, then reopening, hovering,
+  focusing, typing and navigating produced no further request at all; a hard
+  reload proved the index and the network were fine. **The test written for the
+  double fetch asserts the count is 1 on the success path, which is exactly
+  what a permanently latched guard produces.** The guard is released on the
+  only path that leaves no index, and a test now fails the first fetch and
+  requires the second to work.
+- **The form key was not injective.** Joined with commas, searching for the
+  phrase `hell,objection` produced the same key as searching `hell` with the
+  Objections filter on, so the form did not remount and the reader got the
+  filtered form over unfiltered results — the same defect, the same 81
+  results, that the key was added to prevent. **And its test used two
+  `page.goto` calls, which are full loads: it passed identically with the key
+  deleted.** The key is a `JSON.stringify` of the parameters, extracted so its
+  injectivity is a unit test rather than a browser one, and the end-to-end
+  check now drives a real soft navigation.
+- The progress count was bounded by page membership but not deduplicated, so
+  one id stored forty-five times still read "45 of 40 parts" — the sentence the
+  previous commit said it had retired, under a test named for an invariant the
+  code did not hold.
+
+The handlers, none of which any page test touches:
+
+- **The transcript altered the published wording, on both surfaces that
+  promise it did not.** Paragraphs were split on every full stop, including the
+  ones inside numbers and domains, so "about 0.00001%" became a paragraph
+  ending "about 0." followed by an orphan "00001%," and "rethinking hell.com"
+  became "rethinking hell. com". Sentences now end where terminal punctuation
+  is followed by a space, and a chapter that stops mid-sentence keeps its
+  fragment attached. The test is the whole promise: every chapter's paragraphs,
+  rejoined, equal the published cue text exactly.
+- **`/og` returned no HTTP response at all for an Arabic title** — the socket
+  closed with nothing written, which is worse than an error. `ImageResponse`
+  streams, so the failure lands after the handler returns and a guard around
+  the constructor catches nothing; the bytes are buffered now and a card that
+  cannot be drawn is answered with the plain one.
+- **`/og` claimed it "never contacts a third party" and does.** The renderer
+  fetches a font from Google and an emoji sprite from a CDN for scripts its
+  bundled subset lacks. True of every card this site emits, false in general,
+  and `title` comes from a query string. The claim now says which is which.
+- **The search index was re-downloaded in full on every visit** — 610kB each
+  time, 1.8MB for three — because `must-revalidate` had no validator to
+  revalidate against, while `/privacy/` called it "a single file downloaded the
+  first time you open search". It carries an ETag and an hour of freshness.
+- **The content security policy allowed a host the site never uses.**
+  `i.ytimg.com` was permitted for YouTube thumbnails that the click-to-load
+  poster deliberately does not load — its own comment says so — against the
+  header's statement that the only external origin ever contacted is YouTube's
+  privacy-enhanced domain.
+
+Recorded, not implemented: `/og` will put arbitrary text on a card branded with
+the site and the author, which is a property of every open card renderer and
+would need an allowlist of published titles to close; route-handler responses
+are served uncompressed, which is a deployment concern rather than a code one;
+and the site ships no favicon, so every tab request costs a 404. Each is
+written up with its measurement.
+
+### Gap sweep 16 (follow-up branch)
+
+The pattern recurred a twelfth time, in the transcript fix from the sweep
+before, and it is the clearest instance of the whole run.
+
+- **The trailing-fragment merge deleted a third of the transcript's paragraph
+  breaks.** The comment describes moving a stray word into the sentence it came
+  from. The code tested the last *paragraph* and merged the last *two
+  paragraphs* — and 35 of the 39 chapters end without terminal punctuation,
+  because a chapter boundary is a timestamp, so it fired almost everywhere. The
+  transcript went from 112 paragraphs to 79, twenty-one chapters became a
+  single unbroken block, and one paragraph reached 195 words where the captions
+  gave two. Every word was still present, which is the promise the code exists
+  to keep; the reflow a reader can follow was gone. It now merges only when the
+  stray sentence is the whole of the last paragraph: 100 paragraphs, seven
+  single-block chapters, longest 127 words, and every word still present.
+- **The test could not tell three implementations apart.** Shipped, described,
+  and "collapse the entire chapter into one paragraph" all passed every
+  assertion, because the new checks were rejoin-equality, which is blind to
+  grouping, and a fixture that returns a single paragraph — so the test named
+  for attaching a fragment "to the sentence before it" passed on output where
+  no preceding paragraph survived. The tests now assert exact paragraph arrays,
+  including a chapter that ends mid-sentence with the fragment sharing its
+  paragraph, and were confirmed to fail against both wrong implementations
+  before being accepted.
+
+The same sweep widened past the branch's own diff to the two things every
+route inherits: the words the site counts itself in, and the Scripture it
+quotes.
+
+- **Four verses were misquoted, in the one file whose docstring says that
+  cannot happen.** `web-text.ts` opens by explaining that every full Scripture
+  display renders from this corpus because "no author ever types a verse by
+  hand, which removes any possibility of a misquoted or misremembered passage
+  reaching a page". Four of them had lost the space after a comma or a full
+  stop — `sorcerers,idolaters` (Revelation 21:8), `denarii,and he grabbed`
+  (Matthew 18:28), `commandments,that they may` (Revelation 22:14) and
+  `Gehenna.Yes, I tell you` (Luke 12:5) — reaching eight routes under an
+  attribution naming the World English Bible. The project's own migration
+  ledger carries the correct text for the one verse it covers; the other three
+  need no second copy of the Bible, because punctuation is never immediately
+  followed by a letter in running prose. That is the whole class, so the guard
+  is the class: no quotation in the corpus may run punctuation into the next
+  word, carry a doubled space, or put a space before punctuation. It was
+  confirmed failing against each defect before being accepted.
+- **The site gave readers two different totals under one noun.** The homepage,
+  the 404, `/start/` and the header nav all send a reader to "thirty-seven
+  parts". The hub's own first sentence defines them — three roadblocks and
+  thirty-four numbered arguments, "with a preface and two appendices alongside
+  them" — and then, three screens down, headed its list "All 40 parts", said
+  "Everything in the forty parts", and counted progress "of 40 parts". Both
+  numbers are true and the unit test pins both; what could not stand is the one
+  word carrying both, so a reader given 37 and shown 40 had no way to tell
+  which was wrong. "Parts" now always means the 37. The 40 entries are pages,
+  which is what the hub already called them in "Twelve pages, in this order"
+  and "each page is". Guarded end to end: no route may say "40 parts".
+- **And the progress panel's two numbers came from two sources.** "You have
+  opened X of Y pages from this list. Each one is marked as Opened below" took
+  Y from a registry prop and X from the DOM, so the sentence was true by
+  coincidence rather than by construction — the previous sweep had bounded and
+  deduplicated the numerator and left the denominator on the other source.
+  Both are now measured from the rendered list, which makes X ≤ Y hold
+  structurally. Distinct ids, not nodes: the hub lists an essential-path
+  section twice, so counting markers would have read "of 52 pages".
+
+Everything else the sweep measured on this branch came back clean: all 118 OG
+cards render in a mean 54ms with none hitting the fallback and the Arabic title
+now answering 200; the index ETag is deterministic across processes and the
+browser transfers 0 bytes on the second and third visits; releasing the fetch
+guard in `catch` recovers in 61ms without bringing the double fetch back; and
+removing `i.ytimg.com` from the policy refuses nothing, because no code, no
+rendered page and no `next/image` call ever referenced it.
+
+### Gap sweep 17 (follow-up branch)
+
+Four independent finders. The sweep was not clean, and its largest finding is
+the one the site's own promise names.
+
+**The Scripture index did not hold what the pages set out.** `/scripture/` is
+offered as "Every reference used anywhere in the case, with links to the
+sections that treat it". It is built only from each section's declared
+`primaryPassages` and `relatedPassages`; nothing reads the bodies. Eleven full
+Scripture blocks are set out on a page that declares neither list entry for
+them, and for seven the section is already on the row through a containing
+reference it does declare — S04 sets out Matthew 25:46 and declares
+Matthew 25:31-46, S22 sets out three parts of 1 Corinthians 15 and declares the
+chapter — so a reader looking those up finds the page. Five are not covered at
+all: RB2 sets out Genesis 1:26-27 and declares nothing in Genesis, RB3 quotes
+1 Corinthians 15:24-26 and Hebrews 9:27 and declares nothing in either book, and
+S28 quotes Revelation 2:7 and Revelation 22:1-5 while declaring only
+Revelation 22:14-15. Those five are declared now, and the gate is coverage
+rather than string equality, so the seven legitimate sub-ranges cost nothing and
+a sixth cannot appear. Confirmed failing against each of the five.
+
+The declaration moved one pinned ranking outcome: S28's document gained two
+Revelation references, raising its score for "Revelation 14:11" from 439.567909
+to 451.773203. Same total, same order, same matched fields and terms, and the
+other 29 queries byte-identical. `ranking-invariants.test.ts` permits exactly
+this — "correcting what is *indexed* legitimately moves it" — and requires the
+diff inspected and explained, which until now meant reading a thirty-query
+failure through a test reporter. `packages/ci-search/scripts/ranking-baseline.ts`
+prints it per query and per row. It reports and does not write: rewriting the
+snapshot reformatted 4,000 lines of JSON and turned one moved score into a
+3,322-line diff, so the file was edited by hand, one line.
+
+**The privacy page contradicted itself, two bullets apart.** The lede said "the
+only information the site ever receives is what you deliberately type into the
+correction form" and the last bullet of "The short version" repeated it, while
+the bullet immediately above said the full results page "is an ordinary form, so
+its term travels in the address", and the detailed section three screens down
+said the term "reaches the server answering the request as any address does,
+where it may appear in ordinary request logs". Both cannot be true, and a reader
+who reads only the summary — which is what a summary is for — concludes that
+typing into the site's search box sends nothing anywhere. The lede now names
+both things the server receives, and the bullet says the form is the only place
+the site *asks* for anything.
+
+**`/accessibility/` undercounted what scripting-off costs.** It said "Three
+features degrade rather than disappear" and named three that do. A fourth does —
+the video becomes a link that opens on YouTube in a new tab rather than a player
+that loads in place — and three panels are absent altogether, each behind an
+`if (!mounted) return null`: the filters above the source library and the
+Scripture index, and the reading-progress panel on the case map. None of the
+four was named. The page now says which four degrade and which three are
+missing, and adds the part a reader actually needs: every list those panels
+would have narrowed is rendered complete, so their absence hides nothing. That
+is what the new end-to-end test measures.
+
+**A live region was created together with its message.** The recovery sentence
+on `/scripture/` — the one naming the way out when a filter matches nothing —
+carried its own `aria-live` and entered the DOM in the same mutation as its
+text. A region must already be in the accessibility tree for a change inside it
+to be announced, so a screen-reader user heard the count fall to zero and then
+silence: exactly the silence the sentence was added to end. Its comment claimed
+it was "inside a live region" when it was a sibling of one. The search dialog in
+the same branch does this correctly and says so in its own comment. Both
+sentences now sit inside one region mounted from the first render.
+
+**The disclosure decision was documented three ways, two of them false.**
+`docs/motion-brief.md` still said "the only configuration that opens correctly
+is the one where no rule targets `::details-content` at all" and "print needs no
+pseudo-element override because nothing collapses one", and `globals.css` still
+said "print needs no workaround because nothing collapses them" — while the same
+branch added the override and made the contract test require it. The brief was
+edited in this diff, so the section was in scope and was left stale on a binding
+document whose stated purpose is to answer "why not add X" for the next person.
+All three agree now, and the brief lists the fourth test file that holds the line
+and says why it cannot be in the fast suites.
+
+**And the guard for it had been narrowed to three literal values.** Rewriting it
+to permit the print override pinned it to `block-size`,
+`content-visibility: hidden` and `overflow: hidden` by name, so `overflow: clip`
+and `content-visibility: auto` — which collapse or clip the pseudo-element
+identically — walked straight past. It is stated as the outcome now: outside
+`@media print` no rule may target the pseudo-element at all, which is the
+configuration Chromium 148 needs, and inside print the only rule on it must
+un-collapse it. Confirmed failing against both values that used to slip through.
+
+#### Four tests that could not fail, and one that raced
+
+- **The no-scripting correction-form block never posted anything.** All five
+  tests navigate to hand-written URLs, so they measure how `/corrections/` reads
+  a query string and nothing about the redirect that produces it. Each passes
+  against the defect it is named for: drop the fragment from `SUCCESS_REDIRECT`
+  and the test supplies it itself; collapse the two failure outcomes into one
+  and the test still visits both by hand; delete the echo loop entirely and the
+  test still types `section=S04&heading=the-text&type=broken-link` itself.
+  Reaching them meant posting a real submission through the rate limiter and the
+  store, which is why they were written this way. The construction is a property
+  of a string, so it moved to `api/feedback/redirects.ts` — a Next route module
+  may export only its handlers, which is what made it untestable in place — and
+  eight unit tests now hold it, including that the message, the name and the
+  email never appear in a redirect.
+- **The second-tab reading test could not see its own defect.** Its premise is a
+  tab whose in-memory list is empty while storage holds four ids, but it seeded
+  storage from the *other* tab, which fires `storage` — and the listener added
+  in the same change resyncs the list before the click lands. A version that
+  wrote from memory produced the same five ids and passed. Split in two: one
+  test holds the cross-tab resync the listener exists for, the other seeds from
+  the page under test, where no event fires and only a read-merge-write can
+  produce five.
+- **`content.spec.ts` measured a printed disclosure with `textContent`**, which
+  reads the whole subtree whether or not any of it is laid out — the identical
+  mistake `print.spec.ts` documents, in its own comment, as having "passed
+  against exactly the defect this file exists to catch". Corrected there in the
+  sweep before and left here. Now `innerText`, plus the rendered height.
+- **`print.spec.ts` drove both print signals at once**, so either subscription
+  could be deleted and whichever survived did the whole job. The component
+  subscribes twice because the engines disagree about which signal they send,
+  and Firefox is the reason. Now one test per signal per route, plus a third
+  firing both, which is the re-entry case the restore guard exists for.
+- **And the poster-link test raced the router.** `TranscriptTimestamp` fires the
+  seek event synchronously from the link's `onNavigate`, so the poster's href is
+  rebuilt from React state before the address bar has changed; the test asserted
+  the href and then pressed Back, which depends on the address. It failed once in
+  a full run with the page on `about:blank`, history still holding one entry. It
+  waits for the URL now. Same shape as everything else in this list: an
+  assertion on one surface, a dependency on another.
+
+Two smaller things, both structural rather than reproducible. `/og`'s recovery
+path awaited inside its `catch`, so a fault in the renderer itself — rather than
+in the requested glyphs — would reject out of the handler and reproduce the
+dropped socket the buffering was added to end; the last resort renders nothing at
+all now. And P00 went on listing `sprinkle-introduction` in `sourceIds` after
+that source was corrected to `citedBy: []` with the note that "it was listed
+against P00, whose text never mentions it" — the only such disagreement among 33
+sources, invisible because nothing renders `CaseSection.sourceIds`, and checked
+in both directions now rather than one.
+
+### Gap sweep 18 (follow-up branch)
+
+Four finders again, one of them pointed at sweep 17's own commit. It found ten
+things there, and it was right about nine. This sweep is **not clean**, and the
+list of what remains open is at the end rather than absent.
+
+#### Sweep 17's own residue
+
+- **`covers()` tested intersection where it meant containment**, so a narrower
+  declaration covered a wider display. S13 declares Hebrews 12:29 and sets out
+  Hebrews 12:26-29 in full — its own summary line calls 12:26-29 a primary
+  passage — so `/scripture/` held a row for the single verse and none for the
+  three before it, and the check written the same hour to catch exactly that was
+  green against it. The same slip in the other direction let a declared single
+  verse stand for a whole chapter on the page. Containment now, and S13 declares
+  what it sets out. This is the sixth instance of the finding it was written for,
+  which means the count in that commit was five of six.
+- **The same check skipped both appendices.** It read bodies from the `case`
+  collection, and APP1 and APP2 live in `appendices/` — 189 and 202 lines,
+  rendered through the same `SectionPage`, carrying `<Cite>` and `<Scripture>`
+  blocks. `sources-cited.test.ts` skips them too, and states the premise:
+  "the two appendices are built from structured data and have no body to read".
+  It then asserts `caseSections.length - 2` to hold the premise in place. Both
+  checks covered 38 of the 40 pages that can drift. `sectionCollection()` now
+  answers where a body lives, and the size assertion is pinned to the registry:
+  `BODIES.size > 30` was true of 38 and true of 40, so it could not tell them
+  apart.
+- **The privacy fix left the third instance standing** — the one the commit
+  message itself names, three screens down: "the corrections form is the only
+  place this site receives information from you, and it receives only what you
+  type into it". Contradicted by the search term two sections above and by the
+  part identifier that arrives with the link, described in the very next bullet.
+  **And the rewritten summary bullet was still false**: "the only place the site
+  asks you for anything", one bullet below "the full results page is an ordinary
+  form, so its term travels in the address". A form with a field asking for a
+  search term is the site asking. All three now say the same thing — what the
+  site keeps on purpose — and a new end-to-end test counts the forms that submit
+  to this origin and fails if a third appears, which is the moment the page needs
+  rewriting. Nothing read privacy prose before, which is why three copies drifted
+  and two survived a commit aimed at them.
+- **`/accessibility/` still undercounted.** Sweep 17 corrected "three features
+  degrade" to four and named three panels that disappear; a fourth control does,
+  on the same page as one of them — the print button on the case map, behind the
+  same `if (!mounted) return null`. The new test asserted only the three the copy
+  named, so it could not fail against the identical undercount it was added to
+  prevent. Four now, and the test asserts the button too.
+- **Both reading-progress tests raced the panel.** `page.goto` resolves at
+  `load`; the panel's one effect both seeds the in-memory list and registers the
+  `storage` listener. Neither test waited for it, so a seed that landed first was
+  picked up by the seeding read — which makes the cross-tab test pass with the
+  listener deleted and the merge test pass against the memory-built write it
+  names. Both wait for "No pages opened yet" now. The sibling file had just been
+  given this exact fix; this one had not.
+- **The `::details-content` guard had two evasions left.** Its rule matched
+  `::details-content\s*\{`, so `details::details-content, .x { … }` was not
+  matched at all, and its deny-list of five values let `max-height: 0`,
+  `display: none`, `visibility: hidden` and `contain: strict` through. Every
+  deny-list here has been short, so it is an allow-list now: enumerate every rule
+  whose selector names the pseudo-element, require exactly one, require it to sit
+  inside `@media print`, and require its declarations to be exactly
+  `content-visibility: visible !important`. Confirmed failing against all four
+  values above and against `overflow: clip` appended to the good rule.
+- One finding was **wrong**: that the ranking-baseline reporter at
+  `packages/ci-search/scripts/ranking-baseline.ts` is behind no gate, because `packages/ci-search/tsconfig.json` does not include it. The app's
+  `tsc --noEmit` does compile it — it reported `TS2339` on `import.meta.dir` from
+  that path, which is why the file uses `import.meta.url`.
+- One is **recorded rather than fixed**: the both-signals print test cannot fail
+  against removing the re-entry guard, because `opened` is a `const` Set that is
+  never replaced and `openAll` skips anything already open, so the second call is
+  a no-op either way. The failure the guard's comment describes cannot reproduce
+  against the code as written. Both comments now say that, rather than leaving a
+  test to imply coverage it does not have.
+
+#### Elsewhere
+
+- **`/search/` applied two filters it never validated.** `type` was checked
+  against the allowed set; `group` and `book` were passed through, and an
+  unrecognised value excludes every document. `?q=hell&book=matthew` — the
+  canonical name is `Matthew` — returned "No results for hell" with advice about
+  the wording, above a filter panel forced open because a book was selected and a
+  select showing "Any book" because no option matched. Nothing on screen said a
+  filter was on, and pressing Search cleared it, so the failure looked
+  intermittent. Links go stale unaided too: `referencedBooks` is derived from the
+  passages actually cited, so the last reference to a book leaving the case turns
+  every shared URL naming it into a silent zero. Both are filtered against what
+  the controls can offer, with `Object.hasOwn` rather than `in`, so
+  `?group=constructor` is not a group.
+- **`/corrections/?section=` was unbounded on the way in and bounded only on the
+  way out.** The value fills a hidden field and the schema caps it at 16
+  characters, so a longer one made every submission from that URL fail: with
+  scripting, on a banner reading "Not recorded. Form: Too big", naming no control
+  on the page because the rejected value is in the address bar; without it, on
+  the message telling the reader to check wording that was never the problem,
+  with their text gone. A section id is only ever put there by this site and
+  always a real one, so it is checked against the registry now, and the heading is
+  bounded where the schema bounds it.
+- **`/topics/`'s bookends had rotted**, the third instance of a class this repo
+  has fixed twice. Its description said the index runs "from Gehenna and Hades to
+  the second death" while it runs from annihilationism to weeping and gnashing of
+  teeth, with Gehenna tenth of twenty-seven. `/passages/` and `/glossary/` read
+  theirs off the registry for exactly this reason; `/topics/` does now too. It is
+  the `<meta name="description">`, so it is what a search result carries.
+- **Two navigation surfaces promised what `/scripture/` disclaims.** The page
+  says the index is drawn from the references each part records as its own, and
+  that a verse quoted only in passing may not have a row — corrected in an
+  earlier sweep. The narrow-screen menu still said "Every reference in the case"
+  and `/start/` still said "Every reference used anywhere in the case". Both now
+  say what the page says.
+- `packages/ci-content/src/case/index.ts` described the essential path as sparing
+  a reader "reading all thirty-nine". The registry holds forty. This ledger
+  already records "thirty-nine" as a number that is neither of the two the site
+  uses.
+
+#### Found, evidenced, and left
+
+These are real and are not fixed. Each needs an editorial or architectural
+decision that belongs to the author, not to a refinement pass.
+
+- **Every section page prints "Related sections and passages" twice**, once from
+  the MDX body — which `docs/authoring-brief.md` mandates — and once from
+  `section.relatedSections`. All 40 carry both. On 17 pages the first copy is
+  plain text with no links while the registry copy below renders the same
+  entries as working links; on 9 the two lists disagree about membership (S10's
+  prose ends with a link to S01, which the registry list omits while adding S07).
+  Resolving it means deciding which of the two is authoritative, and either
+  removing a mandated heading from 40 bodies or reconciling 9 disagreements by
+  hand.
+- **Three passage records take their identity from the first range they quote**,
+  so 16 links whose label names a later range land on a page headed as a
+  different passage: `/objections/revelation-after-20-15/` offers "Revelation
+  22:14-15" and "Revelation 22:1-5" and both arrive at "Revelation 21:1-8".
+  Nothing is missing from the destination. Fixing it means deciding what a
+  passage page is called when it treats several ranges.
+- **`findPassageByReference` matches `additionalReferences` by exact string
+  only**, and its range fallback tests the record's primary span, so
+  1 Corinthians 15:24-26 and 15:26 do not resolve to the page that quotes
+  15:20-28 in full. Two `/scripture/` rows therefore carry no passage link
+  against that page's promise that references worked through at length have one,
+  and two sections get no link back from prose that sets the passage out.
+- **`/passages/second-peter-3-7-13/` omits S11 and S29** from "Where this passage
+  appears in the case", though both declare 2 Peter 3:9 and S29 declares it as a
+  primary text. `usedInSections` is hand-maintained and only checked for
+  resolvable ids.
+- **33 topic principal passages are labelled "Listed in the Scripture index" and
+  have no row there.** The index walks section passage lists only;
+  `topic.principalPassages` is a second source of references it never reads. The
+  honest fix is either to index them — which changes what the "Where it is used"
+  column means, since a topic is not a section — or to stop making the claim.
+- **Five hyperlinks in the migration ledger route to `/sources/` with
+  `citationStatus: 'verified'` and have no source record**, against
+  `/original-document/`'s published statement that each hyperlink was given one.
+  Adding the records needs access dates and rights status that only the author
+  can supply, and the ledger is generated: its header says to edit the generator.
+- `/topics/image-of-god/` lists S31 under both "Where this is argued in the case"
+  and "Objections that turn on this"; S31 is an objection, so the second is its
+  place. The only such overlap in 27 topics.
+- `/corrections/` labels a link "Report an accessibility problem" and points it
+  at `/accessibility/`, where the identically worded link points back at the
+  form. Every other entry in that block describes its destination.
+- Four breadcrumb group labels are plural where the headings they lead to are
+  singular ("Key Texts" arrives at "Key Text"). `sections.test.ts` pins the crumb
+  as a literal, so it holds the mismatch in place rather than catching it.
+- `/sources/` tells a reader "No part of the case cites it directly" for four
+  sources they may have reached from a topic page that lists them. Strictly true
+  — a topic is not a part of the case — and it does not read that way.
+- `/start/case-map/` characterises a six-entry list as pages that "set up the
+  question, clear away obstacles, or work through an illustration"; S09 does none
+  of the three.
+- 44 of 150 `relatedSections` edges are one-way, along with 51 `relatedTerms` and
+  14 `relatedPassages`. This may be deliberate, but nothing states a policy either
+  way, and the reader-visible effect is that "Related" frequently offers no route
+  back.
+
+### Gap sweep 19 (follow-up branch)
+
+One finder, pointed at sweep 18's commit. Six findings, all substantiated, all in
+that commit or in what it claimed to have fixed. **Not clean.**
+
+- **`sources-cited.test.ts` was never updated, and both the commit message and
+  this ledger said it was.** The commit added `sectionCollection()` and explained
+  that two checks covered 38 of the 40 pages that can drift; it then fixed one of
+  them. The other still reads the `case` collection and still asserts
+  `caseSections.length - 2`, which does not merely record the stale premise but
+  blocks the fix, because correcting the reader makes the count 40. Both
+  appendices cite `welch-source-document` inline, so nothing there could have
+  failed against that source dropping `APP1` or `APP2` from `citedBy` — the
+  heading "Sources cited on this page" would have rendered above an empty list on
+  a page whose body cites it. Both checks read all forty now.
+- **The sibling guard kept the floor the commit had just removed.** Fifteen lines
+  above, `BODIES.size` was pinned to the registry with the reason written out:
+  a floor was true of 38 and true of 40, so it could not tell them apart. The
+  guard against a syntax migration emptying the loop was left as
+  `displayed.length > 20` against a corpus of 189 blocks — true of any 21 of
+  them, so 38 of the 40 pages could stop matching and it stayed green. It counts
+  the blocks written against the blocks parsed now, per page, and was confirmed
+  failing when a single body's `reference=` was renamed.
+- **`?heading=` was clamped, not checked**, on the line below the `?section=`
+  fix and under a comment beginning "Both are checked here, where they enter".
+  `.slice(0, 128)` is the schema's bound, so a longer value was silently
+  truncated to a prefix that resolves to no heading and stored anyway — where
+  the section id was dropped rather than mangled. It is checked against the
+  headings that section actually has now.
+- **And the privacy page did not know about it.** Three sentences there and one
+  on `/corrections/` said a submission carries what you type plus the part
+  identifier — "which is listed below", "nothing more" — while `headingId`
+  arrives from the address, is submitted and is persisted. The end-to-end test
+  that navigates to `?section=S04&heading=the-text` asserts the hidden field
+  carries it. All four now name both, and the new form-counting test could not
+  have caught this: it reads the set of form actions, not what is stored.
+- **The `::details-content` guard bounded the print block by its opening brace.**
+  `@media print` is the last block in `globals.css`, so "after `printAt`" was
+  true of anything appended at the end — including the rule itself lifted out of
+  the block and left to apply on screen, which is the failure the guard exists
+  for and which `globals.css` claims the guard prevents. Simulated against the
+  real stylesheet, that edit left every assertion green. Bounded by the block's
+  closing brace now, and confirmed failing against exactly that edit.
+- `/passages/[slug]/` still says "Every reference the argument makes is listed in
+  the Scripture index", the third copy of a sentence corrected in two other
+  places by the previous commit. It is the `usedInSections.length === 0`
+  fallback and unreachable today, since all 18 passages have a citing section; it
+  becomes visible the first time one does not. Corrected anyway.
+
+Checking the heading fix turned up something the finding had assumed the other
+way: **no link on this site puts a heading in the address at all.** Nothing in
+`src` emits `?heading=`, and the route's failure redirect only echoes what was
+submitted, which comes from the hidden field, which comes from `?heading=`. So
+`headingId` is plumbed end to end — schema, form, route, store — and no surface
+produces it. Two end-to-end tests asserted the field survived a value,
+`the-text`, that is not a heading of S04 and that the site could never have
+emitted; they use a real one now, and the validation stands, because a
+hand-typed address can still reach the field. The privacy and corrections copy
+says what is true: a heading anchor is read if the address carries one, and no
+link puts one there. Whether to wire per-heading feedback links or drop the
+field is a decision for the author, and is left.
+
+Also recorded: the new form-counting test reads only sitemap routes plus the
+three extras, so `/download/handout.html` and the 404 page are never fetched; it
+runs no script, so a form inside the search dialog's mounted branch is invisible;
+it compares a set of actions, so a second form posting to `/api/feedback/`
+changes nothing; and it does not read `formaction`. None is violated today.
+
+### Gap sweep 20 (follow-up branch)
+
+One finder, pointed at sweep 19's commit. Four findings, all inside it. **Not
+clean.** Every one was green rather than red, which is the point.
+
+- **The assertion carrying the previous fix's message was a tautology.** It
+  compared `bodies.flatMap(displayedIn).length` against
+  `Σ new Set(displayedIn(body)).size`, and `displayedIn` already deduplicates,
+  so the two sides are the same number for any implementation. Measured: it
+  held at 0 = 0 with the matcher returning nothing, and at 38 = 38 with 151 of
+  the 189 blocks dropped. The corpus-wide count the commit message advertised
+  was never asserted at all; only the per-page "at least one" loop was live, so
+  S06's thirteen blocks could go down to one. `matchedIn` keeps the repeats now,
+  and the check is written-equals-parsed per page. Confirmed failing when one
+  block on one page stops matching.
+- **The sibling test ten lines below still sliced to the end of the file**, the
+  exact construct replaced above it under a seven-line comment explaining why it
+  is wrong. `@media print` is the last block in `globals.css`, so both of its
+  `!important` disclosure rules could be lifted out and appended after the
+  closing brace — where they force every disclosure and its children open on
+  screen, site-wide — and both assertions stayed green. The brace scan is a
+  shared helper now, used by both, and confirmed failing against that edit. The
+  scan itself was checked against the real stylesheet: no brace inside a quoted
+  string, none inside a `url()`.
+- **The privacy and corrections lists are exhaustive claims and omitted three
+  stored fields.** The route persists an id, a status and `createdAt` alongside
+  what the reader types. `createdAt` is load-bearing: the retention promise on
+  the same page — deleted within twenty-four months of being resolved — is
+  measured against a timestamp the reader was told was not kept. Both lists name
+  all three now. The commit that rewrote them to add `headingId` had not
+  re-derived them from `StoredSubmission`.
+- **And the heading check put a filesystem read on the request path.**
+  `/corrections/` renders per request, and `loadSection` does five things where
+  one was wanted: `readFileSync` with no memo, then eleven chained whole-body
+  regexes, a reading-time count and two registry walks, for bodies averaging
+  8.5kB — to answer one question about a set of ids. Every other caller is
+  statically generated. The ids cannot change without a rebuild, so they are
+  computed once per section per process now.
+
+Checked and clean by the same finder: reading both appendices for the first time
+exposed no `citedBy` disagreement in either direction, `extractHeadings` matches
+`github-slugger` on all 40 bodies with zero mismatches, and the `/passages/`
+sentence rewritten last sweep is accurate.
+
+### Gap sweep 21 (follow-up branch)
+
+One finder, pointed at sweep 20's commit. Four findings, all inside it. **Not
+clean.** The first is the worst kind: a false claim introduced by the sweep that
+was correcting false claims.
+
+- **"The arrival time is what the retention promise is measured against" is not
+  true.** The promise on both pages is deletion "within twenty-four months of
+  being **resolved**", and no resolution timestamp is stored: `status` is typed
+  `'new'`, written as the literal `'new'`, and nothing in the repository ever
+  rewrites the record. `reviewedAt` exists in the schema and no code path writes
+  it. So the clock the promise names does not start anywhere, and the sweep that
+  added `createdAt` to the published lists justified it with a sentence that is
+  false. Both pages now say what the three fields are for and claim nothing
+  about which one measures the promise. **That the promise cannot presently be
+  administered from the stored record at all is a real finding and is left**: it
+  needs either a resolution timestamp or a different promise, and both are the
+  author's call.
+- **`scales presses down, and only slightly` sliced to the end of the file.**
+  It took the first `scale:` after the first `.pressable`, so deleting the press
+  affordance outright left it reading `scale: 0.98` off `.overlay-panel`, an
+  unrelated Tier 3 arrival, and passing under the message "the press affordance
+  has no scale". Read out of the rule now, and confirmed failing when the rule
+  is deleted. This is the third end-of-file slice found in this one file, the
+  previous two having been fixed the sweep before under a comment explaining the
+  hazard.
+- **The second print assertion was pinned to nothing.** Its neighbour is pinned
+  to an exact selector, with a comment saying why; this one matched a bare
+  `display: revert !important` anywhere in the block, so moving the declaration
+  onto `.site-footer > *` left it green while the children of a collapsed
+  disclosure kept `display: none` on paper — the regression the test is named
+  for. Pinned to its selector, and confirmed failing against that move.
+- **The corpus floor was carried over verbatim** at `> 150` against 189 blocks:
+  the same shape as the `> 20` it replaced and the `BODIES.size > 30` two tests
+  above, both of which this file's own comments condemn. The per-page equality
+  cannot compensate, because both its sides derive from the same `<Scripture`
+  token, so a page that stops writing them scores 0 = 0 and the coverage check
+  iterates nothing for it. Deleting the blocks from RB2, RB3 and S06 — two of
+  them the pages this file's header names as its motivating failures — leaves
+  154 and clears the floor. The count is recorded now, and changing it is part
+  of making a content decision.
+
+The memo added last sweep is correct, with one caveat recorded: its docblock
+says the ids cannot change without a rebuild, which is false under `next dev`,
+where every other page picks up an MDX edit on the next request.
+
+### Gap sweep 22 (follow-up branch)
+
+Widened: the newest commit, plus a rule-by-rule audit of the one file that had
+produced three unbounded slices across two sweeps. Eight findings, most of them
+verified by mutation rather than by reading. **Not clean.**
+
+Fixed:
+
+- **`status` was described as "its place in the queue" on both pages.** It is a
+  write-once literal: typed `'new'`, written `'new'`, and nothing in the
+  repository ever reads or rewrites the store. It records no place and no
+  ordering, and `id` and `createdAt` do all of the finding, answering and
+  deleting on their own. The sweep before rewrote the second half of that
+  sentence to remove a false claim about `createdAt` and left an untrue
+  description of `status` in the first half of the same sentence.
+- **A submitted field was reaching a log line.** `console.info` carried
+  `submission.type`, which is one of the three required fields on the form,
+  against this route's own stated rule — "log statements carry the generated id
+  and the outcome, nothing else" — and against `/privacy/`'s promise that
+  submission contents are never written to a log. The id alone now.
+- **The corpus pin aborted the check it was added to protect.** `toBe(189)` sat
+  before the per-page matcher loop, and a failing `toBe` ends the test, so every
+  legitimate content change would have skipped the assertion the test exists
+  for. It runs last now.
+- **A floor of the shape this suite has replaced three times.**
+  `durations.length >= REQUIRED.length - 2` was 4 against 5 live duration
+  tokens, so deleting `--motion-reveal` left the whole file green while three
+  arrival animations resolved to an invalid duration and never ran — nothing
+  else names that token, because `REQUIRED` omits it and the Tier 3 test matches
+  the *usage*, which survives the declaration. The exact set is asserted now.
+- **Two tests in that file assert nothing at all.** Both iterate `reduceBlocks`
+  with every expectation inside the loop, and the stylesheet contains no
+  `reduce` block — movement is opted into under `no-preference` rather than out
+  of under `reduce` — so they execute zero assertions and pass by vacuity. That
+  is correct for the design and was invisible. A named test now records it and
+  fails the moment a `reduce` block appears, at which point the two loops start
+  meaning something.
+
+Found, evidenced and left:
+
+- **The Tier 1 feedback-timing test is satisfied by a different rule.** Verified
+  by mutation: deleting `a,` from the Tier 1 selector list leaves all six
+  selector assertions true, because a bare `a {` — the prose-link colour rule
+  twenty-five lines above — sits inside the same slice, as does comment prose
+  containing the letter. Prose links, the most numerous interactive element on
+  the site, would silently lose their transition. The same test's slice is
+  bounded by `indexOf('@layer components')`, which on a rename returns `-1` and
+  grows the scope from 5,477 to 30,833 characters, pulling in the print block.
+- **The press-scale test is rule-bounded but location-blind.** Moving
+  `.pressable:active` out of the `no-preference` block is not caught by it or by
+  the movement-confinement test, which inspects only `transition` declarations
+  and the moved rule has none. A reader who asked for reduced motion would get
+  an instant jump to 97% on every press, which is exactly what the comment
+  beside that rule says its placement prevents.
+- **`toBe(189)` is outside the authoring loop.** The maintenance guide's
+  procedure for adding a quotation enumerates every other file to touch and ends
+  at `bun run content:validate`, which does not run vitest. An author follows the
+  documented loop, sees green, and meets the pin only in CI, with the
+  explanation living in a comment in a test file the guide never names.
+- **Four tests read the un-stripped stylesheet**, so a declaration deleted and
+  left quoted in the comment explaining its removal keeps them green. Not
+  currently exploited, but that is this file's documented authoring habit.
+
+### Review threads on PR #9
+
+Two automated review comments, both P2, both against `edebe4e`.
+
+**The trailing-fragment merge** was already fixed in `3bf3f16`, which landed
+after the reviewed commit, with exactly the change asked for: merge only when
+the final paragraph consists solely of the fragment. The reviewer's reading of
+the consequence was right and understated — 35 of the 39 chapters end without
+terminal punctuation, so it fired on nearly all of them rather than on the odd
+one. The thread carries the before-and-after measurements.
+
+**The search index emitted a validator nothing answered**, and this was live.
+The reviewer's claim was that `next start` would still transfer the whole body
+on revalidation, and that the test asserting the two headers exist could not
+detect it. Both are true, and measured: a second request carrying the exact tag
+from the first was answered `200` with all 628,636 bytes again.
+
+The cause is one the diff does not show. The route was `force-static`, so the
+handler ran at build time and never saw a request — nothing could compare
+`If-None-Match`, and the code comment said as much while implying the platform
+handled it. Nothing in this repository configures a CDN that would.
+
+Checked before changing it: the prerendered artefact is
+`.next/server/app/search-index.json.body`, and `.body` is not in the PII scan's
+extension list, so serving the route dynamically drops no gate coverage. The
+handler now answers the conditional itself, with the body and tag built once per
+process, so a revalidating request costs a string comparison and writes no body.
+Measured after: matching tag `304`, weak `W/` form `304`, comma-separated list
+`304`, `*` `304`, stale tag `200` with the full file. The end-to-end test
+asserts the `304` and its empty body, and that a stale tag still gets the file —
+the check that was missing, and the reason the reviewer could see the defect
+when the suite could not.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch
@@ -1474,7 +2181,7 @@ validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
 `test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
 (67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
 Total automated coverage at that merge commit: 1,267 tests. The finished
-branch carries 1,328; section 10 has the breakdown.
+branch carries 1,342; section 10 has the breakdown.
 
 **Review threads**: the automated review on the first commit raised two P2
 findings (permalink loss on demoted headings; component-rendered headings

@@ -128,6 +128,23 @@ describe('cross-references', () => {
     }
   })
 
+  it('keeps sourceIds and citedBy in step, which is the direction that drifted', () => {
+    // Only the first direction was checked, so a source could be dropped from
+    // `citedBy` and left behind on the section. One was: P00 went on listing
+    // `sprinkle-introduction` after that record was corrected to
+    // `citedBy: []` with the note that "it was listed against P00, whose text
+    // never mentions it". Nothing renders `CaseSection.sourceIds`, so the two
+    // could disagree indefinitely without a page ever showing it.
+    const known = new Map(sources.map(source => [source.id, source]))
+    for (const section of caseSections) {
+      for (const sourceId of section.sourceIds) {
+        const source = known.get(sourceId)
+        expect(source, `${section.id} lists unknown source ${sourceId}`).toBeDefined()
+        expect(source?.citedBy, `${section.id} lists ${sourceId}`).toContain(section.id)
+      }
+    }
+  })
+
   it('normalises every Scripture reference in the registry', () => {
     for (const section of caseSections) {
       for (const reference of [...section.primaryPassages, ...section.relatedPassages]) {
@@ -477,5 +494,50 @@ describe('the Scripture corpus does not answer for its prototype', () => {
     expect(hasScripture('Mark 9:42-48')).toBe(true)
     expect(getScripture('Mark 9:42-48')?.reference).toBe('Mark 9:42-48')
     expect(requireScripture('Mark 9:42-48').text.length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * The Scripture corpus is quoted, not written.
+ *
+ * Every full Scripture display on the site renders from this corpus under an
+ * attribution naming the World English Bible, so a transcription slip is a
+ * misquotation of a named translation on a site whose whole argument is that
+ * its sources can be checked. Four verses had lost the space after a comma or
+ * a full stop — "sorcerers,idolaters", "denarii,and he grabbed",
+ * "commandments,that they may", "Gehenna.Yes, I tell you" — across eight
+ * routes, and the project's own migration ledger carried the correct text for
+ * the one it covers.
+ *
+ * Punctuation is never immediately followed by a letter in running English
+ * prose, so the whole class is checkable without a second copy of the Bible.
+ */
+describe('the quoted Scripture text', () => {
+  it('never runs punctuation into the next word', () => {
+    const offenders: string[] = []
+    for (const reference of scriptureReferences) {
+      const quotation = getScripture(reference)
+      const bodies = [quotation?.text ?? '', ...(quotation?.verses ?? []).map(verse => verse.text)]
+      for (const body of bodies) {
+        for (const match of body.matchAll(/[\p{L}\u2019][,;:.!?][\p{L}]/gu)) {
+          const at = match.index ?? 0
+          offenders.push(`${reference}: ...${body.slice(Math.max(0, at - 30), at + 30)}...`)
+        }
+      }
+    }
+    expect([...new Set(offenders)]).toEqual([])
+  })
+
+  it('never carries a doubled space or a space before punctuation', () => {
+    const offenders: string[] = []
+    for (const reference of scriptureReferences) {
+      const quotation = getScripture(reference)
+      const bodies = [quotation?.text ?? '', ...(quotation?.verses ?? []).map(verse => verse.text)]
+      for (const body of bodies) {
+        if (/ {2}/.test(body)) offenders.push(`${reference}: doubled space`)
+        if (/\s[,;:.!?]/.test(body)) offenders.push(`${reference}: space before punctuation`)
+      }
+    }
+    expect([...new Set(offenders)]).toEqual([])
   })
 })

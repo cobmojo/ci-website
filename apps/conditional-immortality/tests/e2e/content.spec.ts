@@ -429,10 +429,10 @@ test.describe('the correction form without scripting', () => {
     // be the form they arrived with. Losing the context here delivers the
     // retry with no page attached and relabelled as a factual correction —
     // the exact failure the redirect was rebuilt to prevent.
-    await page.goto('/corrections/?submitted=0&section=S04&heading=the-text&type=broken-link')
+    await page.goto('/corrections/?submitted=0&section=S04&heading=in-brief&type=broken-link')
 
     await expect(page.locator('input[name="sectionId"]')).toHaveValue('S04')
-    await expect(page.locator('input[name="headingId"]')).toHaveValue('the-text')
+    await expect(page.locator('input[name="headingId"]')).toHaveValue('in-brief')
     await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')
   })
 
@@ -451,14 +451,14 @@ test.describe('the correction form without scripting', () => {
   })
 
   test('carries the section and the type a reader arrived with', async ({ page }) => {
-    await page.goto('/corrections/?section=S04&heading=the-text&type=broken-link#form')
+    await page.goto('/corrections/?section=S04&heading=in-brief&type=broken-link#form')
 
     // Every feedback link on the site ends in `#form`. The link checker cannot
     // see this page any more — it renders on demand, so there is no file for it
     // to read — so the anchor is asserted here instead.
     await expect(page.locator('#form')).toHaveCount(1)
     await expect(page.locator('input[name="sectionId"]')).toHaveValue('S04')
-    await expect(page.locator('input[name="headingId"]')).toHaveValue('the-text')
+    await expect(page.locator('input[name="headingId"]')).toHaveValue('in-brief')
     await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')
   })
 })
@@ -484,7 +484,12 @@ test('a collapsed disclosure prints its contents', async ({ page }) => {
         open: details.open,
         height: Math.round(details.getBoundingClientRect().height),
         contentVisibility: getComputedStyle(details, '::details-content').contentVisibility,
-        characters: (details.textContent ?? '').replace(/\s+/g, ' ').trim().length,
+        // `innerText`, not `textContent`. The latter reads the whole subtree
+        // whether or not any of it is laid out, so it returned ~3,900 for a
+        // disclosure printing 29 characters of summary and this assertion
+        // held against exactly the defect it names. `tests/e2e/print.spec.ts`
+        // documents the same correction; it was made there and not here.
+        characters: (details.innerText ?? '').replace(/\s+/g, ' ').trim().length,
       })),
   )
 
@@ -492,6 +497,10 @@ test('a collapsed disclosure prints its contents', async ({ page }) => {
   for (const details of printed) {
     expect(details.contentVisibility, 'a printed disclosure is still collapsed').not.toBe('hidden')
     expect(details.characters, 'a printed disclosure carries only its summary').toBeGreaterThan(200)
+    // Laid out, not merely present: a rule that hid the content by any other
+    // means would leave the character count intact and the box at summary
+    // height.
+    expect(details.height, 'a printed disclosure is summary-height').toBeGreaterThan(200)
   }
 })
 
@@ -577,6 +586,16 @@ test('the poster link goes where a click on it would go', async ({ page }) => {
   expect(requested).toBeTruthy()
 
   await timestamp.click()
+
+  // Wait for the address, not just the href. The timestamp fires the seek
+  // event synchronously from the link's `onNavigate`, so the poster's href is
+  // rebuilt from React state before the router has committed the URL — and the
+  // Back below depends on the URL, not the state. Without this the history
+  // still held one entry when `goBack` ran and the page went to `about:blank`.
+  // The link carries a focus fragment, so the address ends `?t=107#video-player`
+  // rather than at the parameter.
+  await expect(page).toHaveURL(new RegExp(`[?&]t=${requested}(?:#|$)`))
+
   const poster = page.locator('a.video-play')
   await expect(poster).toHaveAttribute('href', new RegExp(`[?&]t=${requested}$`))
 
@@ -641,24 +660,50 @@ test('filtering the Scripture index leaves nothing pointing at hidden sections',
  * State a reader accumulates
  * ------------------------------------------------------------------ */
 
-test('a second tab adds to the reading record rather than replacing it', async ({ context }) => {
-  // The record was written from memory, so a tab that had loaded before any
-  // reading held an empty list, and one click there replaced four parts
-  // recorded in the other tab with one.
+const FOUR_PARTS = ['S07', 'S10', 'S16', 'S17']
+
+test('a second tab is told what the first one recorded', async ({ context }) => {
   const first = await context.newPage()
   const second = await context.newPage()
   await first.goto('/case/')
   await second.goto('/case/')
 
-  await first.evaluate(() =>
-    localStorage.setItem('ci:case-reading-progress', JSON.stringify(['S07', 'S10', 'S16', 'S17'])),
+  // A write in another document fires `storage` here, and without a listener
+  // for it each tab showed its own stale count and neither corrected itself.
+  // The panel has to be there before the write: its one effect both seeds the
+  // in-memory list and registers the `storage` listener, so a write that lands
+  // first is picked up by the seeding read and proves nothing about either.
+  await expect(second.getByText('No pages opened yet')).toBeVisible()
+  await first.evaluate(
+    parts => localStorage.setItem('ci:case-reading-progress', JSON.stringify(parts)),
+    FOUR_PARTS,
   )
-  await second.locator('a[data-section-id]').first().click()
+  await expect(second.getByText(/You have opened 4 of \d+ pages/)).toBeVisible()
+})
 
-  const stored = await second.evaluate(() =>
+test('a click writes what storage holds, not what this tab remembers', async ({ page }) => {
+  await page.goto('/case/')
+
+  // Seeded from this page, so no `storage` event fires and its in-memory list
+  // stays empty while storage holds four. That is the state the read-merge-
+  // write exists for, and the only one that can tell it from a write built
+  // from memory.
+  //
+  // Seeding from a second tab instead — which is how this was first written —
+  // fires the cross-document event, resyncs the list, and makes a write built
+  // purely from memory produce the same five ids. The test passed against the
+  // implementation it was added to catch.
+  await expect(page.getByText('No pages opened yet')).toBeVisible()
+  await page.evaluate(
+    parts => localStorage.setItem('ci:case-reading-progress', JSON.stringify(parts)),
+    FOUR_PARTS,
+  )
+  await page.locator('a[data-section-id]').first().click()
+
+  const stored: string[] = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('ci:case-reading-progress') ?? '[]'),
   )
-  expect(stored).toEqual(expect.arrayContaining(['S07', 'S10', 'S16', 'S17']))
+  expect(stored).toEqual(expect.arrayContaining(FOUR_PARTS))
   expect(stored.length).toBeGreaterThan(4)
 })
 
@@ -675,7 +720,7 @@ test('the reading count never exceeds what the page can mark', async ({ page }) 
   )
   await page.reload()
 
-  await expect(page.getByText(/You have opened 1 of 40 parts/)).toBeVisible()
+  await expect(page.getByText(/You have opened 1 of 40 pages/)).toBeVisible()
 
   // By part, not by marker: the hub lists some sections twice, once in the
   // guided order and once on the essential path, so one opened part can carry
@@ -689,16 +734,35 @@ test('the reading count never exceeds what the page can mark', async ({ page }) 
     ),
   ])
   expect(markedParts).toEqual(['S04'])
+
+  // And the count the test is named for: membership alone did not deduplicate,
+  // so one id stored forty-five times still read "45 of 40 pages".
+  await page.evaluate(() =>
+    localStorage.setItem('ci:case-reading-progress', JSON.stringify(Array(45).fill('S04'))),
+  )
+  await page.reload()
+  await expect(page.getByText(/You have opened 1 of 40 pages/)).toBeVisible()
 })
 
 test('search filters do not survive a URL that does not carry them', async ({ page }) => {
   await page.goto('/search/?q=hell&type=objection&book=Matthew')
   await expect(page.locator('input[name="type"]:checked')).toHaveCount(1)
 
-  // The controls are uncontrolled defaults, which React sets once. On a URL
-  // without filters they stayed ticked over unfiltered results, and pressing
-  // Search then applied filters the reader never asked for.
-  await page.goto('/search/?q=gehenna')
+  // A soft navigation, not a second `page.goto`. A full load re-renders the
+  // defaults from the server whatever the key does, so a `goto`-based version
+  // of this test passes with the key deleted.
+  const trigger = page.locator('a.search-trigger')
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+  await trigger.click()
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+
+  // And a query that spells the filter it must not be confused with: the key
+  // was a comma-joined string, so "hell,objection" and "hell" plus the
+  // Objections filter produced the same key and the form did not remount.
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('hell,objection')
+  await dialog.getByRole('link', { name: /full search page/i }).click()
+
+  await expect(page).toHaveURL(/q=hell%2Cobjection/)
   await expect(page.locator('input[name="type"]:checked')).toHaveCount(0)
   await expect(page.locator('select[name="book"]')).toHaveValue('')
 })
@@ -714,14 +778,205 @@ test('the search index is fetched once, however search is opened', async ({ page
   await trigger.click()
   await expect(page.getByRole('dialog', { name: 'Search this site' })).toBeVisible()
 
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          performance
-            .getEntriesByType('resource')
-            .filter(entry => entry.name.includes('search-index.json')).length,
-      ),
+  const indexFetches = () =>
+    page.evaluate(
+      () =>
+        performance
+          .getEntriesByType('resource')
+          .filter(entry => entry.name.includes('search-index.json')).length,
     )
-    .toBe(1)
+
+  await expect.poll(indexFetches).toBe(1)
+})
+
+test('search recovers from a failed index fetch, as the failure message promises', async ({
+  page,
+}) => {
+  // The guard that stopped the double fetch was a ref set before the request
+  // and released nowhere, so one dropped connection ended search for the whole
+  // session — while the pane said "Reopen search to try again". Counting
+  // fetches on the success path cannot see that: a latched guard produces the
+  // same 1.
+  let failNext = true
+  await page.route('**/search-index.json', route => {
+    if (failNext) {
+      failNext = false
+      return route.abort('connectionfailed')
+    }
+    return route.continue()
+  })
+
+  await page.goto('/case/')
+  const trigger = page.locator('a.search-trigger')
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+  await trigger.click()
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await expect(dialog.getByText(/could not load/i)).toBeVisible()
+
+  // Reopening is the recovery the reader is told to perform.
+  await page.keyboard.press('Escape')
+  await trigger.click()
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('gehenna')
+  await expect(dialog.getByRole('listitem').first()).toBeVisible()
+})
+
+test('the card route always answers with a card', async ({ request }) => {
+  // `ImageResponse` streams, so a renderer failure lands after the handler has
+  // returned: an Arabic title closed the socket with no response written at
+  // all. The bytes are buffered now so the failure can be answered.
+  const titles = [
+    '', // no title at all
+    'Mark 9:42-48',
+    'العذاب الأبدي', // the script that produced no reply
+    'Hell 🔥 forever? 家族',
+    'x'.repeat(400),
+  ]
+
+  for (const title of titles) {
+    const response = await request.get(`/og/?title=${encodeURIComponent(title)}`)
+    expect(response.status(), `no card for ${JSON.stringify(title.slice(0, 20))}`).toBe(200)
+    expect(response.headers()['content-type']).toContain('image/png')
+    expect((await response.body()).length).toBeGreaterThan(1000)
+  }
+})
+
+test('the search index is revalidated rather than refetched', async ({ request }) => {
+  // 610kB with `must-revalidate` and no validator meant every visit
+  // re-downloaded it — three visits cost 1.8MB — while /privacy/ described it
+  // as downloaded the first time search is opened.
+  const response = await request.get('/search-index.json')
+  expect(response.status()).toBe(200)
+
+  const headers = response.headers()
+  expect(headers.etag, 'no validator to revalidate against').toBeTruthy()
+  expect(headers['cache-control']).toMatch(/max-age=[1-9]/)
+
+  /*
+   * And the validator is answered, which is the part that saves the bytes.
+   *
+   * Asserting that the two headers exist was true of the working version and
+   * of the broken one: the route was `force-static`, so the handler ran at
+   * build time and nothing compared `If-None-Match`. Measured against
+   * `next start`, a second request carrying the exact tag was answered 200
+   * with all 628,636 bytes again, and this test passed.
+   */
+  const revalidated = await request.get('/search-index.json', {
+    headers: { 'if-none-match': headers.etag as string },
+  })
+  expect(revalidated.status(), 'the tag was sent back and the body came with it').toBe(304)
+  expect((await revalidated.body()).length, 'a 304 carrying a body').toBe(0)
+
+  // A stale tag still gets the file, or a reader whose copy is out of date
+  // would be served nothing at all.
+  const stale = await request.get('/search-index.json', {
+    headers: { 'if-none-match': '"not-the-current-index"' },
+  })
+  expect(stale.status()).toBe(200)
+  expect((await stale.body()).length).toBeGreaterThan(1000)
+})
+
+/**
+ * One noun, one meaning.
+ *
+ * The case is 37 parts — three roadblocks and thirty-four numbered arguments —
+ * and the hub lists 40 pages, those parts plus a preface and two appendices.
+ * The homepage, the 404, /start/ and the header nav all send a reader to
+ * "thirty-seven parts"; the hub then headed its list "All 40 parts", said
+ * "Everything in the forty parts", and counted progress "of 40 parts", three
+ * screens below its own sentence defining the preface and appendices as
+ * alongside the parts rather than among them. A reader given one number and
+ * shown another has no way to tell which is wrong.
+ *
+ * Both counts are real and the unit test pins both. What could not stand is
+ * the one word carrying both, so "parts" now always means the 37.
+ */
+test('the case is never described as forty parts', async ({ page }) => {
+  for (const route of ['/', '/case/', '/start/', '/objections/', '/no-such-page/']) {
+    await page.goto(route)
+    const text = await page.locator('body').innerText()
+    expect(text, `${route} says "parts" of a count that is not 37`).not.toMatch(
+      /(?:40|forty)\s+parts/i,
+    )
+  }
+
+  // And the hub agrees with the number every other surface gives.
+  await page.goto('/case/')
+  await expect(page.getByText(/thirty-seven parts/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'All 40 pages' })).toBeVisible()
+})
+
+/**
+ * What scripting-off actually leaves.
+ *
+ * `/accessibility/` said "Three features degrade rather than disappear" and
+ * named three that do. A fourth degrades — the video becomes a link that opens
+ * on YouTube rather than a player that loads in place — and four controls are
+ * absent altogether: the filters above the source library and the Scripture
+ * index, and the reading-progress panel and the print button on the case map.
+ * None of those five was named, and a reader was told the list was complete.
+ * The correction to "four" was itself made in a commit whose test asserted the
+ * three the copy still named, so it could not fail against the undercount it
+ * was added to prevent.
+ *
+ * The page now says what is missing, and this holds it to that: each panel is
+ * gone, and the list it would have narrowed is rendered whole, which is why
+ * their absence hides nothing.
+ */
+test.describe('the panels that need scripting', () => {
+  test.use({ javaScriptEnabled: false })
+
+  test('are absent, over lists that are rendered complete', async ({ page }) => {
+    await page.goto('/case/')
+    await expect(page.getByRole('heading', { name: 'Your reading progress' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Print this map' })).toHaveCount(0)
+    const listed = await page.locator('[data-section-entry]').evaluateAll(nodes => {
+      return new Set(nodes.map(node => node.getAttribute('data-section-entry'))).size
+    })
+    expect(listed, 'the case map lists fewer pages than the case has').toBe(40)
+
+    await page.goto('/sources/')
+    await expect(page.getByRole('heading', { name: 'Narrow the library' })).toHaveCount(0)
+    expect(await page.locator('[data-source-entry]').count()).toBeGreaterThan(30)
+
+    await page.goto('/scripture/')
+    await expect(page.locator('#scripture-filter-title')).toHaveCount(0)
+    // The rows, not the two testament sections that hold them.
+    expect(await page.locator('[data-scripture-row]').count()).toBeGreaterThan(100)
+  })
+})
+
+/**
+ * Every form that sends something to this site is named on `/privacy/`.
+ *
+ * The privacy page said in three places that the correction form is the only
+ * thing the site ever receives, two bullets below the one saying a search term
+ * travels in the address and three screens above its own section saying the
+ * same. Two of the three survived a commit that set out to fix exactly that,
+ * because nothing reads privacy prose and nothing counts the forms.
+ *
+ * This counts them. A third form that posts to this origin fails here, which is
+ * the moment the privacy page needs rewriting.
+ */
+test('the privacy page accounts for every form that submits to this site', async ({ request }) => {
+  const routes = [...(await loadSitemapRoutes(request)), ...EXTRA_ROUTES]
+  const actions = new Set<string>()
+
+  for (const route of routes) {
+    const html = await (await request.get(route)).text()
+    for (const form of html.matchAll(/<form\b[^>]*>/g)) {
+      const action = /\baction="([^"]*)"/.exec(form[0])?.[1]
+      // No action means the form submits to the page it is on.
+      actions.add(action && action !== '' ? action : route)
+    }
+  }
+
+  expect([...actions].sort(), 'a form the privacy page does not know about').toEqual([
+    '/api/feedback/',
+    '/search/',
+  ])
+
+  const privacy = bodyText(await (await request.get('/privacy/')).text())
+  expect(privacy, 'privacy does not mention the search form').toMatch(/search/i)
+  expect(privacy, 'privacy does not mention the correction form').toMatch(/correction/i)
 })

@@ -14,6 +14,7 @@ import { Breadcrumbs } from '@/components/article/article-chrome'
 import { FocusOnArrivalLink } from '@/components/navigation/focus-on-arrival-link'
 import { SearchEmptyState, SearchResultsList } from '@/components/search/search-results'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
+import { searchFormKey } from '@/lib/search-form-key'
 import { searchIndex } from '@/lib/search-index'
 
 export const metadata: Metadata = pageMetadata({
@@ -58,11 +59,30 @@ export default async function SearchPage({
   const query = (firstValue(params.q) ?? '').trim()
   const page = Math.max(1, Number.parseInt(firstValue(params.page) ?? '1', 10) || 1)
 
+  /*
+   * All three filters are checked against what the controls below can offer.
+   *
+   * `type` always was; the other two were passed through. An unrecognised value
+   * excludes every document, so `?q=hell&book=matthew` — the canonical name is
+   * `Matthew` — returned "No results for hell" under an empty query field's
+   * worth of advice about the wording, with the filter panel forced open above
+   * it because a book was selected, and the select showing "Any book" because
+   * no option matched. Nothing on screen said a filter was on, and pressing
+   * Search cleared it, which made the failure look intermittent. Links go
+   * stale on their own too: `referencedBooks` is derived from the passages
+   * actually cited, so the last reference to a book leaving the case turns
+   * every shared URL naming it into a silent zero.
+   */
   const selectedTypes = listValue(params.type).filter((value): value is SearchDocType =>
     (SEARCH_DOC_TYPES as readonly string[]).includes(value),
   )
-  const selectedGroups = listValue(params.group)
-  const selectedBooks = listValue(params.book)
+  const selectedGroups = listValue(params.group).filter(value =>
+    // `Object.hasOwn`, not `in`: `?group=constructor` is inherited, not a group.
+    Object.hasOwn(CASE_GROUP_LABELS, value),
+  )
+  const selectedBooks = listValue(params.book).filter(value =>
+    referencedBooks.some(entry => entry.book === value),
+  )
 
   const filters: SearchFilters = {
     ...(selectedTypes.length ? { type: selectedTypes } : {}),
@@ -79,8 +99,7 @@ export default async function SearchPage({
       })
     : { results: [], total: 0, usedTerms: [] }
 
-  /** Every parameter the form's uncontrolled defaults are built from. */
-  const formKey = [query, ...selectedTypes, '|', ...selectedGroups, '|', ...selectedBooks].join(',')
+  const formKey = searchFormKey(query, selectedTypes, selectedGroups, selectedBooks)
 
   const totalPages = Math.max(1, Math.ceil(outcome.total / PAGE_SIZE))
   const caseGroups = Object.keys(CASE_GROUP_LABELS) as CaseGroup[]

@@ -265,6 +265,6 @@ const ENTRY_POINTS: readonly { href: string; label: string; description: string 
     href: '/scripture/',
     label: 'Scripture index',
     description:
-      'Every reference used anywhere in the case, with links to the sections that treat it.',
+      'Every reference the parts of the case record as their own, with links to the sections that treat it.',
   },
 ]

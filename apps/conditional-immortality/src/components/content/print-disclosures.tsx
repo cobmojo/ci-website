@@ -34,11 +34,16 @@ export function PrintDisclosures() {
     /**
      * A real print fires both signals, not one: `beforeprint` and the media
      * query change. Both are subscribed on purpose, because engines differ over
-     * which they send. Without this guard the second call found everything
-     * already open, collected nothing, and replaced the record of what to close
-     * — so `restore` closed nothing and the reader's page kept every aside
-     * sprung open for the rest of the session, on every print after the first
-     * as well.
+     * which they send, so `openAll` is called twice for one print.
+     *
+     * This stops the second call re-scanning the document. It is no longer what
+     * keeps the record intact — `opened` is a `const` Set that accumulates and
+     * is never replaced, and `openAll` skips anything already open, so the
+     * second call adds nothing and destroys nothing. The failure this once
+     * prevented, where the second signal replaced the record and `restore`
+     * closed nothing, cannot happen against the code as written; it is not the
+     * kind of thing an end-to-end test can show either, so this says so rather
+     * than leaving a test to imply it.
      */
     let printing = false
 
@@ -63,6 +68,19 @@ export function PrintDisclosures() {
     window.addEventListener('beforeprint', openAll)
     window.addEventListener('afterprint', restore)
 
+    /*
+     * Says the listeners are attached.
+     *
+     * Only the print stylesheet works before hydration, and it works in two
+     * engines out of three. A test that dispatches `beforeprint` to check the
+     * half that Firefox depends on therefore has to know this has run: in
+     * WebKit the dispatch landed first and nothing happened, and the test
+     * passed anyway because switching the media query un-collapses the content
+     * by CSS alone there. Waiting on this makes each signal testable on its
+     * own, which is the only way either one can be shown to work.
+     */
+    document.documentElement.dataset.printDisclosures = 'ready'
+
     // Safari fires neither event reliably; it changes the print media query
     // instead, and does so around the same moment.
     const printMedia = window.matchMedia('print')
@@ -76,6 +94,7 @@ export function PrintDisclosures() {
       window.removeEventListener('beforeprint', openAll)
       window.removeEventListener('afterprint', restore)
       printMedia.removeEventListener('change', onMediaChange)
+      delete document.documentElement.dataset.printDisclosures
       restore()
     }
   }, [])

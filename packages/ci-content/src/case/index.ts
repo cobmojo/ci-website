@@ -157,7 +157,7 @@ export const PRINCIPAL_CLAIMS: readonly PrincipalClaim[] = [
  * The recommended essential path.
  *
  * A reader who works through these twelve pages in order meets every load-
- * bearing pillar of the case without reading all thirty-nine.
+ * bearing pillar of the case without reading all forty.
  */
 export const ESSENTIAL_PATH: readonly string[] = [
   'P00',

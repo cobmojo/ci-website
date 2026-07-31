@@ -33,9 +33,10 @@ export default function PrivacyPage() {
             </p>
             <h1 className="mt-0 mb-4">Privacy</h1>
             <p className="m-0 text-[1.13rem] leading-[1.6] text-ink-muted">
-              Reading this site is anonymous. Nothing you read, search for or open is recorded, and
-              the only information the site ever receives is what you deliberately type into the
-              correction form.
+              Reading this site is anonymous. No analytics, no cookies, no account, and nothing you
+              read or open is recorded. Two things you send on purpose do reach the server: a
+              correction, and, if you use the full results page rather than the quick panel, the
+              term you searched for, which travels in the address as with any link.
             </p>
           </header>
 
@@ -57,8 +58,9 @@ export default function PrivacyPage() {
                   ordinary form, so its term travels in the address, as with any link.
                 </li>
                 <li>
-                  The correction form is the only place the site receives anything, and only what
-                  you type.
+                  The correction form is the only thing the site keeps on purpose. It keeps what you
+                  type, the part and heading you arrived from, and the arrival time, reference and
+                  status field listed below.
                 </li>
               </ul>
             </section>
@@ -172,8 +174,10 @@ export default function PrivacyPage() {
                 The correction form
               </h2>
               <p className="m-0 mb-3">
-                The <Link href="/corrections/">corrections form</Link> is the only place this site
-                receives information from you, and it receives only what you type into it.
+                The <Link href="/corrections/">corrections form</Link> is the only thing this site
+                keeps on purpose. It keeps what you type into it, the part and heading you arrived
+                from, and the three things it adds itself, all listed below. A search term from the
+                full results page also reaches the server, in the address, and is not kept.
               </p>
 
               <h3 className="mt-6 mb-2">What it collects</h3>
@@ -190,8 +194,17 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   <strong>Context:</strong> the part identifier of the page you came from, when you
-                  arrive from a link on a section page. This is a short code such as S04, and it
-                  exists so that a correction can be matched to the page it is about.
+                  arrive from a link on a section page, and a heading anchor if the address you
+                  arrived with carries one. These are a short code such as S04 and an anchor such as
+                  in-brief, and they exist so that a correction can be matched to the place it is
+                  about. No link on this site puts a heading in the address today, and an anchor is
+                  read only when the address also names a part it belongs to.
+                </li>
+                <li>
+                  <strong>Added by the server:</strong> the time the submission arrived and a
+                  reference for it, so that a submission can be found, answered and deleted, and a
+                  status field which is written once and is the same on every record. Nothing about
+                  you is derived from any of the three.
                 </li>
               </ul>
               <p className="m-0 mb-3">

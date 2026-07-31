@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { caseSections } from '../case/index'
-import { extractHeadings, listMdx, mdxExists, readMdx, sectionFileName } from '../mdx'
+import {
+  extractHeadings,
+  listMdx,
+  mdxExists,
+  readMdx,
+  sectionCollection,
+  sectionFileName,
+} from '../mdx'
 import { sources } from '../sources/index'
 
 /**
@@ -12,16 +19,27 @@ import { sources } from '../sources/index'
  * a source cited twice in the body was missing from the list, and another was
  * listed on a page whose text never mentions it.
  *
- * Only sections with an MDX body can be checked. The two appendices are built
- * from structured data and have no body to read, so a `citedBy` entry naming
- * one of them is left alone rather than assumed wrong.
+ * Every section has a body, including both appendices. This read only the
+ * `case` collection on the stated premise that "the two appendices are built
+ * from structured data and have no body to read", and asserted
+ * `caseSections.length - 2` to hold that premise in place, so the two checks
+ * below covered 38 of the 40 pages that can drift. Both appendices cite
+ * `welch-source-document` inline, and nothing here could have failed against
+ * that source dropping either of them from `citedBy`.
  */
 
 const BODIES = new Map<string, string>(
   caseSections
-    .map(section => [section.id, sectionFileName(section.id, section.slug)] as const)
-    .filter(([, file]) => mdxExists('case', file))
-    .map(([id, file]) => [id, readMdx('case', file)]),
+    .map(
+      section =>
+        [
+          section.id,
+          sectionCollection(section.group),
+          sectionFileName(section.id, section.slug),
+        ] as const,
+    )
+    .filter(([, collection, file]) => mdxExists(collection, file))
+    .map(([id, collection, file]) => [id, readMdx(collection, file)]),
 )
 
 /** Source ids cited inline in a section body. */
@@ -30,9 +48,9 @@ function citedIn(body: string): Set<string> {
 }
 
 describe('sources cited on a page', () => {
-  it('has a body to read for all but the two appendices', () => {
+  it('has a body to read for every section', () => {
     // If this ever drops, the checks below quietly stop covering sections.
-    expect(BODIES.size).toBe(caseSections.length - 2)
+    expect(BODIES.size).toBe(caseSections.length)
   })
 
   it('lists every source a section actually cites', () => {

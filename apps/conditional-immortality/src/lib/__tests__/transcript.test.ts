@@ -164,3 +164,98 @@ describe('cuesToParagraphs', () => {
     expect(cuesToParagraphs(cues('   ', '\n'))).toEqual([])
   })
 })
+
+/**
+ * The transcript's own promise, on both surfaces it appears on.
+ *
+ * `/watch/` and `/download/transcript.txt` say "the cue times and wording are
+ * the published ones; only whitespace was normalised". Grouping cues into
+ * paragraphs is the one place that could break it, and it did: splitting on
+ * every full stop treated the ones inside numbers and domains as sentence
+ * ends, so the speaker's "about 0.00001%" rendered as a paragraph ending
+ * "about 0." followed by an orphan "00001%,", and "rethinking hell.com" as
+ * "rethinking hell. com".
+ */
+describe('the published wording, paragraph by paragraph', () => {
+  const cue = (text: string, start: number): TranscriptCue => ({
+    start,
+    duration: 5,
+    text,
+  })
+
+  /** Exactly what the cues said, with runs of whitespace collapsed. */
+  const published = (cues: readonly TranscriptCue[]) =>
+    cues
+      .map(entry => entry.text.trim())
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+  it('keeps a decimal inside the sentence that contains it', () => {
+    // One cue, as the published captions have it: the split under test is the
+    // paragraph one, not the cue one.
+    const cues = [
+      cue('has been doled out so far?" And God says, "Oh, about 0.00001%," which', 0),
+      cue('is a very small number indeed. Then he stops. And starts again.', 5),
+    ]
+    const rendered = cuesToParagraphs(cues).join(' ')
+    expect(rendered).toContain('0.00001%')
+    expect(rendered).not.toMatch(/about 0\.\s/)
+  })
+
+  it('keeps a dotted domain whole', () => {
+    const cues = [cue('go to rethinking hell.com or google it. Then read what is there.', 0)]
+    const rendered = cuesToParagraphs(cues).join(' ')
+    expect(rendered).toContain('rethinking hell.com')
+    expect(rendered).not.toContain('hell. com')
+  })
+
+  it('joins back to exactly what the cues said', () => {
+    const cues = [
+      cue('First sentence here. Second one follows, at 0.5 per cent.', 0),
+      cue('Third asks a question? Fourth exclaims! Fifth ends here.', 5),
+      cue('A sixth, longer sentence that runs on for a while and then stops.', 10),
+    ]
+    expect(cuesToParagraphs(cues).join(' ').replace(/\s+/g, ' ').trim()).toBe(published(cues))
+  })
+
+  it('attaches a stray fragment to the paragraph before it', () => {
+    // Six sentences group into two paragraphs of three, leaving the fragment
+    // alone in a third. That is the case this rule is for.
+    const cues = [cue('One here. Two here. Three here. Four here. Five here. Six here. The', 0)]
+    expect(cuesToParagraphs(cues)).toEqual([
+      'One here. Two here. Three here.',
+      'Four here. Five here. Six here. The',
+    ])
+  })
+
+  it('leaves every other paragraph break alone when a chapter ends mid-sentence', () => {
+    // Seven sentences plus a fragment: the fragment shares the last paragraph,
+    // so there is no stray to move. Testing the paragraph rather than the
+    // sentence merged these two paragraphs anyway — and because 35 of the 39
+    // chapters end without terminal punctuation, it did so nearly everywhere,
+    // taking the transcript from 112 paragraphs to 79 with twenty-one chapters
+    // reduced to a single block.
+    const cues = [
+      cue('One here. Two here. Three here. Four here. Five here. Six here.', 0),
+      cue('Seven here. The', 5),
+    ]
+    expect(cuesToParagraphs(cues)).toEqual([
+      'One here. Two here. Three here.',
+      'Four here. Five here. Six here.',
+      'Seven here. The',
+    ])
+  })
+
+  it('paragraphs a chapter the same whether or not it ends on a stray word', () => {
+    // A caption track that stops one word into a sentence is the same prose as
+    // one that stops cleanly; the trailing word must not change how the rest is
+    // broken up.
+    const nine = 'A one. B two. C three. D four. E five. F six. G seven. H eight. I nine.'
+    const clean = cuesToParagraphs([cue(nine, 0)])
+    const strayed = cuesToParagraphs([cue(`${nine} And`, 0)])
+    expect(strayed).toHaveLength(clean.length)
+    expect(strayed.slice(0, -1)).toEqual(clean.slice(0, -1))
+    expect(strayed.at(-1)).toBe(`${clean.at(-1)} And`)
+  })
+})

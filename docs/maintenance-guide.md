@@ -257,6 +257,11 @@ order, scores, matched fields and terms. A deliberate ranking change means
 regenerating it in the same commit and saying why; an accidental one fails the
 suite, which is the point.
 
+Run `bun run packages/ci-search/scripts/ranking-baseline.ts` to see what
+moved, per query and per row, before deciding whether it should have. Apply the
+result by hand: rewriting the file wholesale reformats 4,000 lines of JSON and
+hides the one line that changed.
+
 ---
 
 ## Work on the fitted search excerpt

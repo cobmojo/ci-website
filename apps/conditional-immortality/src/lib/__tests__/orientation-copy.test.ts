@@ -16,7 +16,7 @@ const SURFACES = [
   'src/app/page.tsx ("thirty-seven parts")',
   'src/app/not-found.tsx ("thirty-seven parts")',
   'src/app/start/page.tsx ("thirty-seven parts, with a preface and two appendices")',
-  'src/app/case/page.tsx (header, "Twelve pages", "all forty")',
+  'src/app/case/page.tsx (header, "Twelve pages", "All 40 pages")',
   'src/lib/navigation.ts ("All 37 parts")',
 ].join(', ')
 
@@ -34,7 +34,7 @@ describe('the part counts the orientation copy relies on', () => {
     expect(parts.filter(section => section.group !== 'roadblock').length).toBe(34)
   })
 
-  it('has 40 entries in all, as "all forty" on the case hub states', () => {
+  it('has 40 entries in all, as "All 40 pages" on the case hub states', () => {
     expect(caseSections.length).toBe(40)
   })
 

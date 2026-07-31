@@ -1,3 +1,4 @@
+import { getSection } from '@ci/content/case'
 import { revisions } from '@ci/content/revisions'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
@@ -6,7 +7,30 @@ import { FeedbackForm } from '@/components/feedback/feedback-form'
 import { RelatedPages } from '@/components/navigation/related-pages'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
+import { loadSection, sectionBodyExists } from '@/lib/sections'
 import { siteConfig } from '@/lib/site-config'
+
+/**
+ * Heading ids per section, read once per process.
+ *
+ * This route renders per request, so calling `loadSection` from the handler
+ * put a synchronous `readFileSync` and eleven chained whole-body regexes on
+ * the request path, for a body averaging 8.5kB, to answer one question about a
+ * set of ids. Every other caller is statically generated. The ids cannot change
+ * without a rebuild, so they are computed on first use and kept.
+ */
+const HEADING_IDS = new Map<string, ReadonlySet<string>>()
+
+function headingIdsFor(
+  id: string,
+  section: Parameters<typeof loadSection>[0],
+): ReadonlySet<string> {
+  const cached = HEADING_IDS.get(id)
+  if (cached) return cached
+  const ids = new Set(loadSection(section).headings.map(heading => heading.id))
+  HEADING_IDS.set(id, ids)
+  return ids
+}
 
 const CRUMBS: readonly Crumb[] = [
   { href: '/', label: 'Home' },
@@ -42,6 +66,24 @@ export default async function CorrectionsPage({
   const params = await searchParams
   const one = (value: string | string[] | undefined): string | undefined =>
     Array.isArray(value) ? value[0] : value
+  const knownSectionId = (value: string | undefined): string =>
+    value && getSection(value) ? value : ''
+  /*
+   * A heading id is checked against the headings that section actually has,
+   * for the reason the section id is checked against the registry. Bounding it
+   * at the schema's 128 characters was not a check: a longer value was
+   * silently truncated to a prefix that resolves to no heading and stored
+   * anyway, where the section id was dropped rather than mangled. Both are
+   * listed on `/privacy/` as what a submission carries, so both have to be
+   * something this site put in the address.
+   */
+  const knownHeadingId = (section: string, value: string | undefined): string => {
+    if (!value || !section) return ''
+    const record = getSection(section)
+    if (!record || !sectionBodyExists(record)) return ''
+    return headingIdsFor(record.id, record).has(value) ? value : ''
+  }
+  const sectionId = knownSectionId(one(params.section) ?? one(params.sectionId))
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(CRUMBS)} />
@@ -112,8 +154,13 @@ export default async function CorrectionsPage({
                   empty and nothing is stored in their place.
                 </li>
                 <li>
-                  The part of the site you came from, when you arrive from a link on a section page.
-                  This is a section identifier such as S04, nothing more.
+                  The part of the site you came from, when you arrive from a link on a section page,
+                  and a heading anchor if the address carries one. These are a section identifier
+                  such as S04 and an anchor such as in-brief, nothing more.
+                </li>
+                <li>
+                  The time it arrived and a reference for it, added by the server so that a
+                  submission can be found, answered and deleted, and a status field written once.
                 </li>
                 <li>
                   Your network address is used only to limit how many submissions one connection can
@@ -143,9 +190,27 @@ export default async function CorrectionsPage({
               To send a correction, visit {siteConfig.url}/corrections/ in a browser.
             </p>
 
+            {/*
+             * Both are checked here, where they enter, and not only where they
+             * are echoed back.
+             *
+             * The hidden `sectionId` field is filled straight from the address,
+             * and the schema bounds it at 16 characters. A longer value made
+             * every submission from that URL fail: with scripting, on a banner
+             * reading "Not recorded. Form: Too big" — naming no control on the
+             * page, because the rejected value is in the address bar and not in
+             * any field — and without it, on the message telling the reader to
+             * check wording that was never the problem, with their text gone.
+             * Retrying from the same URL failed identically every time.
+             *
+             * A section id is only ever put there by this site, and always a
+             * real one, so anything that does not resolve is not a correction
+             * about a page. Dropping it sends an unattached correction, which
+             * is what the form does with no `?section=` at all.
+             */}
             <FeedbackForm
-              sectionId={one(params.section) ?? one(params.sectionId) ?? ''}
-              headingId={one(params.heading) ?? one(params.headingId) ?? ''}
+              sectionId={sectionId}
+              headingId={knownHeadingId(sectionId, one(params.heading) ?? one(params.headingId))}
               type={one(params.type)}
               submitted={one(params.submitted)}
             />

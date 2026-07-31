@@ -68,6 +68,25 @@ export function transcriptSegments(): readonly TranscriptSegment[] {
 }
 
 /**
+ * Split on sentence ends, and only on sentence ends.
+ *
+ * Matching "anything up to a full stop" treats every full stop as a boundary,
+ * including the ones inside numbers and domain names. The transcript said so
+ * itself — "the cue times and wording are the published ones; only whitespace
+ * was normalised" — while rendering the speaker's "about 0.00001%" as a
+ * paragraph ending "about 0." followed by an orphan "00001%,", and "rethinking
+ * hell.com" as "rethinking hell. com".
+ *
+ * A sentence ends where terminal punctuation is followed by space and then
+ * something that starts a sentence. A decimal point has no space after it, and
+ * neither does a dotted domain, so both survive.
+ */
+function splitSentences(text: string): string[] {
+  const sentences = text.split(/(?<=[.!?]["')\]]*)\s+(?=["'([]*[A-Z0-9])/)
+  return sentences.map(sentence => sentence.trim()).filter(Boolean)
+}
+
+/**
  * Cue text joined into readable paragraphs.
  *
  * Caption cues break on timing, not on sense, so a cue almost never ends at a
@@ -85,7 +104,7 @@ export function cuesToParagraphs(
     .trim()
   if (!text) return []
 
-  const sentences = text.match(/[^.!?]+(?:[.!?]+["')\]]*|$)/g) ?? [text]
+  const sentences = splitSentences(text)
   const paragraphs: string[] = []
   for (let i = 0; i < sentences.length; i += sentencesPerParagraph) {
     const chunk = sentences
@@ -94,5 +113,33 @@ export function cuesToParagraphs(
       .join(' ')
     if (chunk) paragraphs.push(chunk)
   }
+
+  /*
+   * A chapter's captions can stop mid-sentence, because the boundary is a
+   * timestamp rather than a full stop. That trailing fragment belongs to the
+   * sentence it came from, not to a paragraph of its own: one chapter ends on
+   * the single word "The", which read as a mistake standing alone. Joined, not
+   * dropped — the words are the published ones.
+   *
+   * Only when the fragment is the whole of the last paragraph. Testing the
+   * paragraph rather than the sentence, and merging the last two paragraphs,
+   * looked the same on the one chapter it was written for and was not: 35 of
+   * the 39 chapters end without terminal punctuation, so it fired on nearly
+   * all of them and joined two full paragraphs of prose. The transcript went
+   * from 112 paragraphs to 79, twenty-one chapters became a single block, and
+   * one paragraph reached 195 words. The words were all still there, which is
+   * the promise this code exists to keep, and the reflow a reader can follow
+   * was gone.
+   */
+  const fragment = sentences.at(-1)
+  if (
+    paragraphs.length > 1 &&
+    fragment &&
+    !/[.!?]["')\]]*$/.test(fragment) &&
+    paragraphs.at(-1) === fragment
+  ) {
+    paragraphs.splice(-2, 2, `${paragraphs.at(-2)} ${fragment}`)
+  }
+
   return paragraphs
 }

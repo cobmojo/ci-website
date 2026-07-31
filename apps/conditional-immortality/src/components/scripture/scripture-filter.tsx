@@ -154,27 +154,34 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
         </button>
       </div>
 
-      <p
-        aria-live="polite"
-        className="m-0 mt-3 font-sans text-[0.88rem] text-ink-subtle tabular-nums"
-      >
-        {active
-          ? `Showing ${shown} of ${total} references.`
-          : `Showing all ${total} references. Filtering only hides rows; nothing is removed from the page.`}
-      </p>
-
-      {/* Without this, a filter matching nothing left the page silent: the
-          index emptied out and the only words on it were a count of zero.
-          `/search/` answers the same situation in prose, and so does this. */}
-      {active && shown === 0 ? (
-        // Inside a live region: the status line announces "Showing 0 of 208"
-        // and this names the way out, so a screen-reader user who heard the
-        // first should hear the second.
-        <p aria-live="polite" className="m-0 mt-3 text-[1.02rem] text-ink-muted">
-          Nothing in the index matches that. Try a book name, a chapter, or a reference such as
-          Matthew 10:28, or show every reference again.
+      {/*
+       * One region, mounted from the first render, for both sentences.
+       *
+       * The recovery sentence below carried its own `aria-live` and entered
+       * the DOM in the same mutation as its text. A region has to be in the
+       * accessibility tree before its contents change for the change to be
+       * announced, so a screen-reader user narrowing to nothing heard the
+       * count fall to zero and then silence — which is the silence the
+       * sentence was added to end. The search dialog and the correction form
+       * both write into a region that is already there; this now does too.
+       */}
+      <div aria-live="polite">
+        <p className="m-0 mt-3 font-sans text-[0.88rem] text-ink-subtle tabular-nums">
+          {active
+            ? `Showing ${shown} of ${total} references.`
+            : `Showing all ${total} references. Filtering only hides rows; nothing is removed from the page.`}
         </p>
-      ) : null}
+
+        {/* Without this, a filter matching nothing left the page silent: the
+            index emptied out and the only words on it were a count of zero.
+            `/search/` answers the same situation in prose, and so does this. */}
+        {active && shown === 0 ? (
+          <p className="m-0 mt-3 text-[1.02rem] text-ink-muted">
+            Nothing in the index matches that. Try a book name, a chapter, or a reference such as
+            Matthew 10:28, or show every reference again.
+          </p>
+        ) : null}
+      </div>
     </section>
   )
 }

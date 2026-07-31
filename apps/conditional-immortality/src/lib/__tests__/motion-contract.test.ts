@@ -73,6 +73,37 @@ function withoutComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '')
 }
 
+/**
+ * Where the print block starts and ends, by brace matching.
+ *
+ * `@media print` is the last block in `globals.css`, so slicing from its
+ * opening keyword to the end of the file makes "inside print" true of anything
+ * appended after it — including a rule lifted out of the block and left to
+ * apply on screen, which is what these assertions exist to prevent. Both tests
+ * below were satisfied by exactly that edit.
+ *
+ * The scan is safe here: the stripped stylesheet contains no brace inside a
+ * quoted string and none inside a `url(...)`.
+ */
+function printBounds(live: string): { start: number; end: number } {
+  const start = live.indexOf('@media print')
+  if (start === -1) return { start: -1, end: -1 }
+  let depth = 0
+  for (let index = start; index < live.length; index += 1) {
+    if (live[index] === '{') depth += 1
+    else if (live[index] === '}') {
+      depth -= 1
+      if (depth === 0) return { start, end: index }
+    }
+  }
+  return { start, end: live.length }
+}
+
+function printBlock(live: string): string {
+  const { start, end } = printBounds(live)
+  return start === -1 ? '' : live.slice(start, end)
+}
+
 interface Declaration {
   readonly property: string
   readonly value: string
@@ -168,7 +199,24 @@ describe('motion tokens', () => {
       .filter(entry => entry.property.startsWith('--motion-'))
       .map(entry => ({ token: entry.property, ms: Number.parseFloat(entry.value) }))
 
-    expect(durations.length).toBeGreaterThanOrEqual(REQUIRED.length - 2)
+    /*
+     * The exact set, not a floor.
+     *
+     * `>= REQUIRED.length - 2` was 4 against 5 live duration tokens, so
+     * deleting `--motion-reveal` left it green — and nothing else names that
+     * token: `REQUIRED` omits it, and the Tier 3 test matches the *usage*
+     * `var(--motion-reveal)`, which survives the declaration going away. The
+     * file stayed green while three arrival animations resolved to an invalid
+     * duration and never ran. Same "true of 5 and true of 4" shape as the
+     * floors this suite has now had to replace three times elsewhere.
+     */
+    expect(durations.map(entry => entry.token).sort()).toEqual([
+      '--motion-feedback',
+      '--motion-overlay',
+      '--motion-overlay-exit',
+      '--motion-press',
+      '--motion-reveal',
+    ])
     for (const { token, ms } of durations) {
       expect(Number.isFinite(ms), `${token} is not a time`).toBe(true)
       expect(ms, `${token} is above the 300ms ceiling`).toBeLessThanOrEqual(300)
@@ -190,6 +238,20 @@ describe('motion tokens', () => {
  * ------------------------------------------------------------------ */
 
 describe('reduced motion', () => {
+  it('has no reduce block, which is what makes the checks below vacuous today', () => {
+    /*
+     * Movement is opted *into* under `no-preference` rather than out of under
+     * `reduce`, so there is no `reduce` block in the stylesheet — and the two
+     * tests below iterate `reduceBlocks` with every assertion inside the loop,
+     * so they run zero assertions and pass by having nothing to look at.
+     *
+     * That is correct for the current design and invisible without this line.
+     * If a `reduce` block is ever added, this fails and says so, and the two
+     * loops below start meaning something.
+     */
+    expect(reduceBlocks).toEqual([])
+  })
+
   it('opts into movement rather than out of it', () => {
     // The still variant has to be the default, so a browser matching neither
     // query still gets it.
@@ -344,8 +406,12 @@ describe('animation craft', () => {
   })
 
   it('scales presses down, and only slightly', () => {
-    const press = css.slice(css.indexOf('.pressable'))
-    const match = press.match(/scale:\s*([0-9.]+)/)
+    // Read out of the rule, not out of the rest of the file. This sliced from
+    // the first `.pressable` to EOF and took the first `scale:` anywhere in it,
+    // so deleting the press affordance outright left it reading `scale: 0.98`
+    // off `.overlay-panel`, an unrelated Tier 3 arrival, and passing under the
+    // message "the press affordance has no scale".
+    const match = withoutComments(css).match(/\.pressable:active\s*\{[^}]*\bscale:\s*([0-9.]+)/)
     expect(match, 'the press affordance has no scale').not.toBeNull()
     const factor = Number.parseFloat(match?.[1] ?? 'NaN')
     expect(factor).toBeLessThan(1)
@@ -394,28 +460,75 @@ describe('print', () => {
     // pseudo-element, and every collapsed disclosure printed as its summary and
     // nothing else. So the rule is now what the test's name always meant —
     // nothing may collapse it, and print must actively un-collapse it.
+    //
+    // An allow-list, because every deny-list of collapsing properties has been
+    // short. The first rewrite named `block-size`, `content-visibility: hidden`
+    // and `overflow: hidden`, which let `overflow: clip` and
+    // `content-visibility: auto` through. Naming those two as well would still
+    // have let `max-height: 0`, `display: none`, `visibility: hidden` and
+    // `contain: strict` past, and matching `::details-content\s*\{` would have
+    // missed `details::details-content, .x { … }` entirely. So: enumerate the
+    // rules that target the pseudo-element at all, and require the one that
+    // exists to be exactly the declaration that un-collapses it.
     const live = withoutComments(css)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*block-size/)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*content-visibility:\s*hidden/)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*overflow:\s*hidden/)
+    const printAt = live.indexOf('@media print')
+    expect(printAt).toBeGreaterThan(-1)
+    // One print block, so `indexOf` is the boundary and not a false floor: a
+    // second block above this one would shrink the screen-side check to
+    // whatever preceded it.
+    expect(live.split('@media print').length - 1).toBe(1)
 
-    const print = live.slice(live.indexOf('@media print'))
-    expect(print).toMatch(
-      /details::details-content\s*\{\s*content-visibility:\s*visible\s*!important/,
+    const targeting = [...live.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter(([, selector]) =>
+      (selector ?? '').includes('::details-content'),
     )
+    expect(targeting.length, 'no rule targets ::details-content at all').toBe(1)
+
+    const [rule] = targeting
+    const at = rule?.index ?? -1
+
+    // Bounded by the block's closing brace, not by its opening one: see
+    // `printBounds`.
+    const { end: printEnd } = printBounds(live)
+
+    // On screen the premise still holds: nothing targets it, which is the only
+    // configuration Chromium 148 opens correctly.
+    expect(at, 'a rule targets ::details-content before @media print').toBeGreaterThan(printAt)
+    expect(at, 'a rule targets ::details-content after @media print closes').toBeLessThan(printEnd)
+
+    const declarations = (rule?.[2] ?? '')
+      .split(';')
+      .map(part => part.trim())
+      .filter(Boolean)
+    expect(declarations).toEqual(['content-visibility: visible !important'])
+    expect(rule?.[1]?.trim()).toBe('details::details-content')
   })
 
   it('keeps disclosures open on paper', () => {
     // Index into the stripped string, not the original: comments shift offsets.
+    //
+    // Bounded by the closing brace, for the reason set out in the test above.
+    // This sliced to the end of the file, and `@media print` is the last block
+    // in it, so both assertions were satisfied by either `!important` rule
+    // lifted out of the block and appended after it — where they would force
+    // every disclosure and its children open **on screen**, site-wide.
+    // Measured: the print block closes at offset 14868 and a rule moved to the
+    // end lands at 14873, and both matched.
     const live = withoutComments(css)
-    const print = live.slice(live.indexOf('@media print'))
+    const print = printBlock(live)
     // Pinned to the exact selector. `details[^{]*` would also accept
     // `details[open]`, which forces open only what is already open — the
     // regression this line exists to catch.
     expect(print).toMatch(
       /details:not\(\[class~="print:hidden"\]\)\s*\{\s*display:\s*block\s*!important/,
     )
-    expect(print).toMatch(/display:\s*revert\s*!important/)
+    // Pinned to its selector too. Written as a bare `display: revert`, any rule
+    // in the print block satisfied it: moving the declaration onto
+    // `.site-footer > *` left this green while the children of a collapsed
+    // disclosure kept the browser's `display: none` on paper, which is the
+    // regression this test is named for.
+    expect(print).toMatch(
+      /details\[open\]\s*>\s*\*,\s*details\s*>\s*\*\s*\{\s*display:\s*revert\s*!important/,
+    )
   })
 
   it('reveals the body of a closed disclosure, which `display` alone cannot reach', () => {

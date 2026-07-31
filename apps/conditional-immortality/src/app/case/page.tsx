@@ -25,7 +25,7 @@ import { loadSection } from '@/lib/sections'
  *
  * This page is a map, not an essay. It states how the argument is put together,
  * names the six claims the whole thing rests on, offers a short path for a
- * reader who does not want to read all forty parts, and then lists every part
+ * reader who does not want to read all forty pages, and then lists every one
  * with enough information to choose between them.
  *
  * Reading times are computed from the MDX bodies at build time, so they cannot
@@ -40,11 +40,11 @@ const CRUMBS: readonly Crumb[] = [
 export const metadata: Metadata = pageMetadata({
   title: 'The Case',
   description:
-    'A map of the cumulative biblical case for conditional immortality: the method, the six principal claims, a twelve page essential path, and all forty parts grouped by the work they do.',
+    'A map of the cumulative biblical case for conditional immortality: the method, the six principal claims, a twelve page essential path, and all forty pages grouped by the work they do.',
   route: '/case/',
 })
 
-/** Reading time for every part, read once from the MDX bodies at build time. */
+/** Reading time for every page, read once from the MDX bodies at build time. */
 const READING_MINUTES: ReadonlyMap<string, number> = new Map(
   caseSections.map(section => [section.id, loadSection(section).readingMinutes]),
 )
@@ -53,7 +53,7 @@ function readingMinutesFor(section: CaseSection): number {
   return READING_MINUTES.get(section.id) ?? 1
 }
 
-/** One line on what each group of parts is for. */
+/** One line on what each group of pages is for. */
 const GROUP_PURPOSE: Record<CaseGroup, string> = {
   preface: 'Why the question is worth the work, and what this document is.',
   roadblock:
@@ -105,7 +105,7 @@ export default function CaseHubPage() {
             id="jump-to-group"
             className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
           >
-            Jump to a group of parts
+            Jump to a group of pages
           </h2>
           <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-sans text-[0.9rem]">
             {caseSectionsByGroup.map(bucket => (
@@ -159,9 +159,9 @@ export default function CaseHubPage() {
             The six principal claims
           </h2>
           <p className="m-0 mb-6 text-[1.05rem] text-ink-muted">
-            Everything in the forty parts is in service of these six claims. If they hold, the
-            conclusion follows. If they do not, the case fails, and the parts that would have to be
-            answered are named beside each one.
+            Everything in the case is in service of these six claims. If they hold, the conclusion
+            follows. If they do not, the case fails, and the parts that would have to be answered
+            are named beside each one.
           </p>
           <ol className="m-0 grid list-none gap-4 p-0 lg:grid-cols-2">
             {PRINCIPAL_CLAIMS.map(claim => {
@@ -247,16 +247,16 @@ export default function CaseHubPage() {
 
         {/* ---------------------------------------------------------------- */}
 
-        <ReadingProgress total={caseSections.length} />
+        <ReadingProgress />
 
         {/* ---------------------------------------------------------------- */}
 
         <section aria-labelledby="all-parts" className="mt-12">
           <h2 id="all-parts" className="mt-0 mb-3 text-[1.35rem]">
-            All {caseSections.length} parts
+            All {caseSections.length} pages
           </h2>
           <p className="m-0 mb-8 text-[1.05rem] text-ink-muted">
-            Grouped by the work each part does. The permanent id beside every title never changes,
+            Grouped by the work each page does. The permanent id beside every title never changes,
             even if a title or a route is revised later, so it is safe to cite.
           </p>
 
@@ -270,7 +270,7 @@ export default function CaseHubPage() {
               <h3 id={`${bucket.group}-title`} className="mt-0 mb-1 text-[1.15rem]">
                 {bucket.label}
                 <span className="ml-2 font-sans text-[0.85rem] font-normal text-ink-subtle">
-                  {bucket.sections.length} {bucket.sections.length === 1 ? 'part' : 'parts'}
+                  {bucket.sections.length} {bucket.sections.length === 1 ? 'page' : 'pages'}
                 </span>
               </h3>
               <p className="m-0 mb-4 text-[1rem] text-ink-muted">{GROUP_PURPOSE[bucket.group]}</p>
@@ -318,8 +318,9 @@ export default function CaseHubPage() {
             Read or keep the whole case
           </h2>
           <p className="m-0 mb-4 text-[1rem] text-ink-muted">
-            Every part is also available as one continuous page for reading offline or on paper, and
-            as files you can keep. Printing from here gives you this map rather than the argument.
+            The whole case is also available as one continuous page for reading offline or on paper,
+            and as files you can keep. Printing from here gives you this map rather than the
+            argument.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/full-case/" className={buttonVariants({ variant: 'primary' })}>
