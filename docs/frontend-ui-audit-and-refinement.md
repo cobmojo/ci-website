@@ -1128,6 +1128,14 @@ is the finding.
   test; an unused prop; and two code comments that described behaviour the code
   does not have.
 
+The focus fix then put `/corrections/` 77 bytes over its first-load budget, on
+a route that had 201 bytes of headroom. The budget was not widened. The five
+status branches in the submit handler each set the status and the detail and
+returned; they now go through one `settle` call that also moves focus, which
+removed the separate effect and the render-guard ref along with the
+duplication. 679,930 bytes against 680,000, and the shorter path is the better
+one regardless.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

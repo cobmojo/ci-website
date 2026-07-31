@@ -170,9 +170,9 @@ function readType(value: string | null): FeedbackType {
  */
 const REDIRECT_DETAIL: Partial<Record<SubmissionStatus, string>> = {
   invalid:
-    'The values sent could not be accepted. Check that the message is at least twenty characters and that any web address is complete, then send it again. Your text was not kept, so it will need retyping.',
+    'The values sent could not be accepted, and your text was not kept. Check that the message is at least twenty characters and that any web address is complete, then send it again.',
   error:
-    'The server did not record it. This is a fault at our end, not with what you wrote. Your text was not kept, so it will need retyping. Please try again in a few minutes.',
+    'The server did not record it, and your text was not kept. This is a fault at our end, not with what you wrote. Please try again in a few minutes.',
 }
 
 /** What `?submitted=` means, and what the reader is told about it. */
@@ -264,33 +264,29 @@ function FeedbackFormFields({
   const [scripted, setScripted] = useState(false)
   const honeypotRef = useRef<HTMLInputElement>(null)
   const statusRef = useRef<HTMLDivElement>(null)
-  const settledOnce = useRef(false)
 
   useEffect(() => setScripted(true), [])
 
   /**
-   * Take the reader to the result of their submission.
+   * Report the outcome, and take the reader to it.
    *
    * The status region sits above the form, so on a scripted submit — where the
    * page never navigates and nothing scrolls — the answer rendered a full
    * screen *above* the reader: measured at 987px above the top of an 812px
    * viewport, with the reader still looking at the Send button and their text
-   * gone from the textarea. Without scripting the redirect's `#submission-status`
-   * fragment handles it; with scripting there is no navigation to carry one.
+   * gone from the textarea. Without scripting the redirect's status fragment
+   * handles it; with scripting there is no navigation to carry one.
    *
    * Focus rather than a bare scroll, so a keyboard reader lands on the message
-   * and can carry on from there. The first render is skipped: arriving on a
-   * redirect, the browser has already done the scrolling, and stealing focus
-   * on page load would be its own defect.
+   * and can carry on from there. Only an outcome moves focus, never the
+   * `submitting` step, and never a redirect's initial render: there the
+   * browser has already scrolled, and stealing focus on load is its own defect.
    */
-  useEffect(() => {
-    if (!settledOnce.current) {
-      settledOnce.current = true
-      return
-    }
-    if (status === 'idle' || status === 'submitting') return
+  const settle = (next: SubmissionStatus, message = '') => {
+    setStatus(next)
+    setDetail(message)
     statusRef.current?.focus()
-  }, [status])
+  }
 
   const form = useForm({
     defaultValues: {
@@ -319,8 +315,8 @@ function FeedbackFormFields({
         if (response.status === 429) {
           const retryAfter = Number(response.headers.get('retry-after') ?? '0')
           const minutes = Math.max(1, Math.ceil(retryAfter / 60))
-          setStatus('rate-limited')
-          setDetail(
+          settle(
+            'rate-limited',
             `Please try again in about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}. Nothing was lost: your text is still in the form.`,
           )
           return
@@ -344,8 +340,8 @@ function FeedbackFormFields({
           } catch {
             // A 400 without a readable body still gets the generic sentence.
           }
-          setStatus('invalid')
-          setDetail(
+          settle(
+            'invalid',
             report ||
               'The server could not accept those values. Check that the message is at least twenty characters and that any web address is complete, then send it again.',
           )
@@ -353,19 +349,18 @@ function FeedbackFormFields({
         }
 
         if (!response.ok) {
-          setStatus('error')
-          setDetail(
+          settle(
+            'error',
             'The server did not record it. Your text is still in the form, so you can try again.',
           )
           return
         }
 
-        setStatus('success')
-        setDetail('')
+        settle('success')
         form.reset()
       } catch {
-        setStatus('error')
-        setDetail(
+        settle(
+          'error',
           'The submission could not be sent, which usually means the connection dropped. Your text is still in the form.',
         )
       }
