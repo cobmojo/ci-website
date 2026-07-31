@@ -63,8 +63,14 @@ const ALLOWANCES: Record<string, { readonly overMedianBytes: number; readonly re
  * them and nothing fails. This is the floor under that. Set from the measured
  * baseline with room for a framework upgrade, and low enough that a dependency
  * arriving in the shared graph is a conversation rather than a surprise.
+ *
+ * Lowered from 700,000 when the search engine and its result list moved behind
+ * the intent trigger that already fetches the index, which took 33,480 bytes
+ * off every route. The headroom over the heaviest route is the 15.4 kB it was
+ * originally given; the point of moving it down is that a win this size cannot
+ * be given back silently.
  */
-const ABSOLUTE_CEILING_BYTES = 700_000
+const ABSOLUTE_CEILING_BYTES = 666_000
 
 interface RouteStats {
   readonly route: string

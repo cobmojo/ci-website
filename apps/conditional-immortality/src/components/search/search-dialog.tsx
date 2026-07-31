@@ -1,31 +1,56 @@
 'use client'
 
-import { type SearchIndex, search } from '@ci/search'
+import type { SearchIndex } from '@ci/search'
 import { usePathname } from 'next/navigation'
-import { type MouseEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  lazy,
+  type MouseEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
 import { Link } from '@/components/navigation/link'
-import { QuickSearchResults } from '@/components/search/quick-search-results'
 import { pluralise } from '@/lib/format'
 import { isModifiedClick } from '@/lib/modified-click'
+import { loadSearchEngine, type SearchFn } from '@/lib/search-engine-client'
 import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
+
+/**
+ * The result list, and everything it reaches — the label tables, the excerpt
+ * fitter, the text-layout contract — on the same terms as the engine and the
+ * index: fetched when a reader shows an interest in searching, never on a page
+ * load. `importResults` is called directly from `prewarm` as well, because
+ * `lazy` alone would not start the request until the first result was already
+ * waiting to be drawn.
+ */
+const importResults = () => import('@/components/search/quick-search-results')
+const QuickSearchResults = lazy(() =>
+  importResults().then(module => ({ default: module.QuickSearchResults })),
+)
 
 /**
  * Site search, as a dialog.
  *
  * The trigger is a real link to `/search/`. With scripting disabled it simply
  * navigates there, where a server-rendered form does the same job. With
- * scripting available the link opens a dialog instead, and the index is
- * fetched lazily on first open so pages that are never searched pay nothing.
+ * scripting available the link opens a dialog instead, and the index, the
+ * engine and the result list are all fetched lazily on first sign of search
+ * intent, so pages that are never searched pay nothing for any of them.
  *
  * Searching in this panel runs entirely in the browser: the index is a static
  * file and what a reader types here is never transmitted. The `/search/` page
  * it falls back to is server-rendered, so a term reaching that page travels in
  * the URL — `/privacy/` states the distinction.
  *
- * The text-layout runtime that fits excerpts follows the same rule as the
- * index: nothing is fetched until a reader shows an interest in searching, and
- * neither fetch is ever waited on before results appear.
+ * The text-layout runtime that fits excerpts is fetched on the same trigger and
+ * is never waited on: an excerpt appears unfitted and is refined in place. The
+ * engine is the one exception, awaited beside the index because there is
+ * nothing to draw without it, and it is a fraction of the index's size.
  */
 export function SearchDialogTrigger() {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -38,6 +63,7 @@ export function SearchDialogTrigger() {
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [index, setIndex] = useState<SearchIndex | null>(null)
+  const [engine, setEngine] = useState<SearchFn | null>(null)
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
   const [query, setQuery] = useState('')
@@ -59,8 +85,24 @@ export function SearchDialogTrigger() {
     setLoading(true)
     setFailed(false)
     try {
-      const response = await fetch('/search-index.json')
+      /*
+       * The engine is fetched beside the index rather than after it, and the
+       * index is only published once both have arrived. That keeps `loading`
+       * and `failed` describing the whole of "search is not usable yet", so
+       * every state this pane can show still turns on `index` alone — there is
+       * no window where the index is present, the engine is not, and the pane
+       * has nothing to say. The engine is a fraction of the index's 610 kB and
+       * has been in flight since the first sign of search intent, so waiting
+       * for it costs nothing measurable.
+       */
+      const [response, loaded] = await Promise.all([
+        fetch('/search-index.json'),
+        loadSearchEngine(),
+      ])
       if (!response.ok) throw new Error(`search index ${response.status}`)
+      if (!loaded) throw new Error('search engine')
+      // Wrapped: `setEngine(fn)` would run `fn` as a state updater.
+      setEngine(() => loaded)
       setIndex((await response.json()) as SearchIndex)
     } catch {
       // A dropped connection must not surface as an unhandled rejection and a
@@ -88,6 +130,7 @@ export function SearchDialogTrigger() {
   const prewarm = useCallback(() => {
     void loadIndex()
     void loadTextLayoutEngine()
+    void importResults()
   }, [loadIndex])
 
   const openDialog = useCallback(() => {
@@ -156,17 +199,17 @@ export function SearchDialogTrigger() {
   }, [openDialog, closeDialog])
 
   const outcome = useMemo(() => {
-    if (!index || query.trim().length < 2) return null
+    if (!index || !engine || query.trim().length < 2) return null
     // Candidates are requested here and nowhere else: the server-rendered
     // search page has no fitter to feed and does not pay for them.
-    return search(index.docs, query, {
+    return engine(index.docs, query, {
       limit: 12,
       includeExcerptCandidate: true,
       // The rows show their excerpt in a fixed box, so the fallback has to put
       // its match where a reader can see it without waiting for a fit.
       compactExcerpt: true,
     })
-  }, [index, query])
+  }, [index, engine, query])
 
   return (
     <>
@@ -304,7 +347,20 @@ export function SearchDialogTrigger() {
             </div>
 
             {outcome && outcome.results.length > 0 ? (
-              <QuickSearchResults results={outcome.results} open={open} onNavigate={onLinkClick} />
+              /*
+                The fallback is `null` and never shows: the list is only
+                rendered once the index has resolved, and the index cannot
+                resolve before this chunk, which was requested beside it and is
+                a fraction of its size. Nothing already on screen is withheld
+                by it.
+              */
+              <Suspense fallback={null}>
+                <QuickSearchResults
+                  results={outcome.results}
+                  open={open}
+                  onNavigate={onLinkClick}
+                />
+              </Suspense>
             ) : null}
 
             {outcome && outcome.results.length === 0 ? (
