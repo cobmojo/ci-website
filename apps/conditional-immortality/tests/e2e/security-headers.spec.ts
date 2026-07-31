@@ -201,13 +201,20 @@ test('the downloads and the search index are reachable but not indexable', async
   ]
   expect(article).toBe(home)
 
-  // And where the site-wide policy exists, the four paths do not weaken it: a
-  // later header rule replaces an earlier one rather than adding to it, so the
-  // download rule has to carry the preview directive too.
-  if (home?.includes('nofollow')) {
-    const download = await request.get('/download/transcript.txt')
-    expect(download.headers()['x-robots-tag']).toContain('nofollow')
-  }
+  /*
+   * The four paths never weaken the site-wide policy. A later header rule
+   * replaces an earlier one rather than adding to it, so the download rule has
+   * to carry every directive the site-wide one does — and the assertion has to
+   * be unconditional, or it only runs on a preview and is dead everywhere the
+   * suite is actually executed. Written as a token comparison so it holds in
+   * both environments: `noindex` always, `nofollow` exactly when the site-wide
+   * policy has it.
+   */
+  const download = (await request.get('/download/transcript.txt')).headers()['x-robots-tag'] ?? ''
+  expect(download).toContain('noindex')
+  expect(download.includes('nofollow'), 'the download rule dropped nofollow').toBe(
+    (home ?? '').includes('nofollow'),
+  )
 })
 
 test('the search index is served as JSON and revalidates rather than going stale', async ({

@@ -27,9 +27,7 @@
         "NEXT_PUBLIC_SITE_URL",
         "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL",
         "SITE_ENV",
-        "VERCEL_ENV",
-        "VERCEL_URL",
-        "VERCEL_PROJECT_PRODUCTION_URL"
+        "VERCEL_ENV"
       ]
     },
     "dev": {
@@ -84,6 +82,11 @@
       "outputs": ["playwright-report/**", "test-results/**"]
     },
     "test:preview": {
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "test:smoke": {
+      "dependsOn": ["build"],
       "cache": false,
       "outputs": ["playwright-report/**", "test-results/**"]
     }

@@ -38,7 +38,10 @@ updates:
       # `.github/workflows/ci.yml` have to move together, or the visual
       # baselines stop meaning anything. Bumping it needs both edits.
       - dependency-name: "@playwright/test"
-        update-types: [version-update:semver-major, version-update:semver-minor]
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
 
   - package-ecosystem: github-actions
     directory: /

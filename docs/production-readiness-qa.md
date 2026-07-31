@@ -89,7 +89,7 @@ plausible-looking wrong answer is worse than a refusal.
 `scripts/conditional-immortality/canonical-check.ts` in `validate`, which
 proves the resolved origin is the one that actually reached the output in every
 canonical tag, Open Graph URL, sitemap entry and robots directive. Verified red
-against a mismatched origin (443 problems, exit 1) and green against a correct
+against a mismatched origin (1,082 problems, exit 1) and green against a correct
 one.
 
 #### P0-2 · A published citation resolved to the private working document
@@ -327,7 +327,7 @@ against anything else.
 | P2-5 | No HSTS, and no `X-Robots-Tag` for previews | Both added, gated on the resolved origin being HTTPS and on `SITE_ENV`/`VERCEL_ENV` |
 | P2-6 | `VERCEL_ENV` and the origin variables changed build output but were not in the Turborepo cache key, so a cached **preview** build could be restored as production — with `Disallow: /` in it | Six variables added to the `build` task's `env` |
 | P2-7 | No deployed-preview mode: the suite could only test a locally started server | `PLAYWRIGHT_BASE_URL`, a `preview` project, and `bun run test:preview` that starts no local server |
-| P2-8 | No visual regression of any kind | Thirteen surfaces, pinned engine/viewport/scale/motion, Linux baselines produced in the same image CI compares in |
+| P2-8 | No visual regression of any kind | Fourteen surfaces, pinned engine/viewport/scale/motion, Linux baselines produced in the same image CI compares in |
 | P2-9 | The rendered route sweep covered 31 hand-picked routes | `route-sweep.spec.ts` drives all 120 public routes from the sitemap at five viewports |
 | P2-10 | No Origin or `Sec-Fetch-Site` check on the only write endpoint | Added, with `curl` deliberately still allowed: the endpoint has no session to borrow, so this is spam hygiene, not CSRF defence |
 | P2-11 | Malformed JSON answered 415 | 400. The content type was supported; the body was not |
@@ -388,11 +388,31 @@ seven angles went back over the diff looking for what the pass had broken.
 | GAP-9 | **P2.** Rescoping the print rule from `.prose-article` to `main` fixed one bug and made another: 56 anchors on `/sources/` and 29 on `/full-case/` — the two pages a reader prints — now printed their address **twice**, `break-all` wrapped, because their visible text is already the URL | `NewTabLink` detects a self-labelled link and the rule excludes it. Both halves are now rendered assertions: no doubling on the three pages that have them, and prose links still annotated |
 | GAP-10 | **P3.** The new `<Cite>` accessible name spoke the locator twice, and three times where the record carries one of its own | The spoken tail drops it; the marker in front already has it |
 | GAP-11 | **P3.** The receipt's `scroll-margin-top` stacked with the site's `scroll-padding-top` — the exact geometry `globals.css` documents two hundred lines earlier as measured and rejected | Deleted |
-| GAP-12 | **P3.** On a preview build the download rule replaced `noindex, nofollow` with `noindex`, dropping `nofollow` from the four paths that contain the whole site's text. A later header rule replaces an earlier one rather than adding to it | The rule carries the preview directive too, and a test asserts the four paths agree with the site-wide policy |
+| GAP-12 | **P3.** On a preview build the download rule replaced `noindex, nofollow` with `noindex`, dropping `nofollow` from the four paths that contain the whole site's text. A later header rule replaces an earlier one rather than adding to it | The rule carries the preview directive too. **This entry was written before the change actually landed** — a patch silently missed after the formatter reflowed the line, and the accompanying test was written so that it could only run on a preview and was therefore dead everywhere the suite runs. The second sweep found both. Now applied, verified on the wire against a real preview build, and the assertion is unconditional |
 | GAP-13 | **P2.** Nothing connected the redirect fragments to the ids `/corrections/` renders, so renaming either would leave the redirect pointing at nothing with every test green | Asserted against the exported constants |
 | GAP-14 | **P2.** The no-scripting failure receipt told the reader to "check the form below", which a page reload had emptied | It says the text is gone and why, rather than implying it is still there |
 | GAP-15 | **P2.** `global-error.tsx` claimed to replace Next's built-in error document. It replaces the React-tree case; Next still emits and serves a static `500.html` for a runtime crash, and the App Router offers no way to replace it | The claim is narrowed to what is true |
 | GAP-16 | **P2.** Two races, found by the final full run rather than by reading: axe scanned `/scripture/` mid-arrival and measured a *blended* colour (`#747b84` on `#fefbf6`, neither a token) as a 4.14:1 contrast failure; and the skip-link assertion sampled a single instant of a 150ms transition, which passed in Chromium and failed in WebKit against identical, correct CSS | axe waits for `document.getAnimations()` and the fonts; the skip-link assertion polls. Neither claim was weakened, and neither was answered with a retry |
+
+### Found by the second gap sweep
+
+Seven angles went over the finished branch; six more went over it again once
+those were fixed, with instructions to look for fixes that did not work and for
+defects the fixes created. That second pass is the reason for this section, and
+for the correction to GAP-12 above.
+
+| # | Finding | Correction |
+|---|---|---|
+| GAP2-1 | **P1.** The `Origin` fallback on the write endpoint compared against `request.url` — which behind a proxy, meaning every deployment, is the internal host the process bound to, while the browser sends the public one. An ordinary submission would have been refused as cross-site, and only for the older browsers that send no `Sec-Fetch-Site`, which are exactly the ones the fallback exists for | Compared against the canonical origin, which the route supplies. Two tests, one of them a request whose URL and `Origin` deliberately disagree |
+| GAP2-2 | **P1.** The "derive the count from the spec" improvement to the visual guard made it weaker than the hardcoded number it replaced: eleven surfaces share one `toHaveScreenshot(` call inside a loop, so it derived 4 where 14 are required and would have passed on a third of the evidence | Compares the two baseline sets, which must be the same size, and fails if either is empty |
+| GAP2-3 | **P2.** GAP-6's `--port ${PORT:-3210}` is not expanded by Bun's shell — it reaches Next as a literal string, which its port parser rejects. So the fix for a hardcoded port produced a start command that fails outright. `next start` reads `PORT` from the environment itself, which is what the flag was reaching for | The flag is gone |
+| GAP2-4 | **P2.** `next start` refuses to boot without `NEXT_PUBLIC_SITE_URL`, because `next.config.ts` resolves the origin when it loads — while the runbook and `.env.example` both described the variable as build-scope. An operator following the runbook exactly would have had a server that would not start | Both documents corrected. The requirement is real and stays: the value has to match the build, which baked it in |
+| GAP2-5 | **P2.** The honeypot answered before the rate limiter ran, so a trapped request never consumed an allowance — which makes the pair an oracle: a sender who never meets the limit knows it tripped the trap, and knows which field to leave empty | The limiter runs first |
+| GAP2-6 | **P2.** `bun run test:smoke` was documented twice and existed only inside the app package | Wired at the repository root, with its turbo task |
+| GAP2-7 | **P3.** GAP-10 de-duplicated the accessible name and left the tooltip, which is also the accessible description, saying the locator twice | Both compose from one value |
+| GAP2-8 | **P3.** `turbo.json` still hashed `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` into the build key after GAP-1 removed the code that reads them | Removed |
+| GAP2-9 | **P3.** Dependabot's `@playwright/test` rule ignored major and minor but not patch, and the client version and the pinned container tag have to move together | Patch ignored too |
+| GAP2-10 | **P2/P3.** Fourteen documentation numbers had drifted again during the round-one fixes — test counts, screenshot counts, page counts, the external-link total, the bundle medians, and the canonical-check verification figure | Every one recomputed from the final tree |
 
 ### Rejected, with evidence
 
@@ -426,7 +446,7 @@ appear, and the number rises as coverage falls.
 The app's global figure keeps 29 components in the denominator on purpose.
 Excluding them would lift it about twenty points while measuring less. What
 they have instead is a browser: 120 routes rendered at five viewports, axe at
-two, thirteen screenshots, and the reading, motion and search specs driving
+two, fourteen screenshots, and the reading, motion and search specs driving
 their real interactions. jsdom copies would be weaker oracles for the same
 claims.
 
@@ -445,10 +465,10 @@ that pin behaviour rather than from exclusions.
 
 ## Test counts, from the final tree
 
-**Unit and component: 931** across 37 files — 479 app, 336 search, 65 content,
+**Unit and component: 938** across 37 files — 486 app, 336 search, 65 content,
 51 content-schema. Was 808 across 31.
 
-**Browser: 566 in one `test:browser` invocation**, across ten projects plus the
+**Browser: 570 in one `test:browser` invocation**, across ten projects plus the
 guard. The per-project numbers below exclude the guard, which every project
 depends on and which runs once per invocation.
 
@@ -458,8 +478,8 @@ selected only when `PLAYWRIGHT_BASE_URL` is set.
 | Project | Tests | What it is for |
 |---|---|---|
 | `served-build` | 1 | Refuses to run the suite against a foreign build |
-| `chromium-desktop` | 186 | Full suite at 1440×900 |
-| `chromium-mobile` | 186 | Full suite at 375×812 with touch |
+| `chromium-desktop` | 188 | Full suite at 1440×900 |
+| `chromium-mobile` | 188 | Full suite at 375×812 with touch |
 | `accessibility` | 32 | axe + structure, desktop |
 | `accessibility-mobile` | 32 | axe + structure, mobile |
 | `firefox-smoke` | 23 | Critical flows and headers, Gecko |
@@ -481,9 +501,9 @@ Safari and neither is described as Safari; the manual Safari procedure is in
 | Prerendered HTML pages | 121 (119 with canonicals, plus `_not-found` and `_global-error`, which correctly have none) |
 | Sitemap entries | 118 |
 | Pages the link checker walks | 121, 9,543 internal links, 0 broken, 0 duplicate ids |
-| External links published | 31 distinct; all 31 answered; 6 redirect; 1 plain-http host with no TLS available |
-| Median first-load JS | 591.2 kB uncompressed |
-| Largest route | 667.5 kB (`/corrections`, TanStack Form) |
+| External links published | 30 distinct after the retired short link was removed; all answered; 6 redirect; 1 plain-http host offers no TLS |
+| Median first-load JS | 590.9 kB uncompressed |
+| Largest route | 667.2 kB (`/corrections`, TanStack Form) |
 | Search index | 624 kB, fetched once on search intent |
 | Third-party requests before video activation | 0 |
 

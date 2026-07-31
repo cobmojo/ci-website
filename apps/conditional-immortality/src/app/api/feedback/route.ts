@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { resolveFeedbackConfig } from '@/lib/feedback/config'
 import { type FeedbackDeps, handleFeedback } from '@/lib/feedback/handler'
 import { createFeedbackStore, type FeedbackStore } from '@/lib/feedback/store'
+import { siteConfig } from '@/lib/site-config'
 
 /**
  * The single write endpoint on this site.
@@ -45,6 +46,7 @@ if (!config.usable) {
 const deps: FeedbackDeps = {
   config,
   store,
+  canonicalOrigin: siteConfig.url,
   now: () => new Date(),
   newId: () => randomUUID(),
   log: (level, line) => {

@@ -72,6 +72,11 @@ export interface FeedbackDeps {
   readonly newId: () => string
   /** Injected so a test can assert what is — and is not — written to a log. */
   readonly log: (level: 'info' | 'error', line: string) => void
+  /**
+   * The public origin, for the `Origin` fallback to compare against. Behind a
+   * proxy the request's own URL is the internal host and says nothing useful.
+   */
+  readonly canonicalOrigin?: string
 }
 
 type RawBody = Record<string, unknown>
@@ -103,15 +108,30 @@ function json(body: unknown, status: number, headers: Record<string, string> = {
  * no ambient authority to borrow, so the check is spam hygiene rather than CSRF
  * defence, and refusing `curl` would only break the documented way to test it.
  */
-export function isSameSiteRequest(request: Request): boolean {
+export function isSameSiteRequest(request: Request, canonicalOrigin?: string): boolean {
   const fetchSite = request.headers.get('sec-fetch-site')
   if (fetchSite)
     return fetchSite === 'same-origin' || fetchSite === 'same-site' || fetchSite === 'none'
 
   const origin = request.headers.get('origin')
   if (!origin || origin === 'null') return true
+
+  /*
+   * Compared against the canonical origin, not against `request.url`.
+   *
+   * Behind any proxy — which is every deployment — `request.url` is the host
+   * the process is bound to, `localhost:3000`, while the browser's `Origin` is
+   * the public one. Comparing the two rejects a perfectly ordinary submission
+   * as cross-site, and it would do so only for the older browsers that send no
+   * `Sec-Fetch-Site`, which are exactly the ones this fallback exists for.
+   *
+   * With no canonical origin to compare against there is nothing to check, so
+   * the request is allowed: this is spam hygiene, not CSRF defence — the
+   * endpoint has no session and no ambient authority to borrow.
+   */
+  if (!canonicalOrigin) return true
   try {
-    return new URL(origin).host === new URL(request.url).host
+    return new URL(origin).host === new URL(canonicalOrigin).host
   } catch {
     return false
   }
@@ -269,7 +289,7 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
   const refuse = (error: string, status: number, extra: Record<string, unknown> = {}) =>
     isBrowserFormPost ? redirect(FAILURE_REDIRECT) : json({ ok: false, error, ...extra }, status)
 
-  if (!isSameSiteRequest(request)) return refuse('cross-site', 403)
+  if (!isSameSiteRequest(request, deps.canonicalOrigin)) return refuse('cross-site', 403)
 
   const parsed = await parseBody(request)
 
@@ -278,6 +298,21 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
   if (parsed === 'malformed') return refuse('malformed-body', 400)
 
   const { body, wantsJson } = parsed
+
+  /*
+   * The limiter runs before the honeypot, not after.
+   *
+   * A trapped request used to return fake success without consuming an
+   * allowance, which makes the pair a two-request oracle: a sender who never
+   * meets the limit knows it tripped the trap, and knows which field to leave
+   * empty next time. Counting it first costs a caught bot its allowance and
+   * tells it nothing.
+   */
+  const limit = rateLimit(
+    `feedback:${clientAddress(request.headers, deps.config.trustedProxyHops)}`,
+    { limit: RATE_LIMIT, windowMs: RATE_LIMIT_WINDOW_MS },
+  )
+  if (!limit.allowed) return rateLimitedResponse(wantsJson, limit.retryAfterSeconds)
 
   /**
    * Honeypot. A filled field means an automated client, so the response is
@@ -288,12 +323,6 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
   if (honeypot.length > 0) {
     return wantsJson ? json({ ok: true, id: deps.newId() }, 201) : redirect(SUCCESS_REDIRECT)
   }
-
-  const limit = rateLimit(
-    `feedback:${clientAddress(request.headers, deps.config.trustedProxyHops)}`,
-    { limit: RATE_LIMIT, windowMs: RATE_LIMIT_WINDOW_MS },
-  )
-  if (!limit.allowed) return rateLimitedResponse(wantsJson, limit.retryAfterSeconds)
 
   const result = FeedbackSubmissionInputSchema.safeParse(candidateFrom(body))
 

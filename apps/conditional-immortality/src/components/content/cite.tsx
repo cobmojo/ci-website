@@ -15,8 +15,6 @@ export function Cite({ id, locator }: { id: string; locator?: string }) {
     )
   }
 
-  const label = locator ? `${formatCitation(source)}. ${locator}` : formatCitation(source)
-
   /**
    * The visible marker, built once and used twice.
    *
@@ -36,18 +34,21 @@ export function Cite({ id, locator }: { id: string; locator?: string }) {
   }`
 
   /*
-   * The spoken tail deliberately omits the locator, because the marker in
-   * front of it already carries one. `formatCitation` appends the record's own
-   * locator too, so `${marker}. Source: ${label}` said it twice — and three
-   * times where a record has a locator of its own and the citation passes one
-   * as well. The visible text and the tooltip are unchanged.
+   * The locator is said once, in the marker.
+   *
+   * `formatCitation` appends the record's own locator, and the marker already
+   * carries the one this citation passes, so composing the two said it twice —
+   * three times where a record has a locator and the citation passes one as
+   * well. The tail therefore drops it, and so does the tooltip, which is also
+   * the accessible description and was repeating it for the same reason.
    */
+  const citation = formatCitation(source, { includeLocator: false })
   return (
     <a
       href={`/sources/#${source.id}`}
       className="ml-0.5 font-sans text-[0.72em] align-super no-underline text-copper-deep hover:underline"
-      aria-label={`${marker}. Source: ${formatCitation(source, { includeLocator: false })}`}
-      title={label}
+      aria-label={`${marker}. Source: ${citation}`}
+      title={`${marker}. ${citation}`}
     >
       [{marker}]
     </a>

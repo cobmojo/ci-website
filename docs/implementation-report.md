@@ -77,7 +77,7 @@ contract and the browser evidence are in `docs/pretext-text-geometry.md`.
 
 ## Routes
 
-129 pages generated. Landing and orientation: `/`, `/start/` and its three
+121 prerendered HTML pages generated. Landing and orientation: `/`, `/start/` and its three
 children, `/case/`, `/objections/`, `/passages/`, `/scripture/`, `/topics/`,
 `/glossary/`, `/sources/`, `/watch/`, `/full-case/`, `/method/`, `/about/`,
 `/corrections/`, `/changelog/`, `/original-document/`, `/download/`,
@@ -106,8 +106,8 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-1,497 tests in the gate, all passing: 931 unit and component across 37 files,
-and 566 browser tests across ten Playwright projects. A further 23 run against
+1,508 tests in the gate, all passing: 938 unit and component across 37 files,
+and 570 browser tests across ten Playwright projects. A further 23 run against
 a deployed origin with `bun run test:preview`.
 
 | Suite | Count |

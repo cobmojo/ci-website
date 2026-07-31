@@ -59,7 +59,7 @@ short version of what production needs:
 
 | Variable | Required | Scope | If it is wrong |
 |---|---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | yes | build | Build fails, or the site is un-indexable |
+| `NEXT_PUBLIC_SITE_URL` | yes | build **and** runtime | Build fails; and the server refuses to boot, because `next.config.ts` resolves the origin when it loads |
 | `SITE_ENV` | yes | build | A preview becomes indexable and competes with production |
 | `FEEDBACK_STORE` | yes | runtime | Defaults to `filesystem` |
 | `FEEDBACK_STORE_DIR` | filesystem only | runtime | Endpoint answers 503 |
@@ -121,10 +121,19 @@ server-rendered: `/api/feedback/`, `/og/` and `/search/`.
 ```
 install:  bun install --frozen-lockfile
 build:    bun run build         (with the variables from §1 set)
-start:    bun run start
+start:    bun run start         (with the same variables set)
 root:     the repository root, not apps/conditional-immortality
 node:     22 or later
 ```
+
+`start` needs `NEXT_PUBLIC_SITE_URL` too, not only `build`. `next.config.ts`
+resolves the canonical origin when it loads, and `next start` loads it on every
+boot, so a server started without it stops with the same message the build
+gives. The value must be the one the build used: it is baked into the output,
+and setting a different one at start changes nothing but the header policy.
+
+`next start` takes its port from `PORT` when the platform sets one, and 3000
+otherwise. Nothing passes `--port`, so a platform-assigned port works.
 
 If the platform serves headers of its own, check §6 afterwards: the security
 headers are set by `next.config.ts`, and a platform is free to strip or

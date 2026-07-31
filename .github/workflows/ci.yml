@@ -169,15 +169,23 @@ jobs:
       - name: The Linux baselines are committed
         run: |
           dir=apps/conditional-immortality/tests/e2e/visual.spec.ts-snapshots
-          # Derived from the spec rather than hardcoded, so adding a surface
-          # cannot leave the guard passing on a stale count.
-          expected=$(grep -c 'toHaveScreenshot(' apps/conditional-immortality/tests/e2e/visual.spec.ts)
+          # Every shot has a baseline on the platform it was authored on, so the
+          # two sets must be the same size. Counting `toHaveScreenshot(` call
+          # sites does not work — eleven surfaces share one call inside a loop,
+          # so it derived 4 where 14 are required and the guard passed on a
+          # third of the evidence.
+          expected=$(ls "$dir"/*-win32.png 2>/dev/null | wc -l)
           count=$(ls "$dir"/*-linux.png 2>/dev/null | wc -l)
-          if [ "$count" -lt "$expected" ]; then
-            echo "::error::Found $count Linux visual baselines, expected $expected. Run the 'Visual baselines' workflow, download its artifact, and commit the images."
+          if [ "$expected" -eq 0 ]; then
+            echo "::error::No authored baselines found in $dir at all."
             exit 1
           fi
-          echo "$count Linux baselines present, $expected expected."
+          if [ "$count" -ne "$expected" ]; then
+            echo "::error::Found $count Linux visual baselines and $expected authored ones. Run the 'Visual baselines' workflow, download its artifact, and commit the images."
+            ls "$dir"
+            exit 1
+          fi
+          echo "$count Linux baselines present, matching $expected authored."
 
       - name: Build
         run: bun run build:local

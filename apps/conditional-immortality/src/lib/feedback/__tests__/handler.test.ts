@@ -169,7 +169,20 @@ describe('what the endpoint refuses', () => {
       headers: { 'content-type': 'application/json', origin: 'https://elsewhere.example' },
       body: JSON.stringify(VALID),
     })
-    expect((await handleFeedback(request, deps())).status).toBe(403)
+    const status = (await handleFeedback(request, deps({ canonicalOrigin: 'https://example.org' })))
+      .status
+    expect(status).toBe(403)
+  })
+
+  it('allows anything when no canonical origin is configured, because there is nothing to compare', async () => {
+    // The deployed route always supplies one. A build that has not named its
+    // origin cannot start at all, so this is the local and test case only.
+    const request = new Request('https://example.org/api/feedback', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://elsewhere.example' },
+      body: JSON.stringify(VALID),
+    })
+    expect((await handleFeedback(request, deps())).status).toBe(201)
   })
 
   it('allows a same-origin post that carries no Sec-Fetch-Site', async () => {
@@ -220,6 +233,36 @@ describe('what the endpoint refuses', () => {
     )
     expect(response.status).toBe(403)
     expect(response.headers.get('content-type')).toContain('application/json')
+  })
+
+  it('compares Origin against the canonical origin, not the host it is bound to', async () => {
+    /*
+     * Behind a proxy — every deployment — `request.url` is the internal host
+     * while the browser's `Origin` is the public one. Comparing those two
+     * rejects an ordinary submission as cross-site, and only for the older
+     * browsers that send no `Sec-Fetch-Site`, which are the ones the fallback
+     * exists for.
+     */
+    const fromBehindAProxy = new Request('http://localhost:3000/api/feedback/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://example.org' },
+      body: JSON.stringify(VALID),
+    })
+    expect(
+      (await handleFeedback(fromBehindAProxy, deps({ canonicalOrigin: 'https://example.org' })))
+        .status,
+    ).toBe(201)
+  })
+
+  it('still refuses an Origin that is not the canonical one', async () => {
+    const elsewhere = new Request('http://localhost:3000/api/feedback/', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://evil.example' },
+      body: JSON.stringify(VALID),
+    })
+    expect(
+      (await handleFeedback(elsewhere, deps({ canonicalOrigin: 'https://example.org' }))).status,
+    ).toBe(403)
   })
 
   it('allows a request from something that is not a browser at all', async () => {
@@ -275,6 +318,28 @@ describe('the honeypot', () => {
 
     expect(trapped.status).toBe(real.status)
     expect(Object.keys(await trapped.json())).toEqual(Object.keys(await real.json()))
+    expect(store.records?.()).toHaveLength(0)
+  })
+
+  it('consumes an allowance, so it is not an oracle for the field name', async () => {
+    /*
+     * A trapped request used to answer before the limiter ran, so it never
+     * cost anything. A sender who never met the limit knew it had tripped the
+     * trap, and knew which field to leave empty next time.
+     */
+    const trap = { ...VALID, website: 'https://spam' }
+    for (let attempt = 0; attempt < RATE_LIMIT; attempt += 1) {
+      const response = await handleFeedback(
+        jsonRequest(trap, { 'x-forwarded-for': '203.0.113.55' }),
+        deps(),
+      )
+      expect(response.status).toBe(201)
+    }
+    const refused = await handleFeedback(
+      jsonRequest(trap, { 'x-forwarded-for': '203.0.113.55' }),
+      deps(),
+    )
+    expect(refused.status).toBe(429)
     expect(store.records?.()).toHaveLength(0)
   })
 

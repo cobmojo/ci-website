@@ -143,7 +143,16 @@ const nextConfig: NextConfig = {
          */
         source:
           '/:path(download/transcript.txt|download/bibliography.txt|download/handout.html|search-index.json)',
-        headers: [{ key: 'X-Robots-Tag', value: 'noindex' }],
+        /*
+         * A later rule with the same key replaces an earlier one rather than
+         * adding to it, so this has to carry the preview directive too.
+         * Without it these four paths would be the only ones on a preview
+         * deployment that lost `nofollow` — and `handout.html` carries links,
+         * so a crawler reaching the preview would be invited to follow them.
+         */
+        headers: [
+          { key: 'X-Robots-Tag', value: isPreviewDeployment ? 'noindex, nofollow' : 'noindex' },
+        ],
       },
     ]
   },
