@@ -386,12 +386,23 @@ describe('animation craft', () => {
 
 describe('print', () => {
   it('leaves no animation able to hide content on paper', () => {
-    // Print forces every disclosure open by reverting `display` on its
-    // children, which cannot reach a pseudo-element. So no rule anywhere may
-    // collapse `::details-content`, or the content of every disclosure would be
-    // missing from the printed page.
+    // This guard forbade every `::details-content` rule, on the premise that
+    // nothing collapses the pseudo-element so nothing needs to un-collapse it.
+    // The premise was false, and the printed page proved it: the browser's own
+    // stylesheet puts `content-visibility: hidden` there on a closed
+    // disclosure, `display: revert` on the children cannot reach a
+    // pseudo-element, and every collapsed disclosure printed as its summary and
+    // nothing else. So the rule is now what the test's name always meant —
+    // nothing may collapse it, and print must actively un-collapse it.
     const live = withoutComments(css)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*(block-size|content-visibility|overflow)/)
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*block-size/)
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*content-visibility:\s*hidden/)
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*overflow:\s*hidden/)
+
+    const print = live.slice(live.indexOf('@media print'))
+    expect(print).toMatch(
+      /details::details-content\s*\{\s*content-visibility:\s*visible\s*!important/,
+    )
   })
 
   it('keeps disclosures open on paper', () => {

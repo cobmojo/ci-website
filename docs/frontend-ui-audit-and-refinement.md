@@ -1181,6 +1181,13 @@ things ten code-focused sweeps had not:
   happen and describing exactly what it would look like if it did. The
   pseudo-element is overridden now, and a test prints the page and fails if a
   disclosure carries only its summary.
+
+  The motion contract had the same false premise, and forbade every
+  `::details-content` rule on the strength of it — so the fix failed the guard
+  written to protect the thing the fix protects. It now says what its own name
+  always meant: nothing may collapse the pseudo-element, and print must
+  actively un-collapse it. That is a stronger gate than the one it replaces,
+  which could be satisfied by a stylesheet that simply never mentioned it.
 - **A transcript timestamp did nothing once the video was playing.** The start
   offset is read when play is pressed, so in the order a reader actually uses
   the page — press play, watch, scroll down, click a timestamp — the iframe
