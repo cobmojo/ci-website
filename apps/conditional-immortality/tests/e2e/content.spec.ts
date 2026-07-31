@@ -258,13 +258,36 @@ for (const download of DOWNLOADS) {
  * sampled document is exactly the one that hides them.
  */
 
+/**
+ * HTML text back to the characters it stands for.
+ *
+ * Headings on this site are full of quotation marks and apostrophes —
+ * `The author's own suggested reading`, `"Unquenchable" means it cannot be
+ * put out` — and React serialises those as entities. Comparing the raw markup
+ * against the index reported eleven real headings as missing. `&amp;` is
+ * decoded last, or `&amp;quot;` would turn into a quotation mark.
+ */
+function decodeEntities(html: string): string {
+  return html
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+}
+
 /** Heading text as rendered, with React's comment markers and the anchor gone. */
 function headingsIn(html: string): string[] {
   return [...html.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)].map(([, , inner]) =>
-    inner
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/<[^>]*>/g, '')
-      .replace(/\s+/g, ' ')
+    decodeEntities(
+      (inner ?? '')
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<[^>]*>/g, '')
+        .replace(/\s+/g, ' '),
+    )
       .replace(/#$/, '')
       .trim(),
   )

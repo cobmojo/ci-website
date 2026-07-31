@@ -67,14 +67,15 @@ export function ScrollRegion({
   }, [])
 
   return (
-    // Both rules below fire on the technique described above, so both are
-    // suppressed deliberately: a fieldset is a form-control grouping, and the
-    // tabindex is what makes the region keyboard-scrollable at all.
+    // Suppressed deliberately: the rule wants a semantic element, and a
+    // fieldset is a form-control grouping, which this is not.
     // biome-ignore lint/a11y/useSemanticElements: a fieldset is a form grouping
     <div
       ref={ref}
       className={cn('overflow-x-auto overscroll-x-contain', className)}
-      // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1, see above
+      // `noNoninteractiveTabindex` needs no suppression here: it fires on a
+      // literal 0, and this is measured. The tab stop is still the point —
+      // WCAG 2.1.1 — it is just conditional on there being something to scroll.
       tabIndex={scrollable ? 0 : -1}
       role="group"
       aria-label={label}

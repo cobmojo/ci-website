@@ -228,7 +228,10 @@ test.describe('keyboard operation', () => {
   test('a transcript timestamp moves focus to the player it scrolled to', async ({ page }) => {
     await page.goto('/watch/')
 
-    const timestamp = page.getByRole('link', { name: /Closing and further resources/ })
+    // Scoped by href: the "On this page" contents carries a link of the same
+    // name, and only the transcript one is the timestamp under test.
+    const timestamp = page.locator('a[href^="?t="]').filter({ hasText: 'Closing and further' })
+    await expect(timestamp).toHaveCount(1)
     await timestamp.click()
     await expect(page).toHaveURL(/\/watch\/\?t=\d+$/)
 
@@ -257,18 +260,37 @@ test.describe('keyboard operation', () => {
 
   test('an open dialog stops the page behind it scrolling', async ({ page }) => {
     await page.goto('/')
-    await page.keyboard.press('ControlOrMeta+k')
-    await expect(page.locator('dialog[open]')).toBeVisible()
 
-    // Over the backdrop, never over the panel: `showModal` makes the page
-    // inert to activation but does nothing about the wheel.
+    // The trigger is a plain link to `/search/` until the component mounts, so
+    // `aria-haspopup` is the honest readiness signal — a keyboard shortcut
+    // pressed before then has no listener to reach.
+    const trigger = page.getByRole('link', { name: 'Search', exact: true })
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+    await trigger.click()
+    await expect(page.getByRole('dialog', { name: 'Search this site' })).toBeVisible()
+
+    const rootOverflow = () =>
+      page.evaluate(() => getComputedStyle(document.documentElement).overflow)
+
+    // Asserted on the computed style as well as the gesture: at the mobile
+    // viewport the sheet covers most of the screen, so a wheel can land on the
+    // panel and prove nothing.
+    expect(await rootOverflow()).toBe('hidden')
+
+    // The gesture too, over the backdrop rather than the panel. `showModal`
+    // makes the page inert to activation but does nothing about the wheel.
     const box = page.viewportSize()
     await page.mouse.move(
       Math.round((box?.width ?? 800) * 0.06),
-      Math.round((box?.height ?? 600) * 0.9),
+      Math.round((box?.height ?? 600) * 0.95),
     )
     await page.mouse.wheel(0, 800)
     expect(await page.evaluate(() => window.scrollY)).toBe(0)
+
+    // And it has to give the scrolling back, or the lock is the worse bug.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('dialog[open]')).toHaveCount(0)
+    expect(await rootOverflow()).not.toBe('hidden')
   })
 
   test('the Scripture index has no tab stop that cannot be scrolled', async ({ page }) => {
