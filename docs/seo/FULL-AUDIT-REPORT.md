@@ -189,7 +189,7 @@ something, never by a link.
 **Evidence** `route-sweep.spec.ts` checked structure (one `h1`, one `main`, no
 console error, no broken fragment) but nothing checked canonicals, descriptions,
 robots directives, Open Graph agreement or JSON-LD validity.
-**Correction** Ten checks over all routes, driven by the sitemap so a new route
+**Correction** Eleven checks over all routes, driven by the sitemap so a new route
 cannot escape them, reading served HTML rather than driving a browser — the
 crawler's view, and origin-agnostic, so the same assertions run against a
 deployed preview through the existing `preview` project.
@@ -337,6 +337,8 @@ did not exist before.
 | Language | English-only content with marked Greek and Hebrew spans. No `hreflang`, correctly. |
 | Server rendering | Primary content, metadata and JSON-LD are all in the served HTML. |
 | `meta keywords` | Absent, and now guarded. |
+| Framework error documents | `/_not-found/` answers **404** and `/_global-error/` answers **500**. Both are real entries in the route manifest and both are prerendered, and `_global-error.html` has no title — but neither is servable as a 200, so neither can become the title-less soft 404 that gets indexed and then sits in Search Console as an unexplained quality problem. Verified by request and now gated. |
+| 404 handling | An address that never existed answers a true 404, not a styled 200. |
 
 ---
 

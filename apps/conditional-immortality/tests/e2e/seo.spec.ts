@@ -281,6 +281,26 @@ test('the social image endpoint actually returns an image', async ({ request }) 
   expect((await response.body()).length).toBeGreaterThan(1_000)
 })
 
+test("the framework's own error documents are not indexable pages", async ({ request }) => {
+  /*
+   * `_not-found` and `_global-error` are real entries in the route manifest and
+   * are prerendered to HTML, and `_global-error.html` has no title and no
+   * description. Nothing links to either and neither is in the sitemap, but
+   * "only reachable by guessing" is not the same as "not indexable" — the one
+   * thing that must stay true is that neither answers 200, because a
+   * title-less 200 is exactly the soft 404 that gets indexed and then sits in
+   * Search Console as a quality problem nobody can find the cause of.
+   */
+  for (const [path, expected] of [
+    ['/_not-found/', 404],
+    ['/_global-error/', 500],
+    ['/this-address-was-never-a-page/', 404],
+  ] as const) {
+    const response = await request.get(path, { maxRedirects: 0 })
+    expect(response.status(), `${path} must not be a servable page`).toBe(expected)
+  }
+})
+
 test('the two faces that draw the first screen are preloaded', async ({ request }) => {
   /*
    * Page experience, gated as markup rather than as a measurement.

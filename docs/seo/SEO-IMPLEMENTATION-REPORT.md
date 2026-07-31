@@ -55,7 +55,7 @@ untouched.
 | --- | --- | --- |
 | `src/lib/__tests__/structured-data.test.ts` | 10 | The *truth* of every JSON-LD claim, not its syntax |
 | `src/lib/__tests__/indexing-contract.test.ts` | 9 | `robots.txt` per environment; sitemap parity, absolute URLs, no future `lastmod`, no ignored fields |
-| `tests/e2e/seo.spec.ts` | 10 | Rendered output over every sitemap route: canonicals, unique titles and descriptions, robots agreement, Open Graph, JSON-LD parsing, font preloads |
+| `tests/e2e/seo.spec.ts` | 11 | Rendered output over every sitemap route: canonicals, unique titles and descriptions, robots agreement, Open Graph, JSON-LD parsing, font preloads, non-indexable error documents |
 
 Plus one existing gate strengthened: `link-check.ts` now *fails* on an orphan
 page instead of printing one and exiting zero.

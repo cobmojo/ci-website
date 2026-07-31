@@ -18,7 +18,7 @@ that was skipped.
 | SEO-06 | Stop a preview blocking its own `noindex` | `src/app/robots.ts` | Preview allows crawling, names no sitemap and no host | `indexing-contract.test.ts` | ✅ Done |
 | SEO-07 | Drop sitemap fields Google ignores | `src/app/sitemap.ts` | No `priority`, no `changeFrequency`, no future `lastmod` | `indexing-contract.test.ts` | ✅ Done |
 | SEO-08 | Make orphan pages fail the build | `scripts/…/link-check.ts` | 0 orphans excluding Next's error documents | `bun run content:links` | ✅ Done |
-| SEO-09 | Gate rendered SEO output | `tests/e2e/seo.spec.ts` | 10 checks over every sitemap route, on the chromium and deployed-preview projects | itself | ✅ Done |
+| SEO-09 | Gate rendered SEO output | `tests/e2e/seo.spec.ts` | 11 checks over every sitemap route, on the chromium and deployed-preview projects | itself | ✅ Done |
 | SEO-10 | Remove em dashes from `/privacy/` | `src/app/privacy/page.tsx` | Style contract passes | `content.spec.ts` | ✅ Done |
 | SEO-11 | Restore real coverage of the correction flow | `playwright.config.ts` | The endpoint accepts a write under test and returns a receipt | `reading.spec.ts` | ✅ Done |
 | SEO-12 | Stop repeating a citation locator three times | `src/components/content/cite.tsx` | An identical locator is not appended twice | `reading.spec.ts` | ✅ Done |
