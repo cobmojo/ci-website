@@ -1,5 +1,7 @@
+import { video } from '@ci/content/video'
 import type { CaseSection } from '@ci/content-schema'
 import type { Metadata } from 'next'
+import { isoDuration } from '@/lib/format'
 import { absoluteUrl, siteConfig } from '@/lib/site-config'
 
 export interface PageMetaInput {
@@ -78,19 +80,114 @@ export function breadcrumbJsonLd(trail: readonly { href: string; label: string }
   }
 }
 
+/**
+ * The one author identity every block shares.
+ *
+ * `url` is what turns a name into something resolvable: `/about/` is the page
+ * that says who he is, in his own words, and it is the only page that does.
+ * Nothing here asserts a credential, an institution or a review the visible
+ * site does not also state.
+ */
+export function authorPerson() {
+  return {
+    '@type': 'Person',
+    name: siteConfig.author.name,
+    url: absoluteUrl('/about/'),
+  } as const
+}
+
 export function articleJsonLd(section: CaseSection) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: section.title,
     description: section.shortSummary,
-    author: { '@type': 'Person', name: siteConfig.author.name },
-    publisher: { '@type': 'Organization', name: siteConfig.name },
+    author: authorPerson(),
+    /*
+     * No `publisher`.
+     *
+     * It used to name the site's own title as an `Organization`, which
+     * invented a publishing body that does not exist: the About page states
+     * that this is one person's case, and no organization stands behind it.
+     * `publisher` is not a required Article property, so the truthful move is
+     * to omit it rather than to dress the author up as an institution.
+     */
     mainEntityOfPage: absoluteUrl(section.route),
     ...(section.firstPublished ? { datePublished: section.firstPublished } : {}),
     ...(section.lastSubstantiveRevision ? { dateModified: section.lastSubstantiveRevision } : {}),
     isAccessibleForFree: true,
     inLanguage: siteConfig.language,
+  }
+}
+
+/**
+ * The site's own identity.
+ *
+ * No `potentialAction`. The `SearchAction` that used to sit here existed for
+ * one consumer — Google's sitelinks search box — and Google retired that
+ * globally on 21 November 2024, removing the report, the Rich Results Test
+ * highlight and the documentation with it. Markup with no remaining consumer
+ * is not free: it is a claim about a feature that no longer exists, and it has
+ * to be maintained by whoever reads this next. The site's own `/search/` page
+ * is untouched; it is a reader feature and never depended on this.
+ *
+ * `WebSite` itself stays, because site names still read from it.
+ */
+export function websiteJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: siteConfig.name,
+    url: siteConfig.url,
+    description: siteConfig.description,
+    inLanguage: siteConfig.language,
+    author: authorPerson(),
+  }
+}
+
+/**
+ * The overview video, as the watch page presents it.
+ *
+ * Two things here are corrections rather than choices.
+ *
+ * `contentUrl` is absent. It must be the URL of the video file's actual
+ * content bytes, and this project has no such URL — the video is hosted on
+ * YouTube and reachable only as a watch page or an embed. It used to be set to
+ * the watch page, which is the one thing the property must not be. `embedUrl`
+ * is the supported way to say "the player lives here", and it stays.
+ *
+ * Each `Clip` points at `?t=`, not at a page fragment. A clip URL has to deep
+ * link into the video; the fragment form scrolled the transcript and left the
+ * player at zero, so it described a capability the page did not have. `?t=` is
+ * the format `ClickToLoadVideo` already reads at activation, and the transcript
+ * timestamps above already use it, so the markup now matches behaviour that is
+ * on the page and tested.
+ */
+export function videoJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: video.siteTitle,
+    alternateName: video.originalTitle,
+    description: video.description,
+    thumbnailUrl: [
+      absoluteUrl(
+        `/og/?title=${encodeURIComponent(video.siteTitle)}&category=${encodeURIComponent('Video overview')}`,
+      ),
+    ],
+    uploadDate: video.publishedAt,
+    duration: isoDuration(video.durationSeconds),
+    embedUrl: `${siteConfig.video.embedHost}/embed/${siteConfig.video.youtubeId}`,
+    creator: authorPerson(),
+    inLanguage: siteConfig.language,
+    isAccessibleForFree: true,
+    hasPart: video.chapters.map(chapter => ({
+      '@type': 'Clip',
+      name: chapter.title,
+      startOffset: chapter.start,
+      endOffset: chapter.end,
+      url: absoluteUrl(`/watch/?t=${chapter.start}`),
+    })),
   }
 }
 
