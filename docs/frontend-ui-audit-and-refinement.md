@@ -9,7 +9,7 @@ exactly as they stand.
 
 ## 1. Executive summary
 
-**What was audited.** All 129 static pages across every route family, the shared
+**What was audited.** All 129 routes across every route family, the shared
 component layer (`packages/ui` and `src/components`), the global stylesheet and
 design tokens, both native dialogs, the correction form, search in both surfaces,
 the two index filters, the video and transcript surfaces, print output, and the
@@ -181,7 +181,9 @@ browser-level sweep. Tier 0 (all content) is never animated.
 
 ## 5. Route and surface coverage
 
-129 static pages, generated from the App Router files below. Every unique
+129 routes, generated from the App Router files below. 121 are prerendered
+as HTML; `/search/` and `/corrections/` render on demand because they read
+query parameters, and the rest are handlers. Every unique
 template was inspected in the rendered production build; the representative set
 covered at minimum one instance of every template plus the outliers named in the
 matrix.
@@ -441,12 +443,12 @@ against a production build.
 | `bun run content:validate` | Pass |
 | `bun run content:audit` | Pass, ledger exports unchanged |
 | `bun run content:docs` | Pass |
-| `bun run test` | **834 unit tests pass** on the finished tree — 51 in `@ci/content-schema`, 79 in `@ci/content`, 336 in `@ci/search`, 368 in the app (281 at the audit base; the balance is this branch's additions and PR #5's merge) |
-| `bun run build` | Pass, 129 static pages |
+| `bun run test` | **835 unit tests pass** on the finished tree — 51 in `@ci/content-schema`, 80 in `@ci/content`, 336 in `@ci/search`, 368 in the app (281 at the audit base; the balance is this branch's additions and PR #5's merge) |
+| `bun run build` | Pass, 129 routes, 121 prerendered as HTML |
 | `bun run content:pii` | Pass: no source contact details in 1,753 built or 295 committed files |
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
 | `bun run content:bundle` | Pass on the merged tree: every route within budget; `/corrections` 663.7 kB against its 664.1 kB allowance |
-| `bun run test:e2e` | **314 tests, 0 failures**, Chromium desktop 1440×900 and mobile 375×812 |
+| `bun run test:e2e` | **320 tests, 0 failures**, Chromium desktop 1440×900 and mobile 375×812 |
 | `bun run test:a11y` | **76 tests, 0 failures** (32 at base, desktop only; now 38 × desktop + 38 × mobile via the new `accessibility-mobile` project, `/accessibility/` having joined the axe routes, plus four keyboard-operation tests axe cannot express) |
 | `bun run test:text-geometry` | **69 tests, 0 failures** across Chromium, Firefox and WebKit |
 
@@ -1060,7 +1062,7 @@ validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
 `test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
 (67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
 Total automated coverage at that merge commit: 1,267 tests. The finished
-branch carries 1,293; section 10 has the breakdown.
+branch carries 1,300; section 10 has the breakdown.
 
 **Review threads**: the automated review on the first commit raised two P2
 findings (permalink loss on demoted headings; component-rendered headings

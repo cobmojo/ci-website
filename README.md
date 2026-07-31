@@ -82,12 +82,12 @@ unknown reference fails the build. Do not work around this by typing the verse.
 
 ## Scale
 
-129 static pages. 40 case sections with roughly 54,000 words of authored prose,
+129 routes, 121 of them prerendered as HTML. 40 case sections with roughly 54,000 words of authored prose,
 18 key passage pages, 27 topics, 20 glossary terms, 8 original-language notes,
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-1,293 tests: 834 unit, 314 end-to-end across desktop and mobile, 76
+1,300 tests: 835 unit, 320 end-to-end across desktop and mobile, 76
 accessibility across desktop and mobile viewports, and 69 text-geometry
 across Chromium, Firefox and WebKit.
 They run on every push; see `.github/workflows/ci.yml`.

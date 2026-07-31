@@ -86,7 +86,7 @@ contract and the browser evidence are in `docs/pretext-text-geometry.md`.
 
 ## Routes
 
-129 pages generated. Landing and orientation: `/`, `/start/` and its three
+129 routes, 121 of them prerendered as HTML. Landing and orientation: `/`, `/start/` and its three
 children, `/case/`, `/objections/`, `/passages/`, `/scripture/`, `/topics/`,
 `/glossary/`, `/sources/`, `/watch/`, `/full-case/`, `/method/`, `/about/`,
 `/corrections/`, `/changelog/`, `/original-document/`, `/download/`,
@@ -115,15 +115,15 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-1,293 tests, all passing.
+1,300 tests, all passing.
 
 | Suite | Count |
 |---|---|
 | Unit, `@ci/content-schema` | 51 |
-| Unit, `@ci/content` | 79 |
+| Unit, `@ci/content` | 80 |
 | Unit, `@ci/search` | 336 |
 | Unit and component, `conditional-immortality` | 368 |
-| End-to-end, desktop and mobile | 314 |
+| End-to-end, desktop and mobile | 320 |
 | Accessibility, axe plus structural, desktop and mobile viewports | 76 |
 | Text geometry, Chromium, Firefox and WebKit | 69 |
 

@@ -44,8 +44,13 @@ Binding rules for anyone adding a route to `apps/conditional-immortality`.
 - Every route ends with a trailing slash in links and in `pageMetadata({ route })`.
 - Dynamic routes set `export const dynamicParams = false` and implement
   `generateStaticParams`, so every content route is statically generated.
-  `/search/` is the one exception: it reads `searchParams` and is rendered on
-  demand, which is what lets a result page be linked and shared.
+  Two pages are exceptions, and both read `searchParams` on the server for the
+  same reason: what they must answer is in the URL. `/search/` renders on
+  demand so a result page can be linked and shared, and so search works with
+  scripting off. `/corrections/` renders on demand so that a reader without
+  scripting is told whether their submission was received, and so the section
+  they came from survives the redirect. Prerendering it made every one of
+  those states invisible — the server sent identical bytes to everyone.
 - `/full-case/` and `/search/` are `noindex, follow`: pass `noindex: true`.
 - Content comes from `@ci/content`. Never re-declare a list of sections, passages or
   sources in a component; import the registry.
