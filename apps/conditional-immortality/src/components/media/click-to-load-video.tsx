@@ -29,6 +29,8 @@ export interface ClickToLoadVideoProps {
   /** Start the video at this offset in seconds when it is activated. */
   readonly startSeconds?: number
   readonly className?: string
+  /** Set where something on the page needs to move focus to the player. */
+  readonly id?: string
 }
 
 const FALLBACK_TITLE = 'Video overview'
@@ -38,6 +40,7 @@ export function ClickToLoadVideo({
   durationSeconds,
   startSeconds,
   className,
+  id,
 }: ClickToLoadVideoProps) {
   const [activated, setActivated] = useState(false)
   const [start, setStart] = useState(0)
@@ -78,7 +81,10 @@ export function ClickToLoadVideo({
   ].join('')
 
   return (
-    <div className={className}>
+    // `tabIndex={-1}` so a link elsewhere on the page can move focus here
+    // without the player becoming a tab stop of its own. See
+    // `FocusOnArrivalLink`, which the transcript timestamps use.
+    <div className={className} id={id} tabIndex={-1}>
       <div className="video-embed relative aspect-video w-full overflow-hidden rounded-md border border-border bg-panel print:hidden">
         {activated ? (
           <iframe

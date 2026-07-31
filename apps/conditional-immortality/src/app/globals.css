@@ -424,6 +424,28 @@
   }
 
   /*
+   * A modal must not leave the page behind it operable. `showModal()` makes
+   * the background inert to activation but does nothing about scrolling, so a
+   * wheel or trackpad gesture over the backdrop scrolled the document behind
+   * the panel: eight hundred pixels, at every width, on both overlays. Closing
+   * then returned the reader to a place they never chose, and at high zoom,
+   * where the sheet fills the viewport, there was no way to tell it had
+   * happened.
+   *
+   * Stated once, against any open dialog, so a third overlay cannot forget it.
+   * `scrollbar-gutter` is the other half: without it, taking the scrollbar
+   * away would shift the whole page sideways as the dialog opened, and this
+   * layout does not move.
+   */
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  /*
    * Tier 3. Anything that appears in place: the correction form's status
    * messages, and the controls that cannot exist until scripting has run.
    *

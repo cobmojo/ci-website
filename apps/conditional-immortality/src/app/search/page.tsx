@@ -9,9 +9,9 @@ import {
 } from '@ci/search'
 import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/article/article-chrome'
+import { FocusOnArrivalLink } from '@/components/navigation/focus-on-arrival-link'
 import { SearchEmptyState, SearchResultsList } from '@/components/search/search-results'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { searchIndex } from '@/lib/search-index'
@@ -244,7 +244,10 @@ export default async function SearchPage({
 
         {/* Each result is an h3, so the list needs an h2 above it or the
             document outline jumps straight from the page title to level three. */}
-        <section aria-labelledby="search-results-title">
+        {/* `tabIndex={-1}` so paging can move focus here. Without it a reader
+            who pressed "Next" stayed on the button and tabbed into the
+            footer, past every result the new page had just loaded. */}
+        <section aria-labelledby="search-results-title" id="search-results" tabIndex={-1}>
           <h2 id="search-results-title" className="sr-only">
             {query ? `Results for ${query}` : 'Results'}
           </h2>
@@ -261,25 +264,27 @@ export default async function SearchPage({
             className="mt-8 flex items-center gap-3 print:hidden"
           >
             {page > 1 ? (
-              <Link
+              <FocusOnArrivalLink
                 href={buildHref({ page: String(page - 1) })}
+                focusId="search-results"
                 rel="prev"
                 className="pressable inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline hover:bg-panel"
               >
                 <span aria-hidden="true">←</span> Previous
-              </Link>
+              </FocusOnArrivalLink>
             ) : null}
             <span className="font-sans text-[0.9rem] text-ink-subtle">
               Page {page} of {totalPages}
             </span>
             {page < totalPages ? (
-              <Link
+              <FocusOnArrivalLink
                 href={buildHref({ page: String(page + 1) })}
+                focusId="search-results"
                 rel="next"
                 className="pressable inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline hover:bg-panel"
               >
                 Next <span aria-hidden="true">→</span>
-              </Link>
+              </FocusOnArrivalLink>
             ) : null}
           </nav>
         ) : null}

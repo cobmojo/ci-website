@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Breadcrumbs, type Crumb, FeedbackCta } from '@/components/article/article-chrome'
 import { NewTabLink } from '@/components/content/new-tab-link'
 import { ClickToLoadVideo } from '@/components/media/click-to-load-video'
+import { FocusOnArrivalLink } from '@/components/navigation/focus-on-arrival-link'
 import { formatLongDate, formatTimestamp, isoDuration } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { absoluteUrl, siteConfig } from '@/lib/site-config'
@@ -100,7 +101,11 @@ export default function WatchPage() {
           </header>
 
           <figure className="m-0 mb-10">
-            <ClickToLoadVideo title={video.siteTitle} durationSeconds={video.durationSeconds} />
+            <ClickToLoadVideo
+              id="video-player"
+              title={video.siteTitle}
+              durationSeconds={video.durationSeconds}
+            />
             <figcaption className="mt-3 font-sans text-[0.86rem] leading-snug text-ink-subtle">
               Published on YouTube as{' '}
               <span className="text-ink-muted">“{video.originalTitle}”</span>.{' '}
@@ -172,7 +177,11 @@ export default function WatchPage() {
             {segments.map(segment => (
               <section key={segment.id} id={segment.id} className="mt-8">
                 <h3 className="mt-0 mb-2 text-[1.08rem]">
-                  <Link href={`?t=${segment.start}`} className="no-underline hover:underline">
+                  <FocusOnArrivalLink
+                    href={`?t=${segment.start}`}
+                    focusId="video-player"
+                    className="no-underline hover:underline"
+                  >
                     <time
                       dateTime={isoDuration(segment.start)}
                       className="mr-2 font-sans text-[0.86rem] tabular-nums text-ink-subtle"
@@ -180,7 +189,7 @@ export default function WatchPage() {
                       {formatTimestamp(segment.start)}
                     </time>
                     {segment.title}
-                  </Link>
+                  </FocusOnArrivalLink>
                 </h3>
 
                 {segment.chapter?.visualDescription ? (

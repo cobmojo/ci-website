@@ -712,7 +712,7 @@ instance of a class rather than a fix of the class:
 ### Gap sweep 6 (completed tree)
 
 Three angles over the tree at `38ce63c`: rendered-output truth, accessibility
-beyond what axe can see, and the branch's own diff. Fourteen findings
+beyond what axe can see, and the branch's own diff. Eighteen findings
 confirmed. The most serious is a false statement about data handling on the
 privacy page; the most instructive is that two of sweep 5's own fixes were
 weaker than they read.
@@ -820,6 +820,50 @@ The remaining findings, each with rendered proof:
   satisfies while forcing open only what is already open. Both now fail for
   the thing they exist to catch, and an unreadable height fails rather than
   being skipped.
+
+The accessibility angle found four things the axe suite cannot see. It runs
+clean on sixteen routes, and none of these is a rule violation it could have
+caught — where focus is after a navigation, whether a tab stop has anything
+behind it, and whether a modal is really modal are not things a rule engine
+can check:
+
+- **Every transcript timestamp stranded keyboard focus twenty-one thousand
+  pixels off screen.** `/watch/` links each of its thirty-nine timestamps to
+  `?t=…`, and a query-only navigation is a soft one: the router resets the
+  scroll position but leaves focus exactly where it was. Measured, the player
+  arrived at the top of the viewport while focus stayed on the timestamp at
+  `y=21067` — a hundred and fifty-eight Shift+Tab presses away from the
+  control the page's own prose promises it links to. Mouse readers never saw
+  it; keyboard, switch and screen-reader readers were denied the feature
+  entirely.
+- **Search pagination had the same defect, and the announcement made it
+  worse.** The live region correctly said "Page 2 of 4", and the next three
+  tab stops after "Next" were footer links: every new result skipped. A
+  correct announcement leading into a stranded focus is more misleading than
+  silence.
+
+  Both now use `FocusOnArrivalLink`, which moves focus to the region the
+  navigation was for. It is not a fragment link and adds no motion.
+- **Neither dialog stopped the page behind it scrolling.** `showModal()`
+  makes the background inert to activation but says nothing about the wheel,
+  so a gesture over the backdrop scrolled the document 800px behind the panel
+  at every width tested, on both overlays. Closing then returned the reader to
+  a place they never chose. `html:has(dialog[open])` states it once for any
+  overlay; `scrollbar-gutter: stable` is the other half, because taking the
+  scrollbar away would otherwise shift the page sideways, and this layout does
+  not move.
+- **`/scripture/` shipped forty-four tab stops that could not be used.** Its
+  tables carry no `min-width`, so they fit at every width from 375px up, and
+  each wrapper's unconditional `tabindex="0"` made better than one in ten of
+  the page's stops a dead end announced as a group with nothing inside it to
+  do. `ScrollRegion` now measures: the server still renders the stop, so a
+  reader without scripting keeps it, and a `ResizeObserver` withdraws it only
+  while there is nothing to scroll. The stop returns at 320px, where the same
+  tables really do overflow — the point is to honour WCAG 2.1.1, not to tidy
+  the tab order past it.
+
+Four end-to-end tests cover these, including the 320px case, so the fix cannot
+quietly become a regression in the other direction.
 
 ## 11. PR #5 compatibility
 

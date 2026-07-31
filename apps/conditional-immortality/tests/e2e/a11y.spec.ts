@@ -213,3 +213,91 @@ test.describe('document structure', () => {
     })
   }
 })
+
+/* ------------------------------------------------------------------ *
+ * Keyboard operation, where axe cannot see
+ * ------------------------------------------------------------------ */
+
+/**
+ * These four are things a rule engine has no way to check: where focus is
+ * after a navigation, whether a tab stop has anything behind it, and whether
+ * a modal really is modal. Each was a measured defect before it was a test.
+ */
+
+test.describe('keyboard operation', () => {
+  test('a transcript timestamp moves focus to the player it scrolled to', async ({ page }) => {
+    await page.goto('/watch/')
+
+    const timestamp = page.getByRole('link', { name: /Closing and further resources/ })
+    await timestamp.click()
+    await expect(page).toHaveURL(/\/watch\/\?t=\d+$/)
+
+    // A query-only navigation is a soft one: the router resets the scroll
+    // position but leaves focus behind, which stranded a keyboard reader
+    // twenty-one thousand pixels below the player they had just asked for.
+    await expect(page.locator('#video-player')).toBeFocused()
+  })
+
+  test('paging the search results moves focus into them', async ({ page }) => {
+    await page.goto('/search/?q=fire')
+
+    const next = page.getByRole('link', { name: /Next/ })
+    await expect(next).toBeVisible()
+    await next.click()
+    await expect(page).toHaveURL(/page=2/)
+
+    await expect(page.locator('#search-results')).toBeFocused()
+    // The next tab stop belongs to the results, not to the footer beyond them.
+    await page.keyboard.press('Tab')
+    const inResults = await page.evaluate(() =>
+      Boolean(document.activeElement?.closest('#search-results')),
+    )
+    expect(inResults, 'tabbing from the results landed outside them').toBe(true)
+  })
+
+  test('an open dialog stops the page behind it scrolling', async ({ page }) => {
+    await page.goto('/')
+    await page.keyboard.press('ControlOrMeta+k')
+    await expect(page.locator('dialog[open]')).toBeVisible()
+
+    // Over the backdrop, never over the panel: `showModal` makes the page
+    // inert to activation but does nothing about the wheel.
+    const box = page.viewportSize()
+    await page.mouse.move(
+      Math.round((box?.width ?? 800) * 0.06),
+      Math.round((box?.height ?? 600) * 0.9),
+    )
+    await page.mouse.wheel(0, 800)
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+  })
+
+  test('the Scripture index has no tab stop that cannot be scrolled', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/scripture/')
+
+    const dead = async () =>
+      page.evaluate(
+        () =>
+          [...document.querySelectorAll<HTMLElement>('[role="group"][tabindex="0"]')].filter(
+            node => node.scrollWidth - node.clientWidth < 1,
+          ).length,
+      )
+
+    // Forty-four of this page's tab stops used to do nothing at all.
+    await expect.poll(dead).toBe(0)
+
+    // The stop has to come back where the table really does overflow, or the
+    // fix has broken WCAG 2.1.1 to tidy the tab order.
+    await page.setViewportSize({ width: 320, height: 900 })
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          () =>
+            [...document.querySelectorAll<HTMLElement>('[role="group"][tabindex="0"]')].filter(
+              node => node.scrollWidth - node.clientWidth >= 1,
+            ).length,
+        ),
+      )
+      .toBeGreaterThan(0)
+  })
+})
