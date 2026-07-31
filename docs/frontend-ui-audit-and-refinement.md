@@ -865,6 +865,67 @@ can check:
 Four end-to-end tests cover these, including the 320px case, so the fix cannot
 quietly become a regression in the other direction.
 
+### Gap sweep 7 (completed tree)
+
+Two angles over the tree at `6f3e387`: regressions in the two commits sweep 6
+produced, and what remained of the class sweep 6 kept finding — statements the
+site makes about itself. Eight findings confirmed. Nothing in the branch's own
+new code was found to be wrong; what the sweep found was one omission the new
+guard was structurally unable to see, and six older claims that are not true.
+
+- **The heading guard could only fail in one direction, and the other one was
+  already broken.** It checked that every claimed heading is rendered, so a
+  heading left out was invisible to it — and one was. `Open questions` is a
+  real `h2` on 23 of the 27 topics, rendered by a `Callout` with `as="h2"`, and
+  no list ever claimed it, so searching its wording matched nothing in the
+  headings. The index claims it now, and the guard checks both directions for
+  the two templated kinds. Two details had to be right for that to work: the
+  callout puts its tone glyph in an `aria-hidden` span *inside* the heading, so
+  the parser now drops what assistive technology drops, and the four
+  subheadings under "How the passage is interpreted" are the same on all
+  eighteen passages, so they are left out for the same reason the chrome is —
+  indexing them would match every passage on "the conditionalist reading".
+- **`/scripture/` claimed to be something it is not.** "Every Scripture
+  reference used anywhere in the case" is drawn only from what each section
+  records in `primaryPassages` and `relatedPassages`; references written into
+  the prose as `<Scripture reference="…" />` never reach it. Hebrews 12:26-29
+  is quoted three times on `/case/biblical-patterns/fire-consumes/` and has no
+  row at all, and the Genesis 1:26-27 row reports one appearance where two
+  parts quote it in full. The wording now says what the index is, and says
+  plainly that a verse quoted in passing may not have a row. **Making the claim
+  true instead — walking the MDX bodies and merging what they cite — would add
+  rows and change published counts, which is the author's call, not a
+  refinement. It is the recommendation attached to this sweep.**
+- **`/glossary/` had rotted exactly as `/passages/` had**, describing itself as
+  running "from annihilationism to the second death" when it runs from
+  *aionios* to *Unquenchable Fire*. Both bookends are read off the registry now,
+  the fix `/passages/` already had.
+- **`/original-document/` published a page count the site contradicts twice
+  over**, saying the material was reorganised into thirty-nine pages where the
+  case hub says thirty-seven parts and forty entries. Thirty-nine is neither.
+- **The 404 promised something the site says elsewhere is not true.** "Every
+  part of the original document is published somewhere here" is contradicted by
+  `/original-document/`'s own section headed "What is deliberately not
+  published", and by `/privacy/`. It now says nothing has been *lost*, and
+  points to where the withheld material is listed.
+- **`/about/` named three problems and called them four**, above four bullets.
+  The fourth — that a single argument could not be found inside a fifty-two page
+  file — is now named with the others.
+- **`ScrollRegion`'s docstring became false when the component changed.** It
+  said the MDX pipeline gets the same treatment, and after the `tabindex`
+  became conditional it no longer does, because a rehype pass emits HTML rather
+  than a component that can measure itself. The docstring says so, with the
+  condition under which that would need revisiting.
+- **The new scroll lock was not scoped to the screen.** The print block hides
+  dialogs without clearing their `open` attribute, so `:has()` would still have
+  matched while printing with an overlay open.
+
+Considered and left alone: `/start/what-is-conditional-immortality/` says it
+clears away "four things it is regularly mistaken for" and carries three
+headed sections. The fourth is addressed in prose inside the second, so the
+count is defensible and rewording it would be an editorial preference rather
+than a correction.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

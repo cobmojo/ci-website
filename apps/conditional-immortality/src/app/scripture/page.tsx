@@ -29,7 +29,7 @@ const CRUMBS: readonly Crumb[] = [
 export const metadata = pageMetadata({
   title: 'Scripture Index',
   description:
-    'Every Scripture reference used anywhere in the case, in canonical order, with the parts that cite it, whether the use is primary, and a link to the passage page where one exists.',
+    'Every Scripture reference the case is built on, in canonical order, with the parts that cite it, whether the use is primary, and a link to the passage page where one exists.',
   route: '/scripture/',
 })
 
@@ -94,13 +94,15 @@ export default function ScriptureIndexPage() {
 
         <header className="max-w-[var(--spacing-measure)]">
           <p className="m-0 mb-2 font-sans text-[0.83rem] font-semibold tracking-wider text-copper-deep uppercase">
-            Every reference in the case
+            The references the case is built on
           </p>
           <h1 className="mt-0 mb-4">Scripture Index</h1>
           <p className="m-0 text-[1.13rem] leading-[1.6] text-ink-muted">
             {scriptureIndex.length} distinct references across {referencedBooks.length} books, in
             canonical order. A reference is marked primary where the part it appears in is built on
-            that text rather than citing it in passing.
+            that text rather than citing it in passing. The index is drawn from the references each
+            part records as its own; a verse quoted only in passing inside a part's prose may not
+            have a row here.
           </p>
           <p className="m-0 mt-4 text-[1rem] text-ink-muted">
             References the case works through at length also have their own{' '}

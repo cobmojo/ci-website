@@ -59,8 +59,9 @@ export default function NotFound() {
           be an old link from before the case was reorganised into one page per argument.
         </p>
         <p className="m-0 mb-8 text-[1.06rem] text-ink-muted">
-          Nothing has been deleted. Every part of the original document is published somewhere here,
-          so what you were looking for is almost certainly below.
+          Nothing has been lost. Every argument in the original document is published somewhere
+          here, so what you were looking for is almost certainly below. The few things deliberately
+          withheld are listed on the <Link href="/original-document/">original document</Link> page.
         </p>
 
         <section

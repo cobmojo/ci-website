@@ -20,10 +20,18 @@ const CRUMBS: readonly Crumb[] = [
   { href: '/glossary/', label: 'Glossary' },
 ]
 
+/**
+ * Read off the registry rather than written out, for the reason the same
+ * bookends on `/passages/` were: named by hand they rot. This description
+ * still said the glossary ran "from annihilationism to the second death" long
+ * after it ran from aionios to unquenchable fire.
+ */
+const FIRST_TERM = glossaryByLetter[0]?.terms[0]?.term ?? ''
+const LAST_TERM = glossaryByLetter.at(-1)?.terms.at(-1)?.term ?? ''
+
 export const metadata = pageMetadata({
   title: 'Glossary',
-  description:
-    'Short definitions of the terms used across the case, from annihilationism to the second death, with original-language notes on the Greek and Hebrew words the argument turns on.',
+  description: `Short definitions of the terms used across the case, from ${FIRST_TERM} to ${LAST_TERM}, with original-language notes on the Greek and Hebrew words the argument turns on.`,
   route: '/glossary/',
 })
 

@@ -185,6 +185,9 @@ function topicDocs(): SearchDoc[] {
         'Objections that turn on this',
       ),
       ...headingIf(anyResolves(topic.relatedTerms, topicIds), 'Related topics'),
+      // A `Callout` with `as="h2"`, so it is a real heading on 23 of the 27
+      // topics and was the one section here that no list ever claimed.
+      ...headingIf(topic.openQuestions.length > 0, 'Open questions'),
     ],
     scriptureRefs: normaliseRefs(topic.principalPassages),
     body: [...topic.body, ...topic.distinctions, ...topic.openQuestions].join(' '),

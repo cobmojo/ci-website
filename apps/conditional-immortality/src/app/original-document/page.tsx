@@ -130,13 +130,13 @@ export default function OriginalDocumentPage() {
                 migration ledger.
               </p>
               <p className="m-0 mb-3">
-                The material was then reorganised into thirty-nine pages, each covering one
-                argument, and each carrying the page numbers of the original it was drawn from.
-                Scripture references were normalised and checked against a verified public-domain
-                corpus. Sources that appeared as bare links in the document were given records with
-                an access date, a link status and a rights status. Historical and language claims
-                were checked against primary sources where those exist, and narrowed or withdrawn
-                where they could not be supported.
+                The material was then reorganised into thirty-seven pages, each covering one
+                argument, with a preface and two appendices alongside them, and each carrying the
+                page numbers of the original it was drawn from. Scripture references were normalised
+                and checked against a verified public-domain corpus. Sources that appeared as bare
+                links in the document were given records with an access date, a link status and a
+                rights status. Historical and language claims were checked against primary sources
+                where those exist, and narrowed or withdrawn where they could not be supported.
               </p>
               <p className="m-0">
                 The build refuses to complete if a substantive element from the source has no

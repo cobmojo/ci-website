@@ -9,8 +9,9 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
  * WCAG 2.1.1 requires that anything a pointer can scroll be operable from the
  * keyboard, and a plain `div` with `overflow-x: auto` is not focusable. Every
  * hand-written scroll wrapper on the site goes through this component so the
- * `tabindex` and the label cannot be forgotten. The MDX pipeline gets the same
- * treatment automatically through `rehypeScrollableTables`.
+ * `tabindex` and the label cannot be forgotten. Tables written in MDX are
+ * wrapped automatically by `rehypeScrollableTables`, which produces the same
+ * markup with one difference noted at the end of this comment.
  *
  * `role="group"` rather than `role="region"`: a labelled group conveys the
  * same grouping to assistive technology without adding a landmark. The
@@ -30,6 +31,12 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
  * every keyboard and switch user, each announced as a group with nothing to do
  * inside it. It is measured rather than assumed, because the same tables do
  * overflow at 320px and the stop has to come back when it is real.
+ *
+ * That measurement is the one difference from `rehypeScrollableTables`, whose
+ * `tabindex` stays unconditional: a rehype pass emits HTML, not a component
+ * that can observe itself. The corpus holds one markdown table, of five
+ * columns, which does overflow at the widths that matter. If that stops being
+ * true, the pass needs to emit a marker something on the client can measure.
  */
 export function ScrollRegion({
   label,

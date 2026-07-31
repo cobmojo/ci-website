@@ -279,19 +279,46 @@ function decodeEntities(html: string): string {
     .replace(/&amp;/g, '&')
 }
 
-/** Heading text as rendered, with React's comment markers and the anchor gone. */
-function headingsIn(html: string): string[] {
-  return [...html.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)].map(([, , inner]) =>
-    decodeEntities(
+/**
+ * Heading text as a reader hears it: React's comment markers, the anchor and
+ * anything `aria-hidden` removed.
+ *
+ * A `Callout` heading carries its tone glyph in an `aria-hidden` span inside
+ * the heading, so the raw text of "Open questions" is "? Open questions".
+ * Assistive technology does not say the glyph and the index should not claim
+ * it, so neither does this.
+ */
+function headingsIn(html: string): { level: number; text: string }[] {
+  return [...html.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)].map(([, level, inner]) => ({
+    level: Number(level),
+    text: decodeEntities(
       (inner ?? '')
         .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<span[^>]*aria-hidden="true"[^>]*>[\s\S]*?<\/span>/g, '')
         .replace(/<[^>]*>/g, '')
         .replace(/\s+/g, ' '),
     )
       .replace(/#$/, '')
       .trim(),
-  )
+  }))
 }
+
+/**
+ * Headings every page of a kind carries, which the index deliberately leaves
+ * out. Indexing them would match every passage on the word "sources" without
+ * telling a reader anything.
+ */
+const CHROME_HEADINGS = new Set([
+  'Sources for this topic',
+  'Sources consulted for this passage',
+  'Sources cited on this page',
+  'Found an error or have a counterargument?',
+  'Revisions to this page',
+  'Start here',
+  'Read',
+  'How this was made',
+  'This site',
+])
 
 test('every heading claimed by the search index exists on its page', async ({ request }) => {
   const index = await (await request.get('/search-index.json')).json()
@@ -317,14 +344,37 @@ test('every heading claimed by the search index exists on its page', async ({ re
   expect(claimsByRoute.size).toBeGreaterThan(80)
 
   const missing: string[] = []
+  const unclaimed: string[] = []
   for (const [route, claims] of claimsByRoute) {
     const response = await request.get(route)
     expect(response.ok(), `${route} did not respond`).toBe(true)
-    const rendered = new Set(headingsIn(await response.text()))
+    const headings = headingsIn(await response.text())
+    const rendered = new Set(headings.map(heading => heading.text))
+
     for (const claimed of claims) {
       if (!rendered.has(claimed)) missing.push(`${route} claims "${claimed}"`)
+    }
+
+    // The other direction. Checking only that claims are real cannot see a
+    // heading left out, and one was: "Open questions" is a real h2 on 23 of the
+    // 27 topics that no list ever named, so a search for its wording matched
+    // nothing in the headings. Only the two templated kinds are checked this
+    // way — the MDX pages take their headings from the body and cannot drift.
+    //
+    // Level 2 only. The subheadings under "How the passage is interpreted" are
+    // the same four on all eighteen passages, so indexing them would match
+    // every passage on "the conditionalist reading" and tell a reader nothing,
+    // which is the reason the chrome is left out too.
+    const templated = /^\/(topics|passages)\/[^/]+\/$/.test(route)
+    if (templated) {
+      for (const heading of headings) {
+        if (heading.level !== 2) continue
+        if (CHROME_HEADINGS.has(heading.text) || claims.has(heading.text)) continue
+        unclaimed.push(`${route} renders "${heading.text}"`)
+      }
     }
   }
 
   expect(missing, 'a search document names a heading its page does not render').toEqual([])
+  expect(unclaimed, 'a page renders a heading its search document never claims').toEqual([])
 })

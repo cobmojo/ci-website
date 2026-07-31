@@ -73,9 +73,9 @@ export default function PassagesIndexPage() {
             what both sides agree on, and the single point where they part company.
           </p>
           <p className="m-0 mt-4 text-[1rem] text-ink-muted">
-            A passage gets a page only where the case works through it at length. Every other
-            reference in the argument, and there are many, is listed in the{' '}
-            <Link href="/scripture/">complete Scripture index</Link> with the parts that use it.
+            A passage gets a page only where the case works through it at length. The other
+            references each part is built on, and there are many, are listed in the{' '}
+            <Link href="/scripture/">Scripture index</Link> with the parts that use them.
           </p>
         </header>
 

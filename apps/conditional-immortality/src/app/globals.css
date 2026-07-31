@@ -441,8 +441,15 @@
     scrollbar-gutter: stable;
   }
 
-  html:has(dialog[open]) {
-    overflow: hidden;
+  /*
+   * Screen only. The print block hides dialogs with `display: none` but does
+   * not clear their `open` attribute, so `:has()` would still match and lock
+   * the printed document if a reader printed with an overlay open.
+   */
+  @media screen {
+    html:has(dialog[open]) {
+      overflow: hidden;
+    }
   }
 
   /*
