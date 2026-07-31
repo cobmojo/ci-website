@@ -6,7 +6,7 @@ Binding rules for anyone adding a route to `apps/conditional-immortality`.
 
 - `src/lib/site-config.ts` — site identity, never hardcode the name or URL.
 - `src/lib/navigation.ts` — `PRIMARY_NAV`, `FOOTER_NAV`, `STATIC_ROUTES`, `NOINDEX_ROUTES`.
-- `src/lib/metadata.ts` — `pageMetadata`, `breadcrumbJsonLd`, `articleJsonLd`, `JsonLd`.
+- `src/lib/metadata.tsx` — `pageMetadata`, `breadcrumbJsonLd`, `articleJsonLd`, `JsonLd`.
 - `src/lib/format.ts` — `formatLongDate`, `formatTimestamp`, `isoDuration`, `readingTimeMinutes`.
 - `src/components/article/article-chrome.tsx` — `Breadcrumbs`, `EvidenceRoleBadge`,
   `ReviewStatusBadge`, `OnThisPage`, `PreviousNextNavigation`, `FeedbackCta`.
@@ -39,7 +39,9 @@ Binding rules for anyone adding a route to `apps/conditional-immortality`.
 
 - Every route ends with a trailing slash in links and in `pageMetadata({ route })`.
 - Dynamic routes set `export const dynamicParams = false` and implement
-  `generateStaticParams`, so the whole site is statically generated.
+  `generateStaticParams`, so every content route is statically generated.
+  `/search/` is the one exception: it reads `searchParams` and is rendered on
+  demand, which is what lets a result page be linked and shared.
 - `/full-case/` and `/search/` are `noindex, follow`: pass `noindex: true`.
 - Content comes from `@ci/content`. Never re-declare a list of sections, passages or
   sources in a component; import the registry.

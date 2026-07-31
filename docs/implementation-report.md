@@ -133,7 +133,7 @@ get a pass.
 
 ## Accessibility status
 
-Target WCAG 2.2 AA. axe-core reports **zero violations** across 15 routes plus
+Target WCAG 2.2 AA. axe-core reports **zero violations** across 16 routes plus
 the open states of both dialogs.
 
 Verified beyond axe: one `<h1>` per page and no heading level skips; four

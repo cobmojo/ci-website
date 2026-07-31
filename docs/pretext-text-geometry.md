@@ -236,7 +236,7 @@ in WebKit and nobody knew, because the suite only ran Chromium.
 | Unit, application | `bun run test` | eligibility, the font contract, cursor mapping, the fit algorithm, the LRU cache |
 | Component | `bun run test` | fallback first, failure paths, one observer, stale results, no announcements |
 | End-to-end | `bun run test:e2e` | quick search, responsive fitting, failure paths, no-JavaScript, the bundle boundary, selection |
-| Accessibility | `bun run test:a11y` | axe over fifteen routes plus the open dialog |
+| Accessibility | `bun run test:a11y` | axe over sixteen routes plus both open dialogs |
 | Text geometry | `bun run test:text-geometry` | Chromium, Firefox and WebKit against real fonts and content |
 | Everything in a browser | `bun run test:browser` | every browser suite above: the two end-to-end projects, the two accessibility projects and the three geometry projects |
 

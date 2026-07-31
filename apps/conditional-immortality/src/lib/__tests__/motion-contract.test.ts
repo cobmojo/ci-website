@@ -398,7 +398,7 @@ describe('print', () => {
     // Index into the stripped string, not the original: comments shift offsets.
     const live = withoutComments(css)
     const print = live.slice(live.indexOf('@media print'))
-    expect(print).toMatch(/details\s*\{\s*display:\s*block\s*!important/)
+    expect(print).toMatch(/details[^{]*\{\s*display:\s*block\s*!important/)
     expect(print).toMatch(/display:\s*revert\s*!important/)
   })
 })

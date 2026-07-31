@@ -963,7 +963,7 @@
     ]
   },
   "ect": {
-    "total": 135,
+    "total": 136,
     "usedTerms": [
       "ect",
       "eternal conscious torment",
@@ -974,20 +974,14 @@
     "results": [
       {
         "id": "topic:resurrection",
-        "score": 542.79143,
-        "matchedFields": ["id", "title", "summary", "body", "notes"],
+        "score": 584.59143,
+        "matchedFields": ["id", "title", "summary", "body", "heading", "notes"],
         "matchedTerms": ["ect"]
       },
       {
-        "id": "source:welch-source-document",
-        "score": 391.21,
-        "matchedFields": ["title", "summary", "body"],
-        "matchedTerms": ["ect", "eternal conscious torment"]
-      },
-      {
         "id": "topic:eternal-conscious-torment",
-        "score": 364.82,
-        "matchedFields": ["id", "title", "body"],
+        "score": 406.62,
+        "matchedFields": ["id", "title", "heading", "body"],
         "matchedTerms": [
           "ect",
           "eternal conscious torment",
@@ -995,6 +989,12 @@
           "traditional view",
           "traditionalism"
         ]
+      },
+      {
+        "id": "source:welch-source-document",
+        "score": 391.21,
+        "matchedFields": ["title", "summary", "body"],
+        "matchedTerms": ["ect", "eternal conscious torment"]
       },
       {
         "id": "section:S31",
@@ -1039,10 +1039,10 @@
         "matchedTerms": ["ect"]
       },
       {
-        "id": "page:compare",
-        "score": 263.15,
-        "matchedFields": ["id", "summary", "heading", "body"],
-        "matchedTerms": ["ect", "eternal conscious torment", "traditional view"]
+        "id": "topic:intermediate-state",
+        "score": 256.5,
+        "matchedFields": ["id", "summary", "heading", "body", "notes"],
+        "matchedTerms": ["ect"]
       },
       {
         "id": "glossary:eternal-conscious-torment",
@@ -1177,12 +1177,6 @@
         "matchedTerms": ["raised", "resurrection"]
       },
       {
-        "id": "page:compare",
-        "score": 106.4,
-        "matchedFields": ["summary", "heading"],
-        "matchedTerms": ["resurrection"]
-      },
-      {
         "id": "topic:second-death",
         "score": 103.89143,
         "matchedFields": ["summary", "body"],
@@ -1202,6 +1196,12 @@
       },
       {
         "id": "glossary:hades",
+        "score": 79.8,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["resurrection"]
+      },
+      {
+        "id": "glossary:intermediate-state",
         "score": 79.8,
         "matchedFields": ["summary", "body"],
         "matchedTerms": ["resurrection"]
@@ -1521,7 +1521,7 @@
     ]
   },
   "traditional view": {
-    "total": 160,
+    "total": 161,
     "usedTerms": [
       "traditional view",
       "traditional",
@@ -1546,8 +1546,8 @@
       },
       {
         "id": "topic:eternal-conscious-torment",
-        "score": 575.28,
-        "matchedFields": ["id", "title", "body", "summary"],
+        "score": 585.18,
+        "matchedFields": ["id", "title", "body", "summary", "heading"],
         "matchedTerms": [
           "ect",
           "eternal conscious torment",
@@ -1591,7 +1591,7 @@
       },
       {
         "id": "page:compare",
-        "score": 279.31,
+        "score": 291.41,
         "matchedFields": ["title", "id", "summary", "body", "heading"],
         "matchedTerms": [
           "ect",
@@ -2295,7 +2295,7 @@
     ]
   },
   "the": {
-    "total": 187,
+    "total": 188,
     "usedTerms": ["the"],
     "results": [
       {
@@ -2323,6 +2323,12 @@
         "matchedTerms": ["the"]
       },
       {
+        "id": "topic:day-of-the-lord",
+        "score": 1086.197154,
+        "matchedFields": ["title", "summary", "id", "scripture", "body", "heading", "notes"],
+        "matchedTerms": ["the"]
+      },
+      {
         "id": "section:S23",
         "score": 1077.783448,
         "matchedFields": ["id", "summary", "title", "body", "heading", "scripture", "notes"],
@@ -2338,12 +2344,6 @@
         "id": "section:S02",
         "score": 1051.330691,
         "matchedFields": ["title", "summary", "heading", "body", "id", "notes"],
-        "matchedTerms": ["the"]
-      },
-      {
-        "id": "topic:day-of-the-lord",
-        "score": 1044.397154,
-        "matchedFields": ["title", "summary", "id", "scripture", "body", "notes"],
         "matchedTerms": ["the"]
       },
       {

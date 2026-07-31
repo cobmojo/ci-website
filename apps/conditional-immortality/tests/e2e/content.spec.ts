@@ -239,3 +239,51 @@ for (const download of DOWNLOADS) {
     }
   })
 }
+
+/* ------------------------------------------------------------------ *
+ * The search index tells the truth about headings
+ * ------------------------------------------------------------------ */
+
+/**
+ * Every heading a search document claims must be a heading on its page.
+ *
+ * Case sections take theirs from the MDX body, so they cannot drift. The
+ * page, topic and passage documents are hand-authored, and when one of them
+ * names a section the page does not have, search reports "matched in
+ * heading" against text that is not there and quotes it back as the excerpt.
+ * The templates share one list each, so one topic and one passage prove all
+ * of them.
+ */
+test('every heading claimed by the search index exists on its page', async ({ page, request }) => {
+  const index = await (await request.get('/search-index.json')).json()
+  const docs = index.docs as {
+    id: string
+    route: string
+    type: string
+    headings: string[]
+  }[]
+
+  const oneOfEach = new Map<string, (typeof docs)[number]>()
+  for (const doc of docs) {
+    if (doc.headings.length === 0) continue
+    if (doc.type === 'page') oneOfEach.set(doc.id, doc)
+    else if (!oneOfEach.has(doc.type)) oneOfEach.set(doc.type, doc)
+  }
+
+  const missing: string[] = []
+  for (const doc of oneOfEach.values()) {
+    await page.goto(doc.route)
+    const rendered = await page.evaluate(() =>
+      [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].map(heading =>
+        (heading.textContent ?? '').replace(/\s+/g, ' ').replace(/#$/, '').trim(),
+      ),
+    )
+    for (const claimed of doc.headings) {
+      if (!rendered.some(text => text === claimed)) {
+        missing.push(`${doc.route} claims "${claimed}"`)
+      }
+    }
+  }
+
+  expect(missing, 'a search document names a heading its page does not render').toEqual([])
+})

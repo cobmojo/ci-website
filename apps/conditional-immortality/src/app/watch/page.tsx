@@ -216,9 +216,8 @@ export default function WatchPage() {
               Sources mentioned in the video
             </h2>
             <p className="m-0 mb-3 font-sans text-[0.92rem] text-ink-muted">
-              The closing seconds point viewers to two places for further reading. Both are
-              conditionalist or multi-view sources, and both are listed in full in the source
-              library.
+              The video itself, and the places its closing seconds point viewers for further
+              reading. Each one is listed in full in the source library.
             </p>
             <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">
               {sources.map(source => (

@@ -14,6 +14,15 @@ import baseline from './ranking-baseline.json'
  * score to six decimal places, matched fields in their rendered order, and the
  * matched-term set. If a change moves any of it, this fails and the change is
  * wrong, not the file.
+ *
+ * One exception, and only one: the snapshot is taken against real content, so
+ * correcting what is *indexed* legitimately moves it. That happened once, when
+ * the hand-authored `headings` on the page, topic and passage documents were
+ * found to name sections their pages do not render — search was reporting
+ * "matched in heading" against text that was not there, and quoting it back as
+ * the excerpt. Fixing the index moved 25 of the 30 queries by score and 3 by
+ * order, and the file was regenerated with that diff inspected. A ranker change
+ * is still wrong; regenerate only when the content going in was wrong.
  */
 
 const index = buildSearchIndex()

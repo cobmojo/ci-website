@@ -15,17 +15,21 @@ export function Cite({ id, locator }: { id: string; locator?: string }) {
     )
   }
 
+  const surname = source.author ? source.author.split(' ').pop() : source.title.split(' ')[0]
+  const visible = `${surname}${locator ? `, ${locator}` : ''}`
   const label = locator ? `${formatCitation(source)}. ${locator}` : formatCitation(source)
+  // The visible text opens the accessible name, so speech input can address
+  // the link by what it shows (WCAG 2.5.3), and the full citation follows.
+  const accessibleName = `${visible}. Source: ${label}`
 
   return (
     <a
       href={`/sources/#${source.id}`}
       className="ml-0.5 font-sans text-[0.72em] align-super no-underline text-copper-deep hover:underline"
-      aria-label={`Source: ${label}`}
+      aria-label={accessibleName}
       title={label}
     >
-      [{source.author ? source.author.split(' ').pop() : source.title.split(' ')[0]}
-      {locator ? `, ${locator}` : ''}]
+      [{visible}]
     </a>
   )
 }

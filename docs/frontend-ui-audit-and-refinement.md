@@ -22,7 +22,7 @@ already survived three audits: PR #2 closed a twelve-finding codebase audit and
 added four CI gates, PR #3 unified every hand-rolled button surface onto shared
 `buttonVariants`, and PR #4 built and tested the five-tier motion system. The
 token discipline is real (two radius tokens, five motion tokens, semantic colours
-throughout), the accessibility floor is high (axe-clean on 15 routes plus both
+throughout), the accessibility floor is high (axe-clean on 16 routes plus both
 open dialogs, one `h1` per page, named landmarks, focus restoration on both
 dialogs), and the reading experience is the point of the design rather than a
 casualty of it.

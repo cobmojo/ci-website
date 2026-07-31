@@ -988,7 +988,11 @@
     min-width: 0 !important;
   }
 
-  details {
+  /* Disclosures are forced open on paper so nothing hides inside a collapsed
+     one. The `:not` keeps that from resurrecting a disclosure the page asked
+     to leave out of print entirely, whose `print:hidden` would otherwise lose
+     to this `!important`. */
+  details:not(.print-hidden, [class~="print:hidden"]) {
     display: block !important;
   }
 
