@@ -227,6 +227,96 @@ receipt assertion matched two elements, because the page also carries a
 no-JavaScript `:target` receipt saying the same words; it is now scoped to the
 live region, which is the path the click takes.
 
+### SEO-15 · Font swap pushed CLS past the "good" threshold on two routes · P2
+
+**Where** `src/app/layout.tsx` (now), `src/app/globals.css` (cause).
+**Evidence** Measured cold against the production build, median of five runs
+per route, Chromium at 1440×900:
+
+| Route | CLS before | CLS after | LCP before | LCP after |
+| --- | --- | --- | --- | --- |
+| `/` | **0.1259** | 0.0000 | 412 ms | 332 ms |
+| `/scripture/` | **0.1599** | 0.0294 | 296 ms | 348 ms |
+| `/case/key-texts/eternal-punishment/` | 0.0174 | 0.0000 | 504 ms | 400 ms |
+| `/full-case/` | 0.0035 | 0.0000 | 716 ms | 660 ms |
+| `/search/?q=second+death` | 0.0063 | 0.0000 | 452 ms | 416 ms |
+| `/watch/` | 0.0017 | 0.0000 | 332 ms | 324 ms |
+
+**Root cause** Attributed with `PerformanceObserver`, not guessed: a single
+shift at 357 ms on `/` and 431 ms on `/scripture/`, whose sources were text
+nodes and `nav.ml-auto.hidden.xl:block`. That is the web fonts swapping in. The
+six `@font-face` rules are only discovered once CSS has parsed, so the first
+paint uses the fallback and every line is re-measured when the real faces
+arrive. The comment above them claimed "a metric-similar fallback keeps CLS at
+zero", but no `size-adjust`, `ascent-override` or `descent-override` is
+declared, so nothing actually held the metrics.
+
+**Correction** `ReactDOM.preload` for the two upright latin faces, which cover
+essentially all above-the-fold text. Not the italic or latin-ext subsets: they
+rarely appear there and preloading all six would only make them compete.
+`crossOrigin` is set because a font preloaded without it is fetched a second
+time by the CSS.
+
+**Why not fix the metrics instead** Adding `size-adjust`/`ascent-override` to a
+fallback stack changes text geometry, and this repository has a text-geometry
+contract gated across three engines (`docs/pretext-text-geometry.md`). It is
+also a typography change, which SEO work here is explicitly not allowed to
+make. Preloading changes *when* the same files arrive and nothing else — same
+faces, same metrics, same contract.
+
+**Test** `seo.spec.ts` — *the two faces that draw the first screen are
+preloaded*. The tags are gated, not the measurement: a CLS number taken on a
+shared CI machine is noise, and a flaky performance gate teaches people to
+re-run the build. The tags are the cause and losing them is the regression.
+
+**Honest limit** These are **lab** numbers from a local production server on one
+machine. They are not field data, and no CrUX or Search Console data exists
+because nothing is deployed.
+
+---
+
+## What the Agentic SEO Skill reported, and what came of it
+
+The skill was run at commit `69199160e18372bc5cdf9ddec20ccb9fb1b509f1` against
+the built HTML, and its `finding_verifier.py` reduced 14 raw findings to 12
+distinct ones. **Zero were errors.** All twelve were warnings, and all twelve
+are accounted for:
+
+| Skill finding | Disposition |
+| --- | --- |
+| `WebSite is missing recommended property 'potentialAction'` | **Rejected.** This is the retired sitelinks `SearchAction` — the skill is recommending exactly what SEO-01 removed, and Google retired the feature on 21 November 2024. |
+| `VideoObject is missing recommended property 'contentUrl'` | **Rejected.** Google: "Don't link to the page where the video lives; this must be the URL of the video file's actual content bytes." No media-file URL exists. See SEO-04. |
+| `VideoObject is missing recommended property 'publisher'` | **Rejected.** No organization publishes this site. Same reasoning as SEO-02. |
+| `Article is missing recommended property 'publisher'` | **Rejected.** As above. |
+| `Article is missing recommended property 'image'` | **Rejected.** See the rejection table below. |
+| `VideoObject is missing recommended property 'transcript'` | **Rejected.** The full transcript is already visible, server-rendered and crawlable on `/watch/`, which is what actually lets it be understood. Duplicating 28 minutes of prose into a JSON-LD string would inflate the document for a property with no documented Google consumer. |
+| `BreadcrumbList is missing recommended property 'item'` | **False positive.** `item`, `name` and `position` belong on the `ListItem` children, and that is exactly where this site puts them. The skill checks for them on the parent node. |
+| `BreadcrumbList is missing recommended property 'name'` | **False positive**, as above. |
+| `BreadcrumbList is missing recommended property 'position'` | **False positive**, as above. |
+| `BreadcrumbList property 'itemListElement' appears to contain placeholder text` | **False positive.** The skill's placeholder heuristic lists `"["` as a marker, so every JSON array on every site trips it. |
+| `VideoObject property 'hasPart' appears to contain placeholder text` | **False positive**, same array heuristic. |
+| `VideoObject property 'thumbnailUrl' appears to contain placeholder text` | **False positive**, same array heuristic. |
+
+### Where the skill could not reach
+
+Its URL-fetching scripts refuse any host resolving to a private or loopback
+address (`lib/safe_http.py`), which is a sound SSRF guard and also means they
+cannot audit an undeployed site at all — every script that takes a URL rather
+than a file was unusable here. The guard was **not** patched to work around it:
+weakening a security control to make a tool produce output is not a trade worth
+making, and this repository already covers the same ground deterministically and
+on every push:
+
+| Skill script | Repository equivalent, running in CI |
+| --- | --- |
+| `canonical_checker.py` | `canonical-check.ts` + `seo.spec.ts` canonical test |
+| `robots_checker.py` | `indexing-contract.test.ts` + `smoke.spec.ts` |
+| `sitemap_checker.py` | `indexing-contract.test.ts` (parity both ways, absolute URLs, no future `lastmod`) |
+| `internal_links.py`, `orphan_pages_from_sitemap.py` | `link-check.ts`, which now fails on an orphan |
+| `indexability_matrix.py` | `seo.spec.ts` robots test over every route |
+| `social_meta.py` | `seo.spec.ts` social metadata test |
+| `x_robots_header_checker.py` | `security-headers.spec.ts` |
+
 ---
 
 ## Already correct, and now demonstrated

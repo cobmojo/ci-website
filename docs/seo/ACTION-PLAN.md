@@ -24,6 +24,7 @@ that was skipped.
 | SEO-12 | Stop repeating a citation locator three times | `src/components/content/cite.tsx` | An identical locator is not appended twice | `reading.spec.ts` | ✅ Done |
 | SEO-13 | Correct the stale Irenaeus assertion | `tests/e2e/reading.spec.ts` | Asserts marker-first accessible-name *order* | itself | ✅ Done |
 | SEO-14 | Scope the S04 receipt assertion | `tests/e2e/reading.spec.ts` | Targets the live region, not the no-JS twin | itself | ✅ Done |
+| SEO-15 | Stop the font swap moving the page | `src/app/layout.tsx` | Both upright latin faces preloaded with `crossorigin`; lab CLS on `/` falls 0.126 → 0.000 and `/scripture/` 0.160 → 0.029 | `seo.spec.ts` | ✅ Done |
 
 ## Verified as already correct
 

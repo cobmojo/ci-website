@@ -281,6 +281,41 @@ test('the social image endpoint actually returns an image', async ({ request }) 
   expect((await response.body()).length).toBeGreaterThan(1_000)
 })
 
+test('the two faces that draw the first screen are preloaded', async ({ request }) => {
+  /*
+   * Page experience, gated as markup rather than as a measurement.
+   *
+   * Without these two preloads the `@font-face` rules are only found after CSS
+   * parses, the first paint uses the fallback, and the real faces swap in
+   * around 350–430ms — moving every line of text. Measured cold on the
+   * production build that was worth 0.126 CLS on the homepage and 0.131 on
+   * `/scripture/`, both past the 0.1 that counts as good; with them, both sit
+   * at 0.000 and 0.029.
+   *
+   * Asserting the tags rather than re-measuring CLS is deliberate: a layout
+   * shift number taken on a shared CI machine is noise, and a flaky
+   * performance gate teaches people to re-run the build. The tags are the
+   * cause, they are deterministic, and losing them is the regression.
+   */
+  const html = head(await (await request.get('/')).text())
+  const preloads = [...html.matchAll(/<link[^>]+rel="preload"[^>]*>/g)].map(match => match[0])
+  const fonts = preloads.filter(tag => tag.includes('/fonts/'))
+
+  expect(fonts, 'the upright latin faces must be preloaded').toHaveLength(2)
+  for (const name of ['SourceSerif4-latin-normal.woff2', 'Inter-latin-normal.woff2']) {
+    expect(
+      fonts.some(tag => tag.includes(name)),
+      `${name} is not preloaded`,
+    ).toBe(true)
+  }
+  for (const tag of fonts) {
+    expect(tag, 'a font preload needs as="font"').toContain('as="font"')
+    // Without `crossorigin` the CSS fetches the same file a second time, which
+    // makes the preload worse than not having it.
+    expect(tag, 'a font preload needs crossorigin').toContain('crossorigin')
+  }
+})
+
 test('no page advertises a keywords meta tag', async ({ request }) => {
   /*
    * Google has ignored it since 2009 and it reads as a keyword list to

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import ReactDOM from 'react-dom'
 import { SiteFooter } from '@/components/navigation/site-footer'
 import { SiteHeader } from '@/components/navigation/site-header'
 import { SmoothAnchorScroll } from '@/components/navigation/smooth-anchor-scroll'
@@ -47,7 +48,40 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
+/**
+ * The two faces that draw the first screen, fetched alongside the stylesheet
+ * rather than after it.
+ *
+ * Without this the six `@font-face` rules are only discovered once CSS has
+ * parsed, so the first paint uses the fallback and the real faces swap in
+ * around 350–430ms — re-measuring every line of text and moving the header,
+ * the navigation and the hero with it. Measured cold against the production
+ * build, that swap was the whole of a 0.126 CLS on the homepage and 0.131 on
+ * `/scripture/`, both past the 0.1 that counts as good.
+ *
+ * Only the two upright latin faces. They cover essentially all above-the-fold
+ * text; the italic and latin-ext subsets rarely appear there, and preloading
+ * all six would only make them compete with the CSS and with each other.
+ *
+ * `crossOrigin` is required even same-origin: a font preloaded without it is
+ * fetched a second time by the CSS, which makes the preload worse than none.
+ *
+ * `ReactDOM.preload` rather than a rendered `<link>`: React hoists a rendered
+ * one into `<head>` *and* leaves it in place, so the tag is emitted twice.
+ *
+ * Nothing about the typography changes — same files, same faces, same metrics,
+ * so the text-geometry contract is untouched.
+ */
+const PRELOADED_FONTS = [
+  '/fonts/SourceSerif4-latin-normal.woff2',
+  '/fonts/Inter-latin-normal.woff2',
+] as const
+
 export default function RootLayout({ children }: { children: ReactNode }) {
+  for (const href of PRELOADED_FONTS) {
+    ReactDOM.preload(href, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' })
+  }
+
   return (
     <html lang={siteConfig.language}>
       <body className="flex min-h-dvh flex-col">

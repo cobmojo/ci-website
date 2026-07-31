@@ -63,7 +63,19 @@ const VISUAL_SPEC = /visual\.spec\.ts$/
  * The cross-browser and deployed-preview set: origin-agnostic, reads nothing
  * from `.next`, and asserts the flows an engine can actually differ on.
  */
-const SMOKE_SPECS = [/smoke\.spec\.ts$/, /security-headers\.spec\.ts$/, /seo\.spec\.ts$/]
+const SMOKE_SPECS = [/smoke\.spec\.ts$/, /security-headers\.spec\.ts$/]
+/**
+ * Origin-level SEO assertions.
+ *
+ * Deliberately not in `SMOKE_SPECS`. This spec reads served HTML through
+ * Playwright's `request` fixture, which is a Node HTTP client and never starts
+ * a browser, so `firefox-smoke` and `webkit-smoke` could only re-fetch the same
+ * bytes and reach the same conclusion at the cost of two more sweeps of every
+ * route. One chromium project runs it locally, and the `preview` project runs
+ * it against a deployed origin, which is the case that actually differs:
+ * real TLS, real edge redirects, real headers.
+ */
+const SEO_SPEC = /seo\.spec\.ts$/
 /** Everything that is neither focused nor origin-agnostic. */
 const FOCUSED_SPECS = [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC, VISUAL_SPEC]
 
@@ -118,7 +130,9 @@ export default defineConfig({
     {
       name: 'chromium-mobile',
       dependencies: [...SERVED_BUILD_GUARD],
-      testIgnore: FOCUSED_SPECS,
+      // `SEO_SPEC` too: it asserts over HTTP responses, which do not vary by
+      // viewport, so running it here would repeat the desktop project exactly.
+      testIgnore: [...FOCUSED_SPECS, SEO_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
     {
@@ -223,7 +237,7 @@ export default defineConfig({
     {
       name: 'preview',
       dependencies: [...SERVED_BUILD_GUARD],
-      testMatch: SMOKE_SPECS,
+      testMatch: [...SMOKE_SPECS, SEO_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
   ],
