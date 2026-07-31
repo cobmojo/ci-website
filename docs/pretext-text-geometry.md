@@ -238,7 +238,7 @@ in WebKit and nobody knew, because the suite only ran Chromium.
 | End-to-end | `bun run test:e2e` | quick search, responsive fitting, failure paths, no-JavaScript, the bundle boundary, selection |
 | Accessibility | `bun run test:a11y` | axe over fifteen routes plus the open dialog |
 | Text geometry | `bun run test:text-geometry` | Chromium, Firefox and WebKit against real fonts and content |
-| Everything in a browser | `bun run test:browser` | all five of the above browser suites |
+| Everything in a browser | `bun run test:browser` | every browser suite above: the two end-to-end projects, the two accessibility projects and the three geometry projects |
 
 `bun run validate` is the non-browser gate. `bun run ci` runs `validate` and then
 `test:browser`, which is the complete gate including accessibility and all three

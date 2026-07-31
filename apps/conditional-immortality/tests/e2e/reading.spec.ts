@@ -100,6 +100,30 @@ test('a visitor can determine the site does not teach painless or instant annihi
  * 3, 7 and 8. Finding things
  * ------------------------------------------------------------------ */
 
+test('a search index that fails to load says so, in words and to assistive technology', async ({
+  page,
+}) => {
+  // The index is the one fetch the dialog cannot do without. When it fails the
+  // reader must be told, rather than left with an empty pane, and the telling
+  // has to reach a screen reader: the live region is the only channel that
+  // does not require moving focus.
+  await page.route('**/search-index.json', route => route.abort())
+
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Search', exact: true }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await expect(dialog).toBeVisible()
+
+  const status = dialog.locator('[aria-live="polite"]')
+  await expect(status).toContainText(/could not load/i)
+  await expect(dialog.getByText(/could not load/i).first()).toBeVisible()
+
+  // No unhandled rejection reached the page, and the recovery route works.
+  await dialog.getByRole('link', { name: /full search page/i }).click()
+  await expect(page).toHaveURL(/\/search\//)
+})
+
 test('a visitor can find Revelation 14:11 through search', async ({ page }) => {
   await page.goto('/')
 
@@ -447,9 +471,13 @@ test.describe('narrow viewport navigation', () => {
 
     // The sheet marks where the reader is, exactly as the desktop nav does:
     // this page lives under The Case, so that entry carries aria-current.
+    // Exactly one, counted rather than sampled: the secondary link list
+    // repeats routes the primary list owns, and marking both would announce
+    // two current pages in a single navigation region.
     const current = dialog.locator('[aria-current="page"]')
-    await expect(current.first()).toBeVisible()
-    await expect(current.first()).toContainText('The Case')
+    await expect(current).toHaveCount(1)
+    await expect(current).toBeVisible()
+    await expect(current).toContainText('The Case')
 
     await page.keyboard.press('Escape')
 

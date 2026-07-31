@@ -7,7 +7,7 @@ import {
 } from '@ci/content/passages'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
-import { scrollRegionProps } from '@/components/content/scroll-region'
+import { ScrollRegion } from '@/components/content/scroll-region'
 import { ScriptureFilter } from '@/components/scripture/scripture-filter'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
@@ -166,10 +166,7 @@ export default function ScriptureIndexPage() {
                   </span>
                 </h3>
 
-                <div
-                  {...scrollRegionProps(`References in ${group.book}`)}
-                  className="overflow-x-auto"
-                >
+                <ScrollRegion label={`References in ${group.book}`}>
                   <table className="w-full border-collapse font-sans text-[0.92rem]">
                     <caption className="sr-only">
                       References in {group.book} and the parts of the case that use them
@@ -250,7 +247,7 @@ export default function ScriptureIndexPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </ScrollRegion>
               </section>
             ))}
           </section>

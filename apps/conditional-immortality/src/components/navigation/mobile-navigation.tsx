@@ -158,24 +158,22 @@ export function MobileNavigation() {
                   <h3 className="mb-1.5 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
                     {group.title}
                   </h3>
+                  {/* No `aria-current` here. This secondary list repeats
+                      routes the primary list above already owns (/case/,
+                      /watch/, /start/...), and marking both would announce two
+                      current pages in one navigation region. The footer, which
+                      renders this same model, marks none either. */}
                   <ul className="space-y-0.5">
-                    {group.links.map(link => {
-                      const isActive = isActiveRoute(currentPath, link.href)
-                      return (
-                        <li key={link.href}>
-                          <Link
-                            href={link.href}
-                            aria-current={isActive ? 'page' : undefined}
-                            className={cn(
-                              'block rounded px-3 py-2.5 font-sans text-[0.92rem] no-underline',
-                              isActive ? 'bg-panel text-navy' : 'text-ink-muted hover:bg-panel',
-                            )}
-                          >
-                            {link.label}
-                          </Link>
-                        </li>
-                      )
-                    })}
+                    {group.links.map(link => (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          className="block rounded px-3 py-2.5 font-sans text-[0.92rem] text-ink-muted no-underline hover:bg-panel"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               ))}

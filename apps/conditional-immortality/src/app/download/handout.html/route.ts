@@ -27,7 +27,7 @@ const STYLES = `
     --panel: #f2eee5;
     --ink: #1c242b;
     --ink-muted: #4c5763;
-    --ink-subtle: #646d78;
+    --ink-subtle: #57606d;
     --navy: #233a4d;
     --copper: #7d4f22;
     --border: #d4ccbe;

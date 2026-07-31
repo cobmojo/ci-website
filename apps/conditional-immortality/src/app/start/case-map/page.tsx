@@ -2,7 +2,7 @@ import { caseSections, getSection, PRINCIPAL_CLAIMS } from '@ci/content/case'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
-import { scrollRegionProps } from '@/components/content/scroll-region'
+import { ScrollRegion } from '@/components/content/scroll-region'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**
@@ -215,7 +215,7 @@ export default function CaseMapPage() {
       </div>
 
       <figure className="mt-8 mb-0 hidden max-w-[62rem] lg:block">
-        <div {...scrollRegionProps('Case map diagram')} className="overflow-x-auto">
+        <ScrollRegion label="Case map diagram">
           <svg
             viewBox="0 0 960 700"
             role="img"
@@ -431,7 +431,7 @@ export default function CaseMapPage() {
               conditional immortality
             </text>
           </svg>
-        </div>
+        </ScrollRegion>
         <figcaption className="mt-3 font-sans text-[0.88rem] text-ink-muted">
           Rounded boxes group sections. Square boxes hold claims. The six-sided box holds the
           conclusion the claims are offered in support of. Shape and wording carry the distinction,

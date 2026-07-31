@@ -236,13 +236,19 @@ export function readExcerptGeometry(element: HTMLElement, locale: string): Excer
   )
   if (!contract) return null
 
-  const rect = element.getBoundingClientRect()
+  /*
+   * `clientWidth`, not `getBoundingClientRect().width`.
+   *
+   * The rect is the *transformed* box, and the search panel arrives on a
+   * `scale: 0.98 → 1` enter transition, so a measurement taken during that
+   * transition reads about two per cent narrow and is then cached as the
+   * layout width for the life of the result set. `clientWidth` is the layout
+   * width, unaffected by any ancestor transform, so the fitter no longer
+   * depends on when it happens to run. It already excludes the border, so
+   * only the padding is subtracted here.
+   */
   const width =
-    rect.width -
-    pixels(style.paddingInlineStart) -
-    pixels(style.paddingInlineEnd) -
-    pixels(style.borderInlineStartWidth) -
-    pixels(style.borderInlineEndWidth)
+    element.clientWidth - pixels(style.paddingInlineStart) - pixels(style.paddingInlineEnd)
 
   return Number.isFinite(width) && width > 0 ? { contract, width } : null
 }

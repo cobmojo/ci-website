@@ -14,19 +14,12 @@ import type { ReactNode } from 'react'
  * same grouping to assistive technology without adding a landmark. The
  * Scripture index alone renders forty-eight of these, and forty-eight extra
  * landmarks would make the landmark list useless.
- */
-/**
- * The same behaviour as attributes, for wrappers that already exist and carry
- * their own classes. Spread it onto the wrapper:
  *
- * ```tsx
- * <div {...scrollRegionProps('References in Genesis')} className="…">
- * ```
+ * This component is the only owner. An earlier `scrollRegionProps` helper let
+ * callers spread the attributes onto their own wrapper and keep their own
+ * classes, and every one of those callers then missed `overscroll-x-contain`,
+ * so the helper is gone and `className` composes here instead.
  */
-export function scrollRegionProps(label: string) {
-  return { tabIndex: 0, role: 'group' as const, 'aria-label': label }
-}
-
 export function ScrollRegion({
   label,
   className,

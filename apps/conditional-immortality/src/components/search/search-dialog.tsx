@@ -7,6 +7,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
 import { pluralise } from '@/lib/format'
+import { isModifiedClick } from '@/lib/modified-click'
 import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
 
 /**
@@ -153,7 +154,10 @@ export function SearchDialogTrigger() {
           if (mounted) prewarm()
         }}
         onClick={event => {
-          if (!mounted) return
+          // A modified click is a request for the real link: open `/search/`
+          // in a new tab or window rather than swallowing it into a dialog
+          // the reader cannot put anywhere.
+          if (!mounted || isModifiedClick(event)) return
           event.preventDefault()
           openDialog()
         }}
@@ -176,11 +180,13 @@ export function SearchDialogTrigger() {
           }}
           onPointerDown={event => {
             // A click whose press and release land on different elements is
-            // retargeted to their common ancestor, so a text-selection drag
-            // that starts inside the panel and ends on the backdrop would
-            // read as a backdrop click. Only a press that begins on the
-            // backdrop itself may dismiss.
+            // retargeted to their common ancestor, so either half of a drag
+            // between the panel and the backdrop would otherwise read as a
+            // backdrop click. Dismissal requires both ends on the backdrop.
             backdropPressRef.current = event.target === dialogRef.current
+          }}
+          onPointerUp={event => {
+            if (event.target !== dialogRef.current) backdropPressRef.current = false
           }}
           onClick={event => {
             if (event.target === dialogRef.current && backdropPressRef.current) closeDialog()
@@ -222,9 +228,11 @@ export function SearchDialogTrigger() {
             <p id={statusId} aria-live="polite" className="sr-only">
               {loading
                 ? 'Loading the search index.'
-                : outcome
-                  ? `${outcome.total} ${pluralise(outcome.total, 'result')} for ${query}.`
-                  : ''}
+                : failed
+                  ? 'Search could not load. Reopen search to try again, or use the full search page.'
+                  : outcome
+                    ? `${outcome.total} ${pluralise(outcome.total, 'result')} for ${query}.`
+                    : ''}
             </p>
 
             {!index && loading ? (
@@ -232,7 +240,7 @@ export function SearchDialogTrigger() {
             ) : null}
 
             {!index && !loading && failed ? (
-              <p className="py-4 font-sans text-[0.92rem] text-ink-muted">
+              <p aria-hidden="true" className="py-4 font-sans text-[0.92rem] text-ink-muted">
                 Search could not load, which usually means the connection dropped. Reopen search to
                 try again, or use the{' '}
                 <Link href="/search/" onClick={closeDialog}>

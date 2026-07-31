@@ -84,13 +84,13 @@ children, `/case/`, `/objections/`, `/passages/`, `/scripture/`, `/topics/`,
 `/accessibility/`, `/privacy/`, `/search/`, 404.
 
 Generated: 40 section pages under `/case/`, `/objections/` and `/appendix/`;
-18 passage pages; 27 topic pages; 13 per-section changelog pages.
+18 passage pages; 27 topic pages; 12 per-section changelog pages.
 
 Handlers: `/search-index.json`, `/download/transcript.txt`,
 `/download/bibliography.txt`, `/download/handout.html`, `/sitemap.xml`,
 `/robots.txt`, `/og`, `POST /api/feedback`.
 
-20 redirects cover the paths readers guess (`/annihilationism`, `/ect-vs-ci`,
+21 redirects cover the paths readers guess (`/annihilationism`, `/ect-vs-ci`,
 `/conditional-immortality` and so on). No thin duplicate pages were created.
 
 ## Feedback
@@ -205,8 +205,9 @@ replace `src/lib/rate-limit.ts` with a shared store.
 ## Known limitations
 
 1. Video visual descriptions, as above.
-2. Six pages carry `specialist-review-pending` because they rest on a Greek or
-   Hebrew claim. They are marked in the interface, not just in a document.
+2. Two case pages and eight original-language notes carry
+   `specialist-review-pending` because they rest on a Greek or Hebrew claim.
+   They are marked in the interface, not just in a document.
 3. S34 carries `revision-needed` until someone produces a heaven-versus-hell
    count with published methodology.
 4. External links are recorded with an access date but are not fetched by CI, so

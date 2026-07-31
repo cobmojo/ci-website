@@ -443,9 +443,9 @@ against a production build.
 | `bun run content:docs` | Pass |
 | `bun run test` | **808 unit tests pass** on the merged tree (281 at the audit base; this branch added 21: button contract ×3, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×7; the balance arrived with PR #5's merge) |
 | `bun run build` | Pass, 129 static pages |
-| `bun run content:pii` | Pass: no source contact details in 1,745 built or 248 committed files |
+| `bun run content:pii` | Pass: no source contact details in 1,753 built or 295 committed files |
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
-| `bun run content:bundle` | Pass: every route within budget; `/corrections` 644.0 kB against its 664.1 kB allowance (+1.3 kB for the new error handling) |
+| `bun run content:bundle` | Pass on the merged tree: every route within budget; `/corrections` 663.7 kB against its 664.1 kB allowance |
 | `bun run test:e2e` | **308 tests, 0 failures** on the merged tree (224 at the audit base + 4 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
 | `bun run test:a11y` | **64 tests, 0 failures** (32 at base, desktop only; now 32 × desktop + 32 × mobile via the new `accessibility-mobile` project) |
 
@@ -506,6 +506,56 @@ corrected:
 
 One finder (fix regressions) died on a transient network error; its angle is
 re-run in gap sweep 2.
+
+### Gap sweep 2 (completed tree)
+
+The second sweep ran five angles (fix regressions, fresh eyes on the search
+dialog, contracts, documentation counts, accessibility) plus a hygiene angle
+that had already returned clean. It confirmed fifteen findings, none refuted.
+Three were regressions introduced by this branch's own earlier fixes, which
+is exactly what a second sweep is for. All are corrected:
+
+- **Announced search failure.** Gap sweep 1 gave the failed index fetch a
+  visible recovery message, but left the live region empty at that moment, so
+  assistive technology reported nothing at all (WCAG 4.1.3). The failure is
+  now a branch of the polite status region, the visible copy is its
+  `aria-hidden` twin, and an end-to-end test aborts the index request and
+  asserts both channels plus the recovery link.
+- **One current page per navigation region.** F6's `aria-current` had been
+  applied to the sheet's secondary link list as well as the primary one, and
+  the two lists share routes, so `/case/`, `/watch/` and every `/start/` page
+  announced two current pages. The secondary list no longer marks anything,
+  matching the footer that renders the same model; the end-to-end assertion
+  now counts the marked links instead of sampling the first.
+- **One scroll-region owner.** F42's `overscroll-x-contain` reached only the
+  wrappers converted to `ScrollRegion`; the sibling `scrollRegionProps`
+  helper still emitted none, and all three of its callers were missing it.
+  The helper is retired and its callers use the component, so the class of
+  drift is gone rather than patched again.
+- **Modified clicks.** The search trigger called `preventDefault()`
+  unconditionally and each result row called `onNavigate` on every click, so
+  Cmd/Ctrl/Shift-clicking either opened a background tab *and* destroyed the
+  dialog. A shared `isModifiedClick` helper (unit-tested for all four
+  modifiers and the middle button) now lets the browser have those clicks.
+- **Excerpt geometry measured through a transform.** The fitter read
+  `getBoundingClientRect().width` one frame after the panel opened, inside
+  its `scale: 0.98 → 1` enter transition, and cached a width about two per
+  cent narrow for the life of the result set. It now reads `clientWidth`,
+  which is the layout width and is unaffected by any ancestor transform.
+- **Backdrop dismissal, the mirror case.** Sweep 1 required the press to
+  begin on the backdrop; a drag that began on the backdrop and released
+  inside the panel still dismissed. Both ends must now be on the backdrop.
+- **A third palette mirror.** `download/handout.html` carried the same stale
+  `ink-subtle` the OG mirror had, under the same parity comment.
+- **Motion brief coverage.** The video poster's hover growth is a shipped,
+  tested, `no-preference`-gated Tier 2 companion to its press, but the brief
+  described Tier 2 as press-only. The brief now documents both halves and
+  states that no other element takes a hover transform. No CSS changed.
+- **Six documentation corrections**, each measured against the tree: 21
+  redirects (not 20), 12 per-section changelog pages (not 13), two case pages
+  plus eight language notes carrying `specialist-review-pending` (not "six
+  pages"), the `test:browser` suite descriptions in two documents, and this
+  ledger's own PII and bundle rows brought to their merged-tree values.
 
 ## 11. PR #5 compatibility
 
