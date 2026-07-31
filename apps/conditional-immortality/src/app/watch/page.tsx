@@ -174,8 +174,18 @@ export default function WatchPage() {
               <time dateTime={video.transcriptRetrievedAt}>
                 {formatLongDate(video.transcriptRetrievedAt)}
               </time>
-              . Timestamps link back to the player at the top of this page, and each one also opens
-              the video at that moment on YouTube.
+              .{' '}
+              <span className="print:hidden">
+                Timestamps link back to the player at the top of this page, and each one also opens
+                the video at that moment on YouTube.
+              </span>
+              {/* On paper there is no player and no link to follow, so the
+                  sentence above would promise two things the printed copy does
+                  not carry. The address does the same work. */}
+              <span className="hidden print:inline">
+                The video is at {siteConfig.video.watchUrl}, and each timestamp below is its
+                position in that recording.
+              </span>
             </p>
 
             {segments.map(segment => (

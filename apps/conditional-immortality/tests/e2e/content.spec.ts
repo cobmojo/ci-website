@@ -564,6 +564,25 @@ test('a transcript timestamp seeks a video that is already playing', async ({ pa
   await expect(player).not.toHaveAttribute('src', /[?&]start=/)
 })
 
+test('the poster link goes where a click on it would go', async ({ page }) => {
+  await page.goto('/watch/')
+
+  // The href was a constant, so everything that follows the poster as a link
+  // rather than running its handler — Ctrl or middle click, "open in a new
+  // tab", dragging it, the address a reader reads in the status bar before
+  // deciding — offered the video from the beginning, while a plain click on
+  // the same element in the same state started at the requested moment.
+  const timestamp = page.locator('a[href^="?t="]').nth(3)
+  const requested = (await timestamp.getAttribute('href'))?.match(/\?t=(\d+)/)?.[1]
+  expect(requested).toBeTruthy()
+
+  await timestamp.click()
+  await expect(page.locator('a.video-play')).toHaveAttribute(
+    'href',
+    new RegExp(`[?&]t=${requested}$`),
+  )
+})
+
 /**
  * Did the player get rebuilt while `act` ran?
  *

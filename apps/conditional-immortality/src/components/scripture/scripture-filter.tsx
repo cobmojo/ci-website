@@ -60,7 +60,11 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
     // and every filter a reader actually uses is the non-empty case. The
     // heading stops asserting a number rather than asserting a wrong one; the
     // status line above says how many are showing.
-    rules.push(`[data-reference-count]{display:none}`)
+    //
+    // Screen only. The status line lives in this panel, which print drops, so
+    // hiding the counts on paper as well would leave a narrowed index with no
+    // number anywhere on it — 2 rows printed under a lede still saying 208.
+    rules.push(`@media screen{[data-reference-count]{display:none}}`)
   }
   const css = rules.join('')
 

@@ -54,6 +54,7 @@ export function ClickToLoadVideo({
    * nothing at all with JavaScript off: no request, no iframe, no message.
    */
   const [scripted, setScripted] = useState(false)
+  const [offset, setOffset] = useState(0)
   /**
    * A seek is a request, not a value.
    *
@@ -76,7 +77,13 @@ export function ClickToLoadVideo({
    * body and the reader's place on the page is lost, so focus moves to the
    * player that replaced the control.
    */
-  useEffect(() => setScripted(true), [])
+  useEffect(() => {
+    setScripted(true)
+    // The offset the address bar is asking for, which only exists once a
+    // transcript timestamp has put it there. Read after hydration, so the
+    // route stays prerendered and the markup the server sent still matches.
+    setOffset(resolveStart())
+  }, [])
 
   useEffect(() => {
     if (activated) iframeRef.current?.focus()
@@ -98,16 +105,20 @@ export function ClickToLoadVideo({
    * demand to serve a control that only exists once scripting has run.
    */
   useEffect(() => {
-    if (!activated) return
     const onSeek = (event: Event) => {
       const seconds = (event as CustomEvent<unknown>).detail
-      if (typeof seconds === 'number' && Number.isFinite(seconds) && seconds >= 0) {
-        setSeek(previous => ({ seconds: Math.floor(seconds), requests: previous.requests + 1 }))
-      }
+      if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0) return
+      const whole = Math.floor(seconds)
+      // Both, always. The offset is what the poster links to, and it has to
+      // track the timestamps a reader presses whether or not the player is
+      // running — the effect that reads the address bar runs once at mount,
+      // and a timestamp is a soft navigation that never remounts this.
+      setOffset(whole)
+      setSeek(previous => ({ seconds: whole, requests: previous.requests + 1 }))
     }
     window.addEventListener(VIDEO_SEEK_EVENT, onSeek)
     return () => window.removeEventListener(VIDEO_SEEK_EVENT, onSeek)
-  }, [activated])
+  }, [])
 
   /**
    * Transcript timestamps are `?t=` links, so a reader who arrives through one
@@ -125,6 +136,18 @@ export function ClickToLoadVideo({
     const parsed = raw === null ? Number.NaN : Number.parseInt(raw, 10)
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
   }
+
+  /**
+   * Where the poster goes when it is followed as a link.
+   *
+   * It was a constant, so every path that does not run the click handler —
+   * Ctrl or middle click, "open in new tab", dragging the link, the status bar
+   * a reader reads before deciding — offered the video from the beginning,
+   * while a plain click on the very same element in the very same state
+   * correctly started at the requested moment. Thirty-eight of the thirty-nine
+   * transcript timestamps disagreed with their own poster.
+   */
+  const posterHref = offset > 0 ? `${watchUrl}?t=${offset}` : watchUrl
 
   const source = [
     `${siteConfig.video.embedHost}/embed/${siteConfig.video.youtubeId}`,
@@ -155,7 +178,7 @@ export function ClickToLoadVideo({
         ) : (
           <PosterControl
             scripted={scripted}
-            watchUrl={watchUrl}
+            watchUrl={posterHref}
             title={title}
             durationSeconds={durationSeconds}
             onPlay={() => {

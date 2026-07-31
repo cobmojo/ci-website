@@ -34,6 +34,7 @@ const FEEDBACK_STORE_DIR = path.join(os.tmpdir(), 'ci-playwright-feedback-store'
 const A11Y_SPEC = /a11y\.spec\.ts$/
 /** The geometry spec belongs to the three focused browser projects. */
 const GEOMETRY_SPEC = /text-geometry\.spec\.ts$/
+const PRINT_SPEC = /print\.spec\.ts$/
 
 const DESKTOP_VIEWPORT = { width: 1440, height: 900 }
 const MOBILE_VIEWPORT = { width: 375, height: 812 }
@@ -68,12 +69,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-desktop',
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC],
+      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, PRINT_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'chromium-mobile',
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC],
+      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, PRINT_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
     {
@@ -100,6 +101,28 @@ export default defineConfig({
      * is not described as Safari anywhere. Real Safari is validated by hand;
      * the procedure is in `docs/pretext-text-geometry.md`.
      */
+    /*
+     * Print, in every engine. The one guarantee where the engines genuinely
+     * disagree: Firefox declines `content-visibility` on `::details-content`,
+     * so the rule that opens collapsed disclosures on paper does nothing
+     * there. A Chromium-only run reads green while a Firefox reader prints
+     * two pages of empty boxes.
+     */
+    {
+      name: 'print-chromium',
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'print-firefox',
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'print-webkit',
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
+    },
     {
       name: 'geometry-chromium',
       testMatch: GEOMETRY_SPEC,

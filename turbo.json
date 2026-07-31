@@ -37,6 +37,11 @@
       "cache": false,
       "outputs": ["playwright-report/**", "test-results/**"]
     },
+    "test:print": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
     "test:text-geometry": {
       "dependsOn": ["build"],
       "cache": false,

@@ -1277,6 +1277,63 @@ the host and print appends the address. The claim that destinations are
 printed after the link text is true, the duplication is mild, and the sibling
 link where it matters — `youtu.be` — genuinely gains the video id from it.
 
+### Gap sweep 13 (completed tree)
+
+Two angles over the tree at `b934a5d`: the pattern in the newest work, and a
+gap in the suite's own shape — `test:e2e` and `test:a11y` run Chromium only,
+while this branch leans on `:has()`, `::details-content`, `scrollbar-gutter`,
+`@starting-style` and `allow-discrete`. Four findings.
+
+- **A Firefox reader was printing empty boxes, and every gate read green.**
+  The print fix forces `content-visibility: visible` on `::details-content`.
+  Measured in all three engines: Chromium 3,902px and WebKit 3,733px with the
+  rule against 49px without it, and Firefox 52px either way. Firefox sees the
+  selector — an author `background-color` on that pseudo-element applies — and
+  declines `content-visibility` on it specifically, with `visible`, with
+  `auto`, and with `display` alongside. No engine prints correctly without the
+  rule, so this was never "Firefox is already fine". Two pages carry a closed
+  disclosure with real content: 5,612 characters and four tables between them,
+  under a statement that nothing is lost inside a collapsed section.
+
+  The `open` attribute is the one lever that measures the same everywhere, and
+  no selector can set an attribute, so a `beforeprint` handler opens closed
+  disclosures and restores them afterwards. The CSS stays and does the work
+  where scripting is off.
+
+  **The gate could not have caught this in any engine.** It asserts the rule is
+  present in the stylesheet, which it is. A new print suite measures rendered
+  output on both affected pages in Chromium, Firefox and WebKit, and runs in
+  CI beside the others.
+- **The poster link threw away the moment the reader asked for.** Its `href`
+  was a constant, so everything that follows it as a link rather than running
+  its handler — Ctrl or middle click, "open in a new tab", dragging it, the
+  address shown in the status bar — offered the video from the beginning,
+  while a plain click on the same element in the same state started at the
+  requested moment. Thirty-eight of the thirty-nine timestamps disagreed with
+  their own poster. The href tracks the requested offset now.
+
+  Two things had to be right for that: the offset is read after hydration, so
+  the route stays prerendered, and it is updated on every seek rather than
+  once at mount, because a timestamp is a soft navigation that never remounts
+  the player. The first attempt did only the former and measured unchanged.
+- **`/watch/` printed a sentence promising two things paper does not carry** —
+  a player at the top of the page and a per-moment link, both removed by the
+  print stylesheet. The printed copy names the video's address instead.
+- **A narrowed Scripture index printed with no number on it at all.** Hiding
+  the stale reference counts was right on screen, where the status line says
+  how many are showing; that line lives in the filter panel, which print
+  drops. The rule is scoped to screen.
+
+Everything else the cross-engine sweep measured came back equivalent, and it
+is worth recording what that covered: the `:has()` scroll lock holds in all
+three (stripping it lets 1,364-1,600px of background scroll through);
+`@starting-style` enter animations, `scroll-padding-top`, `:focus-visible`
+rings, native dialog focus and Escape, search end to end, the no-JS correction
+form and the video poster are identical everywhere. Firefox lacking
+`text-wrap: pretty` and the Chromium-only exit transition cost a reader
+nothing. WebKit not tabbing to links is Safari's own preference, not a site
+defect.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch
