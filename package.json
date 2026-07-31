@@ -8,8 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run dev",
     "build": "turbo run build",
+    "build:local": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run build",
     "start": "turbo run start",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -17,28 +18,36 @@
     "format:check": "biome format .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:e2e": "turbo run test:e2e",
-    "test:a11y": "turbo run test:a11y",
+    "test:coverage": "turbo run test:coverage",
+    "test:e2e": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:e2e",
+    "test:a11y": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:a11y",
+    "test:text-geometry": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:text-geometry",
+    "test:visual": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:visual",
+    "test:visual:update": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:visual:update",
+    "test:browser": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:browser",
+    "test:preview": "turbo run test:preview",
     "content:validate": "bun run scripts/conditional-immortality/validate-content.ts",
     "content:audit": "bun run scripts/conditional-immortality/content-audit.ts",
     "content:pii": "bun run scripts/conditional-immortality/pii-scan.ts",
     "content:links": "bun run scripts/conditional-immortality/link-check.ts",
+    "content:links:external": "bun run scripts/conditional-immortality/external-link-audit.ts",
+    "content:canonical": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 bun run scripts/conditional-immortality/canonical-check.ts",
     "content:bundle": "bun run scripts/conditional-immortality/bundle-budget.ts",
     "content:docs": "bun run scripts/conditional-immortality/docs-check.ts",
     "source:import": "bun run scripts/conditional-immortality/import-source.ts",
-    "validate": "bun run format:check && bun run lint && bun run typecheck && bun run content:validate && bun run content:audit && bun run content:docs && bun run test && bun run build && bun run content:pii && bun run content:links && bun run content:bundle",
-    "ci": "bun run validate && bun run test:browser",
-    "test:text-geometry": "turbo run test:text-geometry",
-    "test:browser": "turbo run test:browser"
+    "validate": "bun run format:check && bun run lint && bun run typecheck && bun run content:validate && bun run content:audit && bun run content:docs && bun run test && bun run build:local && bun run content:pii && bun run content:links && bun run content:canonical && bun run content:bundle",
+    "qa:production": "bun run validate && bun run test:coverage && bun run test:browser",
+    "ci": "bun run qa:production"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
-    "@types/bun": "^1.3.0",
-    "turbo": "2.10.7",
-    "typescript": "5.9.3",
     "@ci/content": "workspace:*",
     "@ci/content-schema": "workspace:*",
-    "@ci/search": "workspace:*"
+    "@ci/search": "workspace:*",
+    "@types/bun": "^1.3.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "turbo": "2.10.7",
+    "typescript": "5.9.3"
   },
   "engines": {
     "bun": ">=1.3.0"

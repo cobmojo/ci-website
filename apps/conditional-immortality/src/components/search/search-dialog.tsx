@@ -207,7 +207,7 @@ export function SearchDialogTrigger() {
               placeholder="Search passages, sections, topics, sources"
               autoComplete="off"
               aria-describedby={statusId}
-              className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
+              className="min-h-11 w-full rounded-md border border-border-control bg-paper-raised px-3 font-sans text-[1rem] text-ink"
             />
             <DialogCloseButton label="Close search" onClick={closeDialog} />
           </div>

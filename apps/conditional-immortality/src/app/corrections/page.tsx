@@ -117,6 +117,47 @@ export default function CorrectionsPage() {
               </p>
             </div>
 
+            {/*
+              The receipt a reader gets when they submit with no scripting.
+              The endpoint answers a form-encoded POST with a 303 to one of
+              these two fragments, and `:target` reveals the matching one. It
+              has to be server-rendered and unconditional: the form is a client
+              component, so with scripting off nothing it renders ever appears,
+              and the previous `?submitted=1` round trip returned the reader to
+              an apparently untouched empty form whether their correction had
+              been recorded or not.
+
+              With scripting on the form posts with `fetch` and never
+              navigates, so neither fragment is ever reached and the form's own
+              status region remains the only message.
+
+              `tabIndex={-1}` is what makes the browser move focus here on the
+              fragment navigation, which is what announces it.
+            */}
+            <div
+              className="submission-receipt m-0 mb-5 rounded-md border border-affirm/30 bg-affirm-soft p-4 font-sans text-[0.95rem] text-ink"
+              id="submission-received"
+              tabIndex={-1}
+            >
+              <p className="m-0">
+                <strong className="font-semibold text-affirm">Received.</strong> Your submission has
+                been recorded. Every submission is read. If it leads to a change, that change is
+                published in the <Link href="/changelog/">changelog</Link> with the issue and the
+                decision.
+              </p>
+            </div>
+            <div
+              className="submission-receipt m-0 mb-5 rounded-md border border-deny/30 bg-deny-soft p-4 font-sans text-[0.95rem] text-ink"
+              id="submission-not-recorded"
+              tabIndex={-1}
+            >
+              <p className="m-0">
+                <strong className="font-semibold text-deny">Not recorded.</strong> Nothing was
+                stored. Either a field was not accepted or the site could not write the submission
+                down. Please check the form below and send it again.
+              </p>
+            </div>
+
             <FeedbackForm />
           </section>
 

@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { coverage } from '../../vitest.coverage'
 
 /**
  * Unit test configuration.
@@ -25,6 +26,17 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
+    /*
+     * A unit run is a localhost context, and `site-config.ts` now refuses to
+     * invent a canonical origin for a build that has not named one. Declaring
+     * it here is the same statement the browser suites and CI make, in the one
+     * place every test process inherits it from.
+     */
+    env: { NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL: '1' },
+    coverage: coverage({
+      include: ['src/lib/**/*.ts', 'src/components/**/*.tsx'],
+      thresholds: { lines: 0, statements: 0, functions: 0, branches: 0 },
+    }),
     /*
      * The search-dialog component tests drive a coordinator that crosses an
      * animation frame, two awaited promises and a React transition before it

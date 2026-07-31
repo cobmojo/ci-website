@@ -386,12 +386,17 @@ describe('animation craft', () => {
 
 describe('print', () => {
   it('leaves no animation able to hide content on paper', () => {
-    // Print forces every disclosure open by reverting `display` on its
-    // children, which cannot reach a pseudo-element. So no rule anywhere may
-    // collapse `::details-content`, or the content of every disclosure would be
-    // missing from the printed page.
+    // No rule anywhere may collapse or clip `::details-content`. A rule that
+    // makes it *visible* is the opposite and is required below, so the ban is
+    // on the values that hide rather than on naming the pseudo-element at all.
     const live = withoutComments(css)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*(block-size|content-visibility|overflow)/)
+    for (const rule of live.matchAll(/::details-content\s*\{([^}]*)\}/g)) {
+      const body = rule[1] as string
+      expect(body, 'a disclosure body may not be given a fixed size').not.toMatch(/block-size/)
+      expect(body, 'a disclosure body may not be clipped').not.toMatch(/overflow\s*:\s*hidden/)
+      const visibility = body.match(/content-visibility\s*:\s*([a-z-]+)/)
+      if (visibility) expect(visibility[1]).toBe('visible')
+    }
   })
 
   it('keeps disclosures open on paper', () => {
@@ -400,5 +405,22 @@ describe('print', () => {
     const print = live.slice(live.indexOf('@media print'))
     expect(print).toMatch(/details\s*\{\s*display:\s*block\s*!important/)
     expect(print).toMatch(/display:\s*revert\s*!important/)
+  })
+
+  it('reveals the body of a closed disclosure, which `display` alone cannot reach', () => {
+    /*
+     * `::details-content` is a user-agent pseudo-element, so the
+     * `display: revert !important` on the children above does not touch it —
+     * and it is what actually hides a closed disclosure. Measured under print
+     * emulation, Chromium, Firefox and WebKit all printed the summary and no
+     * body without this rule, which is the opposite of what `/accessibility/`
+     * and the disclosure component both tell a reader.
+     *
+     * A rendering assertion lives in `tests/e2e/print.spec.ts`; this one keeps
+     * the rule from being deleted as redundant.
+     */
+    const live = withoutComments(css)
+    const print = live.slice(live.indexOf('@media print'))
+    expect(print).toMatch(/details::details-content\s*\{[^}]*content-visibility:\s*visible/)
   })
 })

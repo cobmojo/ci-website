@@ -121,33 +121,61 @@ describe('resetRateLimit', () => {
   })
 })
 
+/**
+ * `X-Forwarded-For` is a list a client can start and only a proxy can finish.
+ *
+ * Reading the *first* entry reads whatever the client typed, so a limiter keyed
+ * on it is not a limiter: a sender picks a new leftmost address per request and
+ * never meets the window. The only entry that means anything is the one the
+ * nearest trusted proxy appended, counted from the right — and how many proxies
+ * are trusted is a deployment fact, so it is configuration rather than a guess.
+ */
 describe('clientAddress', () => {
-  it('takes the first entry of the forwarding chain, which is the client', () => {
-    const headers = new Headers({ 'x-forwarded-for': '203.0.113.7, 70.41.3.18, 150.172.238.178' })
-    expect(clientAddress(headers)).toBe('203.0.113.7')
+  const CHAIN = '203.0.113.7, 70.41.3.18, 150.172.238.178'
+
+  it('takes the entry the nearest trusted proxy appended, not the one the client sent', () => {
+    expect(clientAddress(new Headers({ 'x-forwarded-for': CHAIN }), 1)).toBe('150.172.238.178')
+  })
+
+  it('counts further left as more proxies are declared', () => {
+    expect(clientAddress(new Headers({ 'x-forwarded-for': CHAIN }), 2)).toBe('70.41.3.18')
+    expect(clientAddress(new Headers({ 'x-forwarded-for': CHAIN }), 3)).toBe('203.0.113.7')
+  })
+
+  it('assumes exactly one proxy when it is not told otherwise', () => {
+    expect(clientAddress(new Headers({ 'x-forwarded-for': CHAIN }))).toBe('150.172.238.178')
+  })
+
+  it('trusts nothing forwarded when no proxy is declared', () => {
+    const headers = new Headers({ 'x-forwarded-for': CHAIN, 'x-real-ip': '203.0.113.9' })
+    expect(clientAddress(headers, 0)).toBe('unknown-client')
+  })
+
+  it('refuses a chain shorter than the proxies in front of it, which cannot have come from them', () => {
+    expect(clientAddress(new Headers({ 'x-forwarded-for': '203.0.113.7' }), 2)).toBe(
+      'unknown-client',
+    )
   })
 
   it('trims the whitespace around a chain entry', () => {
-    const headers = new Headers({ 'x-forwarded-for': '203.0.113.7 , 70.41.3.18' })
-    expect(clientAddress(headers)).toBe('203.0.113.7')
+    expect(clientAddress(new Headers({ 'x-forwarded-for': '203.0.113.7 , 70.41.3.18 ' }), 1)).toBe(
+      '70.41.3.18',
+    )
   })
 
-  it('falls back to the real-ip header', () => {
-    expect(clientAddress(new Headers({ 'x-real-ip': '203.0.113.9' }))).toBe('203.0.113.9')
+  it('falls back to the real-ip header, which only a proxy sets', () => {
+    expect(clientAddress(new Headers({ 'x-real-ip': '203.0.113.9' }), 1)).toBe('203.0.113.9')
   })
 
   it('prefers the forwarding chain when both headers are present', () => {
-    const headers = new Headers({
-      'x-forwarded-for': '203.0.113.7',
-      'x-real-ip': '203.0.113.9',
-    })
-    expect(clientAddress(headers)).toBe('203.0.113.7')
+    const headers = new Headers({ 'x-forwarded-for': CHAIN, 'x-real-ip': '203.0.113.9' })
+    expect(clientAddress(headers, 1)).toBe('150.172.238.178')
   })
 
   it('names an unknown client rather than returning an empty key', () => {
-    expect(clientAddress(new Headers())).toBe('unknown-client')
-    expect(clientAddress(new Headers({ 'x-forwarded-for': '' }))).toBe('unknown-client')
-    expect(clientAddress(new Headers({ 'x-real-ip': '   ' }))).toBe('unknown-client')
+    expect(clientAddress(new Headers(), 1)).toBe('unknown-client')
+    expect(clientAddress(new Headers({ 'x-forwarded-for': '' }), 1)).toBe('unknown-client')
+    expect(clientAddress(new Headers({ 'x-real-ip': '   ' }), 1)).toBe('unknown-client')
   })
 
   /**
@@ -155,8 +183,17 @@ describe('clientAddress', () => {
    * new key per request, which would let the limiter be bypassed at will.
    */
   it('gives every unidentified client the same key', () => {
-    const first = clientAddress(new Headers())
-    const second = clientAddress(new Headers({ 'x-real-ip': '' }))
+    const first = clientAddress(new Headers(), 1)
+    const second = clientAddress(new Headers({ 'x-real-ip': '' }), 1)
     expect(first).toBe(second)
+  })
+
+  it('cannot be moved off a key by prepending addresses, which is the whole point', () => {
+    const honest = clientAddress(new Headers({ 'x-forwarded-for': '198.51.100.4' }), 1)
+    const forged = clientAddress(
+      new Headers({ 'x-forwarded-for': 'anything, else, entirely, 198.51.100.4' }),
+      1,
+    )
+    expect(forged).toBe(honest)
   })
 })

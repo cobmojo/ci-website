@@ -12,7 +12,8 @@
     "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile",
     "test:a11y": "playwright test --project=accessibility --project=accessibility-mobile",
     "test:text-geometry": "playwright test --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit",
-    "test:browser": "playwright test --project=chromium-desktop --project=chromium-mobile --project=accessibility --project=accessibility-mobile --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit"
+    "test:browser": "playwright test --project=chromium-desktop --project=chromium-mobile --project=accessibility --project=accessibility-mobile --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@chenglou/pretext": "0.0.8",
