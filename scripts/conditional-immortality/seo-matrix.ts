@@ -135,21 +135,46 @@ try {
 
   // --- redirects, on the wire ----------------------------------------------
 
+  /*
+   * Every alias is followed to the end, not one hop.
+   *
+   * `trailingSlash: true` makes Next emit its own normalisation redirect, and
+   * `routes-manifest.json` lists that rule *before* the site's aliases, so a
+   * shared link without a trailing slash costs two hops: `/annihilationism` →
+   * `/annihilationism/` → `/topics/annihilationism/`. Both are 308 and the
+   * destination is a 200, so nothing is broken and no equity is lost; the
+   * alternative is an edge function in front of a static site for the sake of
+   * twenty-one vanity URLs. What has to hold is that the chain is short, every
+   * hop is permanent, and it ends where the table says.
+   */
+  const MAX_HOPS = 2
   for (const [source, destination] of redirectSources) {
-    const first = await fetch(`${server.origin}${source}`, { redirect: 'manual' })
-    if (first.status !== 308 && first.status !== 301) {
-      problems.push(`${source}: answered ${first.status}, expected a permanent redirect`)
+    const chain: string[] = []
+    let url = source
+    let status = 0
+    for (let hop = 0; hop <= MAX_HOPS; hop += 1) {
+      const response = await fetch(`${server.origin}${url}`, { redirect: 'manual' })
+      status = response.status
+      if (status === 200) break
+      if (status !== 301 && status !== 308) {
+        problems.push(`${source}: ${url} answered ${status}, which is not a permanent redirect`)
+        break
+      }
+      const location = response.headers.get('location') ?? ''
+      url = location.startsWith('http') ? new URL(location).pathname : location
+      chain.push(url)
+    }
+    if (status !== 200) {
+      problems.push(
+        `${source}: ${[source, ...chain].join(' -> ')} did not reach a page within ${MAX_HOPS} hops`,
+      )
       continue
     }
-    const location = first.headers.get('location') ?? ''
-    if (location !== destination) {
-      problems.push(`${source}: redirects to ${location}, the table says ${destination}`)
+    if (url !== destination) {
+      problems.push(`${source}: ends at ${url}, the redirect table says ${destination}`)
     }
-    const second = await fetch(`${server.origin}${location}`, { redirect: 'manual' })
-    if (second.status !== 200) {
-      problems.push(
-        `${source} -> ${location}: answered ${second.status}. A redirect chain, or a dead alias.`,
-      )
+    if (chain.length > MAX_HOPS) {
+      problems.push(`${source}: ${chain.length} hops — ${[source, ...chain].join(' -> ')}`)
     }
   }
 

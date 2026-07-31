@@ -179,12 +179,12 @@ test.describe('search', () => {
     // Wait for the index rather than measuring the fetch: the question here is
     // how long a keystroke takes to rank and paint, not how long a network
     // round trip takes.
-    await dialog.getByRole('textbox').fill('judgment')
+    await dialog.getByRole('searchbox').fill('judgment')
     await expect(dialog.getByRole('link').first()).toBeVisible()
 
     await recordInteractions(page)
-    await dialog.getByRole('textbox').press('End')
-    await dialog.getByRole('textbox').pressSequentially(' fire', { delay: 60 })
+    await dialog.getByRole('searchbox').press('End')
+    await dialog.getByRole('searchbox').pressSequentially(' fire', { delay: 60 })
     await expect(dialog.getByText(/Showing|Nothing matched/)).toBeVisible()
     report('type into search with the index loaded', await worstInteraction(page))
   })
@@ -234,16 +234,18 @@ test.describe('navigation and filters', () => {
 
   test('the Scripture index filter answers a select', async ({ page }) => {
     await arriveSettled(page, '/scripture/')
-    await page.getByLabel('Book').selectOption({ index: 3 })
+    await page.getByLabel('Book', { exact: true }).selectOption({ index: 3 })
     report('filter the Scripture index by book', await worstInteraction(page))
   })
 
-  test('the source library filter answers a keystroke', async ({ page }) => {
+  test('the source library filter answers a select', async ({ page }) => {
     await arriveSettled(page, '/sources/')
-    const field = page.getByRole('searchbox').last()
-    await expect(field).toBeVisible()
-    await field.pressSequentially('Wright', { delay: 60 })
-    report('filter the source library by typing', await worstInteraction(page))
+    // The library narrows by kind and perspective, both selects; there is no
+    // free-text field here, unlike the Scripture index.
+    const kind = page.getByLabel('Kind of source')
+    await expect(kind).toBeVisible()
+    await kind.selectOption({ index: 1 })
+    report('narrow the source library by kind', await worstInteraction(page))
   })
 })
 
