@@ -1,10 +1,10 @@
 'use client'
 
 import { type SearchIndex, search } from '@ci/search'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
+import { Link } from '@/components/navigation/link'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
 import { pluralise } from '@/lib/format'
 import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'

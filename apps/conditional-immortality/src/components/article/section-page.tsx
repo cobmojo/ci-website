@@ -3,7 +3,6 @@ import { revisionsForSection } from '@ci/content/revisions'
 import { sourcesForSection } from '@ci/content/sources'
 import { chaptersForSection, videoTimestampUrl } from '@ci/content/video'
 import { REVISION_TYPE_LABELS } from '@ci/content-schema'
-import Link from 'next/link'
 import {
   ArticleHeader,
   Breadcrumbs,
@@ -18,6 +17,7 @@ import {
 } from '@/components/article/chapter-navigation'
 import { MdxContent } from '@/components/content/mdx-content'
 import { NewTabLink } from '@/components/content/new-tab-link'
+import { Link } from '@/components/navigation/link'
 import { formatLongDate, formatTimestamp } from '@/lib/format'
 import { passageBySlugOrReference } from '@/lib/passages'
 import type { LoadedSection } from '@/lib/sections'

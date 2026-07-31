@@ -1,8 +1,8 @@
 'use client'
 
 import { buttonVariants } from '@ci/ui'
-import Link from 'next/link'
 import { useEffect } from 'react'
+import { Link } from '@/components/navigation/link'
 
 /**
  * The recovery page for an uncaught error inside a route.

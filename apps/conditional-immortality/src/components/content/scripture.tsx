@@ -1,5 +1,5 @@
 import { requireScripture, WEB_TRANSLATION, WEB_TRANSLATION_SHORT } from '@ci/content/scripture'
-import Link from 'next/link'
+import { Link } from '@/components/navigation/link'
 import { passageBySlugOrReference } from '@/lib/passages'
 
 /**

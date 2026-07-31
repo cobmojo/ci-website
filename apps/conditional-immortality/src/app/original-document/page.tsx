@@ -10,9 +10,9 @@ import {
   commentDispositions,
   type MediaDisposition,
 } from '@ci/content-schema'
-import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
 import { ScrollRegion } from '@/components/content/scroll-region'
+import { Link } from '@/components/navigation/link'
 import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate, pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'

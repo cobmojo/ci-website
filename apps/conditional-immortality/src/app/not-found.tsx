@@ -1,6 +1,6 @@
 import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { Link } from '@/components/navigation/link'
 
 /**
  * 404.

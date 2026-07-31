@@ -1,5 +1,5 @@
 import { caseSectionsByGroup } from '@ci/content/case'
-import Link from 'next/link'
+import { Link } from '@/components/navigation/link'
 
 /**
  * The full chapter list.

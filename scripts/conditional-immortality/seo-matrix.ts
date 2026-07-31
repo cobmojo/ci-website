@@ -211,7 +211,10 @@ function duplicates(field: 'title' | 'description'): string[] {
   }
   return [...byValue.entries()]
     .filter(([, where]) => where.length > 1)
-    .map(([value, where]) => `${field} shared by ${where.length} routes: ${where.join(', ')} — "${value.slice(0, 70)}"`)
+    .map(
+      ([value, where]) =>
+        `${field} shared by ${where.length} routes: ${where.join(', ')} — "${value.slice(0, 70)}"`,
+    )
 }
 problems.push(...duplicates('title'), ...duplicates('description'))
 
@@ -222,9 +225,19 @@ mkdirSync(outputDir, { recursive: true })
 writeFileSync(join(outputDir, 'indexability-matrix.json'), JSON.stringify(rows, null, 2))
 
 const tsv = [
-  ['route', 'kind', 'status', 'robots', 'x-robots-tag', 'canonical', 'sitemap', 'h1', 'jsonld', 'links', 'title'].join(
-    '\t',
-  ),
+  [
+    'route',
+    'kind',
+    'status',
+    'robots',
+    'x-robots-tag',
+    'canonical',
+    'sitemap',
+    'h1',
+    'jsonld',
+    'links',
+    'title',
+  ].join('\t'),
   ...rows.map(row =>
     [
       row.route,
@@ -255,7 +268,9 @@ console.log(`  distinct descs   ${new Set(indexable.map(row => row.description))
 console.log(
   `  breadcrumbs      ${rows.filter(row => row.breadcrumb).length} of ${rows.length} pages`,
 )
-console.log(`  written to       ${join(outputDir, 'indexability-matrix.tsv').slice(REPO_ROOT.length + 1)}`)
+console.log(
+  `  written to       ${join(outputDir, 'indexability-matrix.tsv').slice(REPO_ROOT.length + 1)}`,
+)
 console.log('')
 
 if (problems.length > 0) {

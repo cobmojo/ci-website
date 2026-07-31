@@ -45,6 +45,18 @@ declare global {
   interface Window {
     __interactions?: Interaction[]
   }
+  /*
+   * `interactionId` and `durationThreshold` are Event Timing Level 1, shipped
+   * in Chromium since 96 and the basis of INP; TypeScript's DOM library has
+   * not caught up. Declared rather than cast, so a future lib update that adds
+   * them conflicts loudly instead of leaving a silent `any` behind.
+   */
+  interface PerformanceEventTiming {
+    readonly interactionId: number
+  }
+  interface PerformanceObserverInit {
+    durationThreshold?: number
+  }
 }
 
 /**

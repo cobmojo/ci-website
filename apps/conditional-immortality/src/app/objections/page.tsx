@@ -1,11 +1,11 @@
 import { objectionSections } from '@ci/content/case'
-import Link from 'next/link'
 import {
   Breadcrumbs,
   type Crumb,
   EvidenceRoleBadge,
   ReviewStatusBadge,
 } from '@/components/article/article-chrome'
+import { Link } from '@/components/navigation/link'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**

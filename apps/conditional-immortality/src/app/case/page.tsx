@@ -8,7 +8,6 @@ import {
 import type { CaseGroup, CaseSection } from '@ci/content-schema'
 import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import {
   Breadcrumbs,
   type Crumb,
@@ -17,6 +16,7 @@ import {
 } from '@/components/article/article-chrome'
 import { PrintButton } from '@/components/case/print-button'
 import { ReadingProgress } from '@/components/case/reading-progress'
+import { Link } from '@/components/navigation/link'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { loadSection } from '@/lib/sections'
 

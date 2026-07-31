@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { Link } from '@/components/navigation/link'
 import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'

@@ -25,7 +25,9 @@ for (const [kind, count] of [...counts.entries()].sort()) {
   console.log(`  ${kind.padEnd(16)} ${String(count).padStart(4)}`)
 }
 console.log(`  ${'sitemap <loc>'.padEnd(16)} ${String(manifest.sitemapRoutes.length).padStart(4)}`)
-console.log(`  ${'auditable HTML'.padEnd(16)} ${String(auditableRoutes(manifest).length).padStart(4)}`)
+console.log(
+  `  ${'auditable HTML'.padEnd(16)} ${String(auditableRoutes(manifest).length).padStart(4)}`,
+)
 console.log('')
 
 console.log('Template families')

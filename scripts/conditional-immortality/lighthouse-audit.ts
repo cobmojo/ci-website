@@ -29,9 +29,9 @@ import {
   auditRoute,
   type BrowserHandle,
   launchBrowser,
+  type Mode,
   mad,
   median,
-  type Mode,
   provenance,
   type ServerHandle,
   startServedBuild,
@@ -175,8 +175,20 @@ try {
     }
   }
 } finally {
-  await browser.kill()
-  server.stop()
+  /*
+   * The server comes down even if the browser will not.
+   *
+   * It did not, once: chrome-launcher threw EBUSY deleting its own temporary
+   * profile, the throw skipped the line below, and a `next start` from that
+   * run held the benchmark port for the rest of the afternoon. Two runs later
+   * the build-id guard caught it — which is the guard working, and also two
+   * runs of wasted measurement.
+   */
+  try {
+    await browser.kill()
+  } finally {
+    server.stop()
+  }
 }
 
 // --- summarise -------------------------------------------------------------
@@ -326,7 +338,8 @@ for (const summary of summaries) {
    * than the median.
    */
   if (s.accessibility?.min !== 100) problems.push(`${where}: accessibility ${s.accessibility?.min}`)
-  if (s.bestPractices?.min !== 100) problems.push(`${where}: best practices ${s.bestPractices?.min}`)
+  if (s.bestPractices?.min !== 100)
+    problems.push(`${where}: best practices ${s.bestPractices?.min}`)
   if (indexable && s.seo?.min !== 100) problems.push(`${where}: SEO ${s.seo?.min}`)
 
   /*

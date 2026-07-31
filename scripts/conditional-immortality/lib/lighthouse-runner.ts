@@ -91,8 +91,8 @@ export async function startServedBuild(port = DEFAULT_PORT): Promise<ServerHandl
         new Error(
           error.code === 'EADDRINUSE'
             ? `Port ${port} is already in use. Something else — very likely an orphaned ` +
-              `\`next start\` from a killed run — is holding it. Stop it, or set ` +
-              `LIGHTHOUSE_PORT to a free port.`
+                `\`next start\` from a killed run — is holding it. Stop it, or set ` +
+                `LIGHTHOUSE_PORT to a free port.`
             : `Could not test port ${port}: ${error.message}`,
         ),
       ),
@@ -115,8 +115,9 @@ export async function startServedBuild(port = DEFAULT_PORT): Promise<ServerHandl
        * then fails to load its config, and the only symptom is a port that
        * never answers.
        */
-      NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL:
-        process.env.NEXT_PUBLIC_SITE_URL ? undefined : (process.env.NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL ?? '1'),
+      NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL
+        ? undefined
+        : (process.env.NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL ?? '1'),
       /*
        * No audit here submits a correction, and none should: the write path is
        * the one part of this site with side effects. `memory` is refused in
@@ -549,7 +550,7 @@ export function median(values: readonly number[]): number {
   const middle = Math.floor(sorted.length / 2)
   return sorted.length % 2 === 1
     ? (sorted[middle] as number)
-    : (((sorted[middle - 1] as number) + (sorted[middle] as number)) / 2)
+    : ((sorted[middle - 1] as number) + (sorted[middle] as number)) / 2
 }
 
 /**

@@ -2,8 +2,8 @@ import { glossary, glossaryByLetter } from '@ci/content/glossary'
 import { languageNotes } from '@ci/content/language'
 import { findPassageByReference, passageRoute } from '@ci/content/passages'
 import { getTopic, topicRoute } from '@ci/content/topics'
-import Link from 'next/link'
 import { Breadcrumbs, type Crumb, ReviewStatusBadge } from '@/components/article/article-chrome'
+import { Link } from '@/components/navigation/link'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**

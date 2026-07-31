@@ -351,13 +351,16 @@ export function buildRouteManifest(): RouteManifest {
   }
   const inSitemap = new Set(sitemapRoutes)
   for (const route of indexable) {
-    if (!inSitemap.has(route)) discrepancies.push(`${route} is indexable but absent from the sitemap`)
+    if (!inSitemap.has(route))
+      discrepancies.push(`${route} is indexable but absent from the sitemap`)
   }
   for (const route of STATIC_ROUTES) {
-    if (!emitted.has(route)) discrepancies.push(`STATIC_ROUTES lists ${route}, which was not prerendered`)
+    if (!emitted.has(route))
+      discrepancies.push(`STATIC_ROUTES lists ${route}, which was not prerendered`)
   }
   for (const route of NOINDEX_ROUTES) {
-    if (!emitted.has(route)) discrepancies.push(`NOINDEX_ROUTES lists ${route}, which was not prerendered`)
+    if (!emitted.has(route))
+      discrepancies.push(`NOINDEX_ROUTES lists ${route}, which was not prerendered`)
   }
   for (const record of records) {
     if (record.kind === 'indexable-html' && record.family === null) {
