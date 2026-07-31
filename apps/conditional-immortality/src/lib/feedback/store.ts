@@ -5,8 +5,11 @@ import path from 'node:path'
  * Somewhere durable to put one correction.
  *
  * Three adapters behind one method. The route does not know which it has, and
- * the only thing it needs from any of them is the difference between "written"
- * and "not written" — a rejected promise, never a quiet return.
+ * what it needs from any of them is which of three things happened: the record
+ * was written, it was refused, or nobody said. A rejected promise, never a
+ * quiet return; and where the answer never came back, an `UnconfirmedWrite`
+ * rather than a plain error, because "we do not know" and "it did not happen"
+ * are different things to tell a reader.
  *
  * See `config.ts` for which adapter a deployment gets and why it has to say so.
  */
@@ -46,6 +49,40 @@ export type StoreSpec =
 const DEFAULT_HTTP_TIMEOUT_MS = 5_000
 
 /**
+ * A write whose outcome nobody knows.
+ *
+ * The request went out and no answer came back before the timeout. The
+ * collector may have stored the record and answered too slowly, or lost the
+ * reply on the way, or never received the request at all — from here those are
+ * indistinguishable. Reporting it as a failure would tell a reader their
+ * correction was not recorded when it may well have been, and send them to
+ * write it again; so it is its own outcome, and the handler says so.
+ *
+ * A non-2xx is *not* this. There the collector spoke and refused, which is a
+ * definite answer and stays an ordinary error.
+ */
+export class UnconfirmedWrite extends Error {
+  readonly unconfirmed = true
+
+  constructor(message: string) {
+    super(message)
+    this.name = 'UnconfirmedWrite'
+  }
+}
+
+/**
+ * Structural rather than `instanceof`, so an adapter loaded through a second
+ * module instance — which bundlers do produce — is still recognised.
+ */
+export function isUnconfirmedWrite(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { unconfirmed?: unknown }).unconfirmed === true
+  )
+}
+
+/**
  * One file per calendar month, keyed on the record's own timestamp.
  *
  * Keying on the record rather than on "now" keeps a submission that arrives a
@@ -80,20 +117,41 @@ function httpStore(endpoint: string, token: string | null, timeoutMs: number): F
   return {
     async append(submission) {
       const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), timeoutMs)
+      let timedOut = false
+      const timer = setTimeout(() => {
+        timedOut = true
+        controller.abort()
+      }, timeoutMs)
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'content-type': 'application/json; charset=utf-8',
+            /*
+             * The submission id, which is derived from the submission itself
+             * rather than drawn at random. A reader whose first attempt timed
+             * out is told it may already have been recorded and asked to send
+             * it again if not; that resend arrives here with the same key, so
+             * a collector that honours it files one correction instead of two
+             * and the reader is not punished for the site's uncertainty.
+             */
+            'idempotency-key': submission.id,
             ...(token ? { authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(submission),
           signal: controller.signal,
-          // A correction is not idempotent to retry blindly and not cacheable.
+          // Not cacheable, and never replayed by anything here: a retry is a
+          // reader's decision, carrying the key above.
           cache: 'no-store',
           redirect: 'error',
         })
+        /*
+         * The answer is in, so the deadline has done its job. Cleared here
+         * rather than only in `finally` because a timer firing between this
+         * line and the status check below would turn a collector's definite
+         * refusal into a reported silence.
+         */
+        clearTimeout(timer)
         if (!response.ok) {
           /*
            * The status only. A collector that echoes the record back in its
@@ -103,6 +161,13 @@ function httpStore(endpoint: string, token: string | null, timeoutMs: number): F
            */
           throw new Error(`The feedback store answered ${response.status}`)
         }
+      } catch (error) {
+        // The abort is ours, and it means the request was sent and nothing
+        // came back. Whether the record landed is not knowable from here.
+        if (timedOut) {
+          throw new UnconfirmedWrite(`The feedback store did not answer within ${timeoutMs}ms`)
+        }
+        throw error
       } finally {
         clearTimeout(timer)
       }

@@ -121,8 +121,15 @@ export function resetRateLimit(key?: string): void {
  * deployment actually has, counted from the right. How many that is cannot be
  * inferred — it depends on the host — so it is configuration
  * (`FEEDBACK_TRUSTED_PROXY_HOPS`, default 1, the shape of every managed
- * platform). Zero means nothing is in front of this process, in which case any
- * forwarding header is client-supplied and none of it is believed.
+ * platform).
+ *
+ * A hop count below one means nothing is in front of this process, so no
+ * forwarding header is believed and every caller collapses onto one key. That
+ * is not a topology this site runs in: `resolveFeedbackConfig` refuses it at
+ * startup, because one shared key means five submissions from any one sender
+ * refuse the form to every other reader. The guard below stays as the
+ * unreachable floor, so a caller that passes zero from somewhere else gets one
+ * conservative key rather than a forgeable one.
  *
  * Returned for rate-limit keying only. It is never persisted and never logged.
  */

@@ -38,6 +38,44 @@ const CONCURRENCY = 6
 /** A transient failure is not link rot; a persistent one is. */
 const ATTEMPTS = 3
 
+/**
+ * Statuses that say "not now" rather than "not here".
+ *
+ * Six requests in flight against one rate-limited host makes 429 likely, and a
+ * 5xx from a healthy site is a bad minute rather than a dead citation. These
+ * used to return on the first attempt, so the retry loop only ever covered
+ * transport exceptions and the audit reported link rot for a source that was
+ * there all along — the exact false alarm the header comment says this command
+ * exists to avoid.
+ */
+const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504])
+
+/** Ceiling on a `Retry-After`, so one host's hour-long backoff cannot stall the run. */
+const MAX_RETRY_AFTER_MS = 30_000
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * How long to wait before attempt `attempt + 1`.
+ *
+ * `Retry-After` is the host telling us what it wants, in seconds or as an HTTP
+ * date, and honouring it is both politer and likelier to get an answer than a
+ * fixed backoff. Anything unparseable, negative or beyond the ceiling falls
+ * back to the same linear backoff a transport error gets.
+ */
+function retryDelayMs(response: Response, attempt: number): number {
+  const backoff = 1_000 * attempt
+  const header = response.headers.get('retry-after')?.trim()
+  if (!header) return backoff
+
+  const seconds = Number(header)
+  const requested = Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(header) - Date.now()
+  if (!Number.isFinite(requested) || requested <= 0) return backoff
+  return Math.min(Math.max(requested, backoff), MAX_RETRY_AFTER_MS)
+}
+
 const asJson = process.argv.includes('--json')
 
 function targets(): Target[] {
@@ -83,8 +121,14 @@ async function fetchOnce(url: string, method: 'HEAD' | 'GET'): Promise<Response>
   }
 }
 
+/**
+ * Every attempt is kept, and the last one is the answer.
+ *
+ * A link is only called dead once all three attempts have been spent, whether
+ * they ran out on a refused connection or on a host that kept saying "not now".
+ */
 async function check(target: Target): Promise<Result> {
-  let lastError: string | null = null
+  let last: Result | null = null
 
   for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
     try {
@@ -93,20 +137,32 @@ async function check(target: Target): Promise<Result> {
       if (response.status === 405 || response.status === 403 || response.status === 501) {
         response = await fetchOnce(target.url, 'GET')
       }
-      return {
+      last = {
         ...target,
         status: response.status,
         finalUrl: response.url || target.url,
         redirected: (response.url || target.url) !== target.url,
         error: null,
       }
+      if (attempt < ATTEMPTS && TRANSIENT_STATUSES.has(response.status)) {
+        await sleep(retryDelayMs(response, attempt))
+        continue
+      }
+      return last
     } catch (error) {
-      lastError = (error as Error).message
-      if (attempt < ATTEMPTS) await new Promise(resolve => setTimeout(resolve, 1_000 * attempt))
+      last = {
+        ...target,
+        status: null,
+        finalUrl: null,
+        redirected: false,
+        error: (error as Error).message,
+      }
+      if (attempt < ATTEMPTS) await sleep(1_000 * attempt)
     }
   }
 
-  return { ...target, status: null, finalUrl: null, redirected: false, error: lastError }
+  // `ATTEMPTS` is at least one, so the loop has always recorded something.
+  return last ?? { ...target, status: null, finalUrl: null, redirected: false, error: null }
 }
 
 async function run(): Promise<void> {

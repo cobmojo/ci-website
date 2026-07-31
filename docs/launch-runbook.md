@@ -66,7 +66,7 @@ short version of what production needs:
 | `FEEDBACK_STORE_DURABLE` | filesystem only | runtime | Endpoint answers 503 |
 | `FEEDBACK_STORE_URL` | http only | runtime | Endpoint answers 503 |
 | `FEEDBACK_STORE_TOKEN` | http, if the endpoint needs it | runtime | Collector rejects the write |
-| `FEEDBACK_TRUSTED_PROXY_HOPS` | no (default 1) | runtime | Rate limiting keyed wrongly |
+| `FEEDBACK_TRUSTED_PROXY_HOPS` | no (default 1) | runtime | Rate limiting keyed wrongly; `0` is refused |
 | `FEEDBACK_NOTIFY_EMAIL` | no | runtime | One log line per submission, or none |
 
 No secret ever goes in a `NEXT_PUBLIC_` variable: those are inlined into the
@@ -84,15 +84,29 @@ option. Use:
 
 ```
 FEEDBACK_STORE=http
-FEEDBACK_STORE_URL=https://your-collector.example/feedback
+FEEDBACK_STORE_URL=https://example.org/internal/feedback
 FEEDBACK_STORE_TOKEN=…
 ```
 
-The collector is any endpoint that accepts `POST` of one JSON record and stores
-it durably: a serverless function writing to a managed database, a spreadsheet
-webhook, a form service. It must answer 2xx only when the record is safe. The
-site treats any other status, and any timeout beyond five seconds, as a failure
-and tells the reader nothing was stored.
+**The collector has to be on this site's own origin**, and a URL anywhere else
+is refused at startup. `/privacy/` promises readers that no third party
+receives, stores or reads a submission, and `/corrections/` that submissions
+are stored on the site's own server. A POST to a spreadsheet webhook, a form
+service or a vendor's API makes both untrue while the pages go on saying them,
+and a reader has no way to find that out. So route a path on the production
+domain — `/internal/feedback` above — to whatever you are running: your own
+serverless function, a small service on your own machine, a database you
+control. It is the origin the reader was promised that is checked, not the
+process behind it, and keeping that promise true is your job on the other side
+of the rewrite.
+
+The endpoint accepts `POST` of one JSON record and must answer 2xx only when
+the record is safe. Any other status is treated as a refusal and the reader is
+told nothing was stored. Each request carries an `Idempotency-Key` header
+holding the submission id; honour it, because a reader whose first attempt
+timed out is asked to resend and that resend arrives with the same key. A
+request that times out after five seconds is reported to the reader as
+*unconfirmed* rather than as a failure, since the record may well have landed.
 
 **On a persistent server with a real volume**, prove all of the following
 before setting the acknowledgement:

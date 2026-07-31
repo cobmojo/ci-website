@@ -35,7 +35,15 @@ import { Suspense, useEffect, useId, useRef, useState } from 'react'
  *    field and a server-side rate limit instead.
  */
 
-type SubmissionStatus = 'idle' | 'submitting' | 'success' | 'error' | 'rate-limited' | 'invalid'
+type SubmissionStatus =
+  | 'idle'
+  | 'submitting'
+  | 'success'
+  | 'error'
+  | 'rate-limited'
+  | 'invalid'
+  /** The store was asked and did not answer. Neither stored nor refused. */
+  | 'unconfirmed'
 
 interface ConsentOption {
   readonly value: PublicationConsent
@@ -324,6 +332,19 @@ function FeedbackFormFields({
           return
         }
 
+        /*
+         * 504 is the endpoint saying it asked where corrections are stored and
+         * got no answer before the timeout. The submission may well be
+         * recorded, so "not recorded" would be a lie, and clearing the form
+         * would throw away text the reader might still need. It stays, and the
+         * message says exactly what is known.
+         */
+        if (response.status === 504) {
+          setStatus('unconfirmed')
+          setDetail('')
+          return
+        }
+
         if (!response.ok) {
           setStatus('error')
           setDetail(
@@ -363,6 +384,13 @@ function FeedbackFormFields({
             been recorded. Every submission is read. If it leads to a change, that change is
             published in the <Link href="/changelog/">changelog</Link> with the issue and the
             decision.
+          </p>
+        ) : null}
+        {status === 'unconfirmed' ? (
+          <p className="status-message m-0 mb-5 rounded-md border border-border-strong bg-panel p-4 font-sans text-[0.95rem] text-ink">
+            <strong className="font-semibold">Not confirmed.</strong> Where corrections are stored
+            did not answer in time, so yours may already have been recorded. Sending the same text
+            again is safe: it carries the same reference, so it is not filed as a second correction.
           </p>
         ) : null}
         {status === 'error' || status === 'rate-limited' || status === 'invalid' ? (

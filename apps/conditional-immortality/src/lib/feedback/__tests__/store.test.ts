@@ -2,14 +2,16 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createFeedbackStore, type StoredSubmission } from '../store'
+import { createFeedbackStore, isUnconfirmedWrite, type StoredSubmission } from '../store'
 
 /**
  * The store is the last thing between a reader's correction and nothing.
  *
  * Every adapter has to answer the same question the same way: either the
- * record is written, or the caller is told it was not. There is no third
- * answer, and in particular there is no "probably".
+ * record is written, or the caller is told it was not. The one case that is
+ * neither — the collector was asked and said nothing before the timeout — is
+ * reported as itself rather than dressed up as a failure, because "we do not
+ * know" and "it did not happen" are different things to tell a reader.
  */
 
 function submission(overrides: Partial<StoredSubmission> = {}): StoredSubmission {
@@ -175,6 +177,72 @@ describe('the http store', () => {
       timeoutMs: 20,
     })
     await expect(store.append(submission())).rejects.toThrow()
+  })
+
+  /**
+   * A collector that stored the record and then lost the reply is
+   * indistinguishable, from here, from one that never received it. Calling
+   * that a failure tells a reader their correction is gone when it may be
+   * filed, so it is reported as unknown and the id is what makes the resend
+   * they are invited to send recognisable as the same correction.
+   */
+  it('sends the submission id as the idempotency key', async () => {
+    const headers: Headers[] = []
+    vi.stubGlobal('fetch', async (_url: string, init: RequestInit) => {
+      headers.push(new Headers(init.headers))
+      return new Response(null, { status: 201 })
+    })
+
+    await createFeedbackStore({
+      kind: 'http',
+      endpoint: 'https://collector.example/r',
+      token: null,
+    }).append(submission())
+
+    expect(headers[0]?.get('idempotency-key')).toBe(submission().id)
+  })
+
+  it('reports a timeout as unknown rather than as a refusal', async () => {
+    vi.stubGlobal('fetch', (_url: string, init: RequestInit) => {
+      return new Promise((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(new Error('The operation was aborted')))
+      })
+    })
+    const store = createFeedbackStore({
+      kind: 'http',
+      endpoint: 'https://collector.example/r',
+      token: null,
+      timeoutMs: 20,
+    })
+
+    const error = await store.append(submission()).catch((thrown: unknown) => thrown)
+    expect(isUnconfirmedWrite(error)).toBe(true)
+  })
+
+  it('reports a status the collector actually sent as a refusal, which is a definite answer', async () => {
+    vi.stubGlobal('fetch', async () => new Response(null, { status: 500 }))
+    const store = createFeedbackStore({
+      kind: 'http',
+      endpoint: 'https://collector.example/r',
+      token: null,
+    })
+
+    const error = await store.append(submission()).catch((thrown: unknown) => thrown)
+    expect(isUnconfirmedWrite(error)).toBe(false)
+  })
+
+  it('reports a connection that never opened as a refusal, not as an unknown', async () => {
+    vi.stubGlobal('fetch', async () => {
+      throw new TypeError('fetch failed')
+    })
+    const store = createFeedbackStore({
+      kind: 'http',
+      endpoint: 'https://collector.example/r',
+      token: null,
+    })
+
+    const error = await store.append(submission()).catch((thrown: unknown) => thrown)
+    expect(isUnconfirmedWrite(error)).toBe(false)
   })
 })
 

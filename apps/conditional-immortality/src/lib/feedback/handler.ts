@@ -1,7 +1,7 @@
 import { type FeedbackFieldError, FeedbackSubmissionInputSchema } from '@ci/content-schema'
 import { clientAddress, rateLimit } from '../rate-limit'
 import type { FeedbackConfig } from './config'
-import type { FeedbackStore, StoredSubmission } from './store'
+import { type FeedbackStore, isUnconfirmedWrite, type StoredSubmission } from './store'
 
 /**
  * The correction endpoint, as a function of its dependencies.
@@ -13,10 +13,11 @@ import type { FeedbackStore, StoredSubmission } from './store'
  *
  * Design constraints, in order of priority:
  *
- * 1. **A submission is never lost silently.** Either the record is stored, or
- *    the reader is told it was not. `config.ts` decides whether the configured
- *    store can be believed at all; a store that cannot be believed answers 503
- *    rather than accepting the message and dropping it.
+ * 1. **A submission is never lost silently, and never misreported.** Either the
+ *    record is stored, or the reader is told it was not — or, where the store
+ *    was asked and never answered, that nobody knows. `config.ts` decides
+ *    whether the configured store can be believed at all; a store that cannot
+ *    be believed answers 503 rather than accepting the message and dropping it.
  * 2. **The server is the authority on what is valid.** The browser form is a
  *    courtesy; every field is re-validated here with the shared schema, and
  *    only the fields the schema returns are ever written.
@@ -46,8 +47,11 @@ export const MAX_BODY_BYTES = 64 * 1024
 /** Where a form-encoded submission is sent back to. */
 export const SUCCESS_FRAGMENT = 'submission-received'
 export const FAILURE_FRAGMENT = 'submission-not-recorded'
+/** The third receipt: the store was asked and did not answer in time. */
+export const UNCONFIRMED_FRAGMENT = 'submission-not-confirmed'
 const SUCCESS_REDIRECT = `/corrections/#${SUCCESS_FRAGMENT}`
 const FAILURE_REDIRECT = `/corrections/#${FAILURE_FRAGMENT}`
+const UNCONFIRMED_REDIRECT = `/corrections/#${UNCONFIRMED_FRAGMENT}`
 
 /** The honeypot control rendered off screen by the form. */
 const HONEYPOT_FIELD = 'website'
@@ -69,7 +73,19 @@ export interface FeedbackDeps {
   /** Absent when the configuration is unusable; the endpoint then answers 503. */
   readonly store: FeedbackStore | null
   readonly now: () => Date
-  readonly newId: () => string
+  /**
+   * The id for one submission, as a function of the fingerprint below rather
+   * than of chance.
+   *
+   * It becomes the idempotency key the http store sends, so it has to survive
+   * a resend: a reader whose first attempt timed out is told the correction
+   * may already be recorded, and if they send it again the collector needs to
+   * recognise the two as one. A fresh random id per request made that
+   * impossible, which is the whole reason this takes an argument.
+   *
+   * The route hashes it. Nothing here depends on how.
+   */
+  readonly newId: (fingerprint: string) => string
   /** Injected so a test can assert what is — and is not — written to a log. */
   readonly log: (level: 'info' | 'error', line: string) => void
 }
@@ -218,6 +234,32 @@ function candidateFrom(body: RawBody): Record<string, unknown> {
   return candidate
 }
 
+/**
+ * What makes two submissions the same submission.
+ *
+ * The same words are one correction, however many times they arrive — which is
+ * exactly the case a reader is put in when they are told the first attempt
+ * could not be confirmed and they send it again. Hashing this gives that
+ * resend the id the first attempt had, and a collector honouring the key files
+ * one correction rather than two.
+ *
+ * Only the fields the schema returned go in. Not the clock, which would give
+ * every attempt its own id again and undo the point; and not the network
+ * address, which `/privacy/` says is used for the rate limit alone and is
+ * never written down — an id derived from it would be written down on every
+ * submission.
+ *
+ * The cost is that two readers who send byte-identical text are treated as one
+ * submission. That is the right reading of "the same correction", and it is
+ * the only way an id can survive the retry it is there to make safe.
+ */
+function fingerprintOf(fields: Record<string, unknown>): string {
+  return Object.keys(fields)
+    .sort()
+    .map(key => `${key}=${String(fields[key])}`)
+    .join('\n')
+}
+
 function rateLimitedResponse(wantsJson: boolean, retryAfterSeconds: number): Response {
   const headers = { 'retry-after': String(retryAfterSeconds) }
   if (wantsJson) {
@@ -264,6 +306,7 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
   if (parsed === 'malformed') return json({ ok: false, error: 'malformed-body' }, 400)
 
   const { body, wantsJson } = parsed
+  const candidate = candidateFrom(body)
 
   /**
    * Honeypot. A filled field means an automated client, so the response is
@@ -272,7 +315,9 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
    */
   const honeypot = asString(body[HONEYPOT_FIELD])?.trim() ?? ''
   if (honeypot.length > 0) {
-    return wantsJson ? json({ ok: true, id: deps.newId() }, 201) : redirect(SUCCESS_REDIRECT)
+    return wantsJson
+      ? json({ ok: true, id: deps.newId(fingerprintOf(candidate)) }, 201)
+      : redirect(SUCCESS_REDIRECT)
   }
 
   const limit = rateLimit(
@@ -281,7 +326,7 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
   )
   if (!limit.allowed) return rateLimitedResponse(wantsJson, limit.retryAfterSeconds)
 
-  const result = FeedbackSubmissionInputSchema.safeParse(candidateFrom(body))
+  const result = FeedbackSubmissionInputSchema.safeParse(candidate)
 
   if (!result.success) {
     if (!wantsJson) return redirect(FAILURE_REDIRECT)
@@ -320,7 +365,7 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
 
   const value = result.data
   const submission: StoredSubmission = {
-    id: deps.newId(),
+    id: deps.newId(fingerprintOf(value)),
     createdAt: deps.now().toISOString(),
     status: 'new',
     type: value.type,
@@ -337,7 +382,32 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
     // Persistence happens first, and on its own. Notification is never the
     // only record of a submission.
     await deps.store.append(submission)
-  } catch {
+  } catch (error) {
+    /*
+     * A store that was asked and never answered is not a store that refused.
+     * Telling a reader their correction was not recorded, when the collector
+     * may have written it and lost the reply, sends them away to type it again
+     * and leaves two copies of the same correction — or, worse, teaches them
+     * the form does not work. So the third answer exists, it says what is and
+     * is not known, and the resend it invites carries the same id.
+     */
+    if (isUnconfirmedWrite(error)) {
+      deps.log('error', `[feedback] unconfirmed write for submission ${submission.id}`)
+      if (!wantsJson) return redirect(UNCONFIRMED_REDIRECT)
+      // 504: this site asked something upstream and got no answer in time.
+      return json(
+        {
+          ok: false,
+          error: 'not-confirmed',
+          id: submission.id,
+          message:
+            'Where corrections are stored did not answer in time, so this one may already have ' +
+            'been recorded. Sending the same text again is safe: it carries the same reference, ' +
+            'so it is not filed as a second correction.',
+        },
+        504,
+      )
+    }
     // Deliberately no detail: a filesystem or fetch error message can contain
     // the payload in some runtimes, and the submission id is enough to
     // correlate.

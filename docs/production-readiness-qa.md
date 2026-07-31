@@ -143,9 +143,11 @@ possibilities. The endpoint also had **no tests at all**.
   `FEEDBACK_STORE_DURABLE=1`, which is an operator asserting the volume
   outlives the process, and an absolute path, because `cwd` is the host's
   choice and moves between a build step and a running server.
-- `http` — POSTs each record to an endpoint the operator owns, with a five
-  second timeout. The only durable option that ties the site to no vendor and
-  adds no dependency.
+- `http` — POSTs each record to an endpoint on the site's own origin, with a
+  five second timeout. The only durable option that ties the site to no vendor
+  and adds no dependency. The origin is checked rather than assumed: `/privacy/`
+  promises that no third party receives or stores a submission, so a collector
+  anywhere else is refused at startup.
 - `memory` — tests, and refused in production by name.
 
 A configuration that does not resolve answers **503 and says nothing was
@@ -178,9 +180,15 @@ unbounded write target for anyone who noticed.
 
 **Correction.** It reads the entry the nearest trusted proxy appended, counted
 from the right, with the hop count configured because it is a property of the
-host (`FEEDBACK_TRUSTED_PROXY_HOPS`, default 1; 0 means nothing is in front and
-no forwarding header is believed). Eleven tests, including one that forges a
-chain and proves the key does not move.
+host (`FEEDBACK_TRUSTED_PROXY_HOPS`, default 1). Eleven tests, including one
+that forges a chain and proves the key does not move.
+
+This audit originally documented `0` as a valid value meaning "nothing is in
+front, believe no forwarding header". It is not one, and is now refused at
+startup: with no address to key on, every reader shares one bucket and five
+submissions from any one sender refuse the form to the whole readership for ten
+minutes. A deployment exposed directly to the internet has to sit behind a
+proxy that appends the client address.
 
 #### P1-2 · No request body cap
 

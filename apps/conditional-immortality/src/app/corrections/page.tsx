@@ -120,7 +120,7 @@ export default function CorrectionsPage() {
             {/*
               The receipt a reader gets when they submit with no scripting.
               The endpoint answers a form-encoded POST with a 303 to one of
-              these two fragments, and `:target` reveals the matching one. It
+              these three fragments, and `:target` reveals the matching one. It
               has to be server-rendered and unconditional: the form is a client
               component, so with scripting off nothing it renders ever appears,
               and the previous `?submitted=1` round trip returned the reader to
@@ -155,6 +155,24 @@ export default function CorrectionsPage() {
                 <strong className="font-semibold text-deny">Not recorded.</strong> Nothing was
                 stored. Either a field was not accepted or the site could not write the submission
                 down. Please check the form below and send it again.
+              </p>
+            </div>
+            {/*
+              The third answer, and the only honest one when the store was
+              asked and said nothing before the timeout. Reporting that as a
+              failure would send a reader off to write their correction a
+              second time over something that may already be recorded.
+            */}
+            <div
+              className="submission-receipt m-0 mb-5 rounded-md border border-border-strong bg-panel p-4 font-sans text-[0.95rem] text-ink"
+              id="submission-not-confirmed"
+              tabIndex={-1}
+            >
+              <p className="m-0">
+                <strong className="font-semibold">Not confirmed.</strong> Where corrections are
+                stored did not answer in time, so yours may already have been recorded. Sending the
+                same text again is safe: it carries the same reference, so it is not filed as a
+                second correction.
               </p>
             </div>
 

@@ -21,6 +21,8 @@ function problemOf(config: FeedbackConfig): string {
 const DEV = { NODE_ENV: 'development' } as const
 /** A deployed build. */
 const PROD = { NODE_ENV: 'production' } as const
+/** The canonical origin a deployed build publishes under. */
+const SITE = 'https://example.org'
 
 describe('resolveFeedbackConfig, locally', () => {
   it('defaults to the filesystem store in the repository', () => {
@@ -76,15 +78,16 @@ describe('resolveFeedbackConfig, deployed', () => {
     expect(problemOf(config)).toMatch(/memory/i)
   })
 
-  it('accepts an http store with an https endpoint', () => {
+  it('accepts an http store on the site’s own origin', () => {
     const config = resolveFeedbackConfig({
       ...PROD,
+      NEXT_PUBLIC_SITE_URL: SITE,
       FEEDBACK_STORE: 'http',
-      FEEDBACK_STORE_URL: 'https://collector.example/records',
+      FEEDBACK_STORE_URL: `${SITE}/internal/feedback`,
     })
     expect(config).toMatchObject({
       kind: 'http',
-      endpoint: 'https://collector.example/records',
+      endpoint: `${SITE}/internal/feedback`,
       usable: true,
     })
   })
@@ -98,8 +101,9 @@ describe('resolveFeedbackConfig, deployed', () => {
   it('refuses a plaintext http endpoint, which would put a reader’s message on the wire in clear', () => {
     const config = resolveFeedbackConfig({
       ...PROD,
+      NEXT_PUBLIC_SITE_URL: SITE,
       FEEDBACK_STORE: 'http',
-      FEEDBACK_STORE_URL: 'http://collector.example/records',
+      FEEDBACK_STORE_URL: 'http://example.org/internal/feedback',
     })
     expect(config.usable).toBe(false)
     expect(problemOf(config)).toMatch(/https/i)
@@ -109,6 +113,59 @@ describe('resolveFeedbackConfig, deployed', () => {
     const config = resolveFeedbackConfig({ ...PROD, FEEDBACK_STORE: 'postgres' })
     expect(config.usable).toBe(false)
     expect(problemOf(config)).toMatch(/postgres/)
+  })
+})
+
+/**
+ * `/privacy/` says no third party is involved in receiving, storing or reading
+ * a submission, and `/corrections/` says submissions are stored on the site's
+ * own server. A collector on anyone else's origin makes both untrue while the
+ * pages go on saying them, so the configuration is where that is caught.
+ */
+describe('the http collector has to be this site', () => {
+  const HTTP = { ...PROD, NEXT_PUBLIC_SITE_URL: SITE, FEEDBACK_STORE: 'http' } as const
+
+  it('refuses a collector on another host, naming the promise it would break', () => {
+    const config = resolveFeedbackConfig({
+      ...HTTP,
+      FEEDBACK_STORE_URL: 'https://collector.example/records',
+    })
+    expect(config.usable).toBe(false)
+    expect(problemOf(config)).toMatch(/third party/i)
+    expect(problemOf(config)).toContain('https://collector.example')
+  })
+
+  it('refuses a subdomain of the site, which is still a different origin to a browser', () => {
+    const config = resolveFeedbackConfig({
+      ...HTTP,
+      FEEDBACK_STORE_URL: 'https://forms.example.org/records',
+    })
+    expect(config.usable).toBe(false)
+  })
+
+  it('refuses a different port on the same host', () => {
+    const config = resolveFeedbackConfig({
+      ...HTTP,
+      FEEDBACK_STORE_URL: 'https://example.org:8443/r',
+    })
+    expect(config.usable).toBe(false)
+  })
+
+  it('accepts any path on the site’s own origin', () => {
+    expect(
+      resolveFeedbackConfig({ ...HTTP, FEEDBACK_STORE_URL: 'https://example.org/internal/store' })
+        .usable,
+    ).toBe(true)
+  })
+
+  it('refuses to guess when the build never said what its origin is', () => {
+    const config = resolveFeedbackConfig({
+      ...PROD,
+      FEEDBACK_STORE: 'http',
+      FEEDBACK_STORE_URL: `${SITE}/internal/feedback`,
+    })
+    expect(config.usable).toBe(false)
+    expect(problemOf(config)).toMatch(/NEXT_PUBLIC_SITE_URL/)
   })
 })
 
@@ -123,10 +180,29 @@ describe('trusted proxy hops', () => {
     ).toBe(2)
   })
 
-  it('treats zero as “no proxy, trust nothing a client sent”', () => {
-    expect(
-      resolveFeedbackConfig({ ...DEV, FEEDBACK_TRUSTED_PROXY_HOPS: '0' }).trustedProxyHops,
-    ).toBe(0)
+  /**
+   * Zero used to be documented as “nothing is in front, believe no forwarding
+   * header”. It is refused instead: with no address to key on, `clientAddress`
+   * answers `unknown-client` for everyone, so the five-per-ten-minutes window
+   * becomes five submissions for the whole readership and one sender closes
+   * the site's only correction channel for everybody.
+   */
+  it('refuses zero rather than bucketing every reader together', () => {
+    const config = resolveFeedbackConfig({ ...DEV, FEEDBACK_TRUSTED_PROXY_HOPS: '0' })
+    expect(config.usable).toBe(false)
+    expect(problemOf(config)).toMatch(/FEEDBACK_TRUSTED_PROXY_HOPS/)
+    expect(problemOf(config)).toMatch(/proxy/i)
+  })
+
+  it('refuses zero in production too, whichever store was asked for', () => {
+    for (const store of ['filesystem', 'http', 'memory']) {
+      const config = resolveFeedbackConfig({
+        ...PROD,
+        FEEDBACK_STORE: store,
+        FEEDBACK_TRUSTED_PROXY_HOPS: '0',
+      })
+      expect(config.usable).toBe(false)
+    }
   })
 
   it('ignores a value that is not a whole number rather than guessing', () => {

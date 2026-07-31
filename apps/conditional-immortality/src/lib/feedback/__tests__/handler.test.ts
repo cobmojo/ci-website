@@ -9,8 +9,14 @@ import {
   MAX_BODY_BYTES,
   RATE_LIMIT,
   SUCCESS_FRAGMENT,
+  UNCONFIRMED_FRAGMENT,
 } from '../handler'
-import { createFeedbackStore, type FeedbackStore, type StoredSubmission } from '../store'
+import {
+  createFeedbackStore,
+  type FeedbackStore,
+  type StoredSubmission,
+  UnconfirmedWrite,
+} from '../store'
 
 /**
  * The site's only write endpoint, exercised on every path it has.
@@ -395,20 +401,123 @@ describe('nothing a reader typed reaches a log line', () => {
   })
 })
 
-describe('duplicate submissions', () => {
-  it('stores both when a reader presses Send twice, and gives each its own id', async () => {
-    let counter = 0
-    const withIds = deps({
-      newId: () => {
-        counter += 1
-        return `id-${counter}`
+/**
+ * A store that was asked and never answered.
+ *
+ * The reader must not be told their correction was not recorded, because
+ * nobody knows that: the collector may have written it and lost the reply. See
+ * `UnconfirmedWrite` in `store.ts`.
+ */
+describe('when the store does not answer in time', () => {
+  const silent: FeedbackStore = {
+    append: async () => {
+      throw new UnconfirmedWrite('The feedback store did not answer within 5000ms')
+    },
+  }
+
+  it('says the submission may already have been recorded, rather than that it was not', async () => {
+    const response = await handleFeedback(jsonRequest(VALID), deps({ store: silent }))
+    expect(response.status).toBe(504)
+    const body = (await response.json()) as { error: string; message: string }
+    expect(body.error).toBe('not-confirmed')
+    expect(body.message).toMatch(/may already have been recorded/i)
+    // The one thing it must never say, because it is the one thing not known.
+    expect(body.message).not.toMatch(/nothing (you sent )?was (stored|recorded)/i)
+  })
+
+  it('is not the same answer as a store that refused, which is a fact rather than a doubt', async () => {
+    const refusing: FeedbackStore = {
+      append: async () => {
+        throw new Error('The feedback store answered 422')
       },
-    })
+    }
+    const unknown = await handleFeedback(jsonRequest(VALID), deps({ store: silent }))
+    const refused = await handleFeedback(jsonRequest(VALID), deps({ store: refusing }))
+    expect(unknown.status).toBe(504)
+    expect(refused.status).toBe(500)
+  })
+
+  it('sends a scripting-free reader to a receipt of its own', async () => {
+    const response = await handleFeedback(formRequest(VALID), deps({ store: silent }))
+    expect(response.status).toBe(303)
+    expect(response.headers.get('location')).toBe(`/corrections/#${UNCONFIRMED_FRAGMENT}`)
+  })
+
+  it('logs the id and nothing a reader typed', async () => {
+    await handleFeedback(jsonRequest(VALID), deps({ store: silent }))
+    expect(logs).toHaveLength(1)
+    expect(logs[0]?.line).toContain('11111111-2222-3333-4444-555555555555')
+    expect(logs[0]?.line).not.toContain(VALID.message)
+  })
+})
+
+/**
+ * The id is what a resend is recognised by.
+ *
+ * It becomes the `Idempotency-Key` the http store sends, so a reader who is
+ * told their first attempt could not be confirmed and sends the same text
+ * again has to arrive with the same one. A random id per request — which is
+ * what this used to be — made that impossible.
+ */
+describe('the submission id', () => {
+  /** The id is the fingerprint itself here, so the assertions read directly. */
+  const identified = () => deps({ newId: fingerprint => fingerprint })
+
+  it('is the same for the same correction sent twice', async () => {
+    await handleFeedback(jsonRequest(VALID), identified())
+    await handleFeedback(jsonRequest(VALID), identified())
+
+    const records = store.records?.() ?? []
+    expect(records).toHaveLength(2)
+    expect(records[0]?.id).toBe(records[1]?.id)
+  })
+
+  it('does not move when the clock does, or a resend a minute later would be a new submission', async () => {
+    await handleFeedback(jsonRequest(VALID), identified())
+    await handleFeedback(
+      jsonRequest(VALID),
+      deps({ newId: fingerprint => fingerprint, now: () => new Date('2027-01-01T00:00:00.000Z') }),
+    )
+
+    const records = store.records?.() ?? []
+    expect(records[0]?.id).toBe(records[1]?.id)
+    expect(records[0]?.createdAt).not.toBe(records[1]?.createdAt)
+  })
+
+  it('differs as soon as a word of the correction differs', async () => {
+    await handleFeedback(jsonRequest(VALID), identified())
+    await handleFeedback(
+      jsonRequest({ ...VALID, message: `${VALID.message} And one more thing.` }),
+      identified(),
+    )
+
+    const records = store.records?.() ?? []
+    expect(records[0]?.id).not.toBe(records[1]?.id)
+  })
+
+  it('differs when an optional field is filled in on the second attempt', async () => {
+    await handleFeedback(jsonRequest(VALID), identified())
+    await handleFeedback(jsonRequest({ ...VALID, name: 'A Reader' }), identified())
+
+    const records = store.records?.() ?? []
+    expect(records[0]?.id).not.toBe(records[1]?.id)
+  })
+})
+
+describe('duplicate submissions', () => {
+  /**
+   * Nothing is deduplicated here. The handler stores what it is given, and
+   * collapsing a resend is the collector's job, done with the idempotency key
+   * the http store sends. What has to be true in this file is that both
+   * attempts carry the same id, which is what makes that possible.
+   */
+  it('stores both when a reader presses Send twice, under one shared id', async () => {
+    const withIds = deps({ newId: fingerprint => `id-${fingerprint.length}` })
     await handleFeedback(jsonRequest(VALID), withIds)
     await handleFeedback(jsonRequest(VALID), withIds)
 
     const records = store.records?.() ?? []
     expect(records).toHaveLength(2)
-    expect(records[0]?.id).not.toBe(records[1]?.id)
+    expect(records[0]?.id).toBe(records[1]?.id)
   })
 })

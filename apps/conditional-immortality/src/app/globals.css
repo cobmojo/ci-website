@@ -371,8 +371,9 @@
   /*
    * The receipt for a correction submitted with no scripting.
    *
-   * The endpoint answers a form-encoded POST with a 303 to `#submission-received`
-   * or `#submission-not-recorded`, and `:target` reveals the one that was asked
+   * The endpoint answers a form-encoded POST with a 303 to
+   * `#submission-received`, `#submission-not-recorded` or
+   * `#submission-not-confirmed`, and `:target` reveals the one that was asked
    * for. It has to work with no scripting, because that is the only case in
    * which it is reached: the form is a client component, so with scripting off
    * nothing it renders ever appears, and a reader was previously returned to an

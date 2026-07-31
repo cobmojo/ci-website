@@ -18,10 +18,16 @@
  * - `filesystem`, the default, for local work and for a genuinely persistent
  *   server. In production it additionally requires `FEEDBACK_STORE_DURABLE=1`,
  *   which is an operator asserting that the volume survives a deploy.
- * - `http`, for everywhere else. It POSTs each record to an endpoint the
- *   operator owns, which is the only durable option that is not tied to one
+ * - `http`, for everywhere else. It POSTs each record to an endpoint on this
+ *   site's own origin, which is the only durable option that is not tied to one
  *   vendor and adds no dependency.
  * - `memory`, for tests, and refused in production by name.
+ *
+ * Two further things are refused here rather than left to a runbook, because
+ * both are silent when they are wrong: a deployment with no proxy in front of
+ * it, which leaves the rate limiter one bucket for every reader, and a
+ * collector on somebody else's origin, which would make what `/privacy/` and
+ * `/corrections/` promise untrue.
  *
  * A configuration that does not resolve does not throw here. The endpoint
  * answers 503 and says so, which keeps a misconfiguration from taking the
@@ -54,6 +60,12 @@ export type FeedbackConfig = Base &
 
 export interface FeedbackEnv {
   readonly NODE_ENV?: string | undefined
+  /**
+   * The canonical origin this site publishes under, which the http collector
+   * has to be part of. `site-url.ts` owns how it is resolved and validated;
+   * this only ever compares it.
+   */
+  readonly NEXT_PUBLIC_SITE_URL?: string | undefined
   readonly FEEDBACK_STORE?: string | undefined
   readonly FEEDBACK_STORE_DIR?: string | undefined
   readonly FEEDBACK_STORE_DURABLE?: string | undefined
@@ -73,6 +85,8 @@ export const DEFAULT_STORE_DIR = '.feedback-store'
  * address to `X-Forwarded-For` before passing the request on. The entry that
  * matters is therefore the *last* one, not the first — everything to the left
  * of it is whatever the client chose to send.
+ *
+ * There is no valid zero. See the refusal in `resolveFeedbackConfig`.
  */
 const DEFAULT_TRUSTED_PROXY_HOPS = 1
 
@@ -96,6 +110,29 @@ export function resolveFeedbackConfig(env: FeedbackEnv): FeedbackConfig {
     usable: false,
     problem,
   })
+
+  /*
+   * A per-connection address the limiter can believe, or nothing runs.
+   *
+   * With nothing in front of this process there is no forwarding header worth
+   * reading, so `clientAddress` answers `unknown-client` for every request and
+   * every reader shares one bucket: five submissions from any one sender close
+   * the form for everybody else for the rest of the ten-minute window. That is
+   * worse than refusing to start, because the correction form is the only way
+   * a reader can tell this site it is wrong, and the failure is invisible from
+   * the inside — the endpoint looks healthy and answers 429.
+   */
+  if (base.trustedProxyHops < 1) {
+    return unusable(
+      'unknown',
+      'FEEDBACK_TRUSTED_PROXY_HOPS=0 leaves the rate limiter without a trustworthy ' +
+        'per-connection address, so every reader would share one bucket and five submissions ' +
+        'from any one sender would refuse the form to everybody. Set it to the number of ' +
+        'proxies in front of this origin — 1 on every managed platform. A deployment exposed ' +
+        'directly to the internet has to sit behind a proxy that appends the client address to ' +
+        'X-Forwarded-For. See docs/launch-runbook.md.',
+    )
+  }
 
   if (requested === 'memory') {
     if (deployed) {
@@ -126,6 +163,40 @@ export function resolveFeedbackConfig(env: FeedbackEnv): FeedbackConfig {
           'chose to give them, a name and an email address; those do not travel in clear.',
       )
     }
+
+    /*
+     * The collector has to be this site.
+     *
+     * `/privacy/` tells readers that no third party is involved in receiving,
+     * storing or reading a submission, and `/corrections/` that submissions
+     * are stored on the site's own server. Those are promises about where a
+     * correction goes, and a POST to anyone else's host makes both of them
+     * false while the pages still say otherwise — which is the kind of thing
+     * a reader can never check and would have every right to be angry about.
+     * So the origin is enforced here rather than left as a sentence in a
+     * runbook that a hurried deploy can skip.
+     */
+    let siteOrigin: string
+    try {
+      siteOrigin = new URL(env.NEXT_PUBLIC_SITE_URL?.trim() ?? '').origin
+    } catch {
+      return unusable(
+        'http',
+        'FEEDBACK_STORE=http needs NEXT_PUBLIC_SITE_URL, because the collector is only accepted ' +
+          'on this site’s own origin and there is nothing to compare it against.',
+      )
+    }
+    if (parsed.origin !== siteOrigin) {
+      return unusable(
+        'http',
+        `FEEDBACK_STORE_URL must be on this site’s own origin (${siteOrigin}); ` +
+          `${parsed.origin} is somewhere else. The privacy page promises that no third party ` +
+          'receives or stores a submission and the corrections page that submissions stay on ' +
+          'this site’s own server. Route the collector path through this origin, or change ' +
+          'those promises first. See docs/launch-runbook.md.',
+      )
+    }
+
     return {
       ...base,
       kind: 'http',
