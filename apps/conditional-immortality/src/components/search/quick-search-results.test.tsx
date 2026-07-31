@@ -1,5 +1,5 @@
 import type { SearchDoc, SearchResult } from '@ci/search'
-import { render, waitFor } from '@testing-library/react'
+import { act, render, waitFor } from '@testing-library/react'
 import { flushSync } from 'react-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
@@ -125,7 +125,26 @@ beforeEach(() => {
   process.on('unhandledRejection', collectUnhandled)
 })
 
-afterEach(() => {
+afterEach(async () => {
+  /*
+   * Drain React's scheduler before the environment goes away.
+   *
+   * The fitter applies its result inside `startTransition`, so the render is a
+   * scheduler task rather than a synchronous commit. A test that asserts and
+   * ends can leave one of those queued, and when vitest tears the jsdom
+   * environment down at the end of the file it runs against a deleted
+   * `window` — surfacing as an uncaught `ReferenceError` that belongs to no
+   * test and reproduces only under load. Seen once on a CI runner, never
+   * locally.
+   *
+   * This is not a failure being swallowed. The component's own cancellation
+   * already prevents an update after unmount; what is missing is somewhere for
+   * the *already legitimate* update to land. If a transition ever throws, it
+   * throws here, inside the test that scheduled it.
+   */
+  await act(async () => {
+    await new Promise(resolve => setTimeout(resolve, 0))
+  })
   process.off('unhandledRejection', collectUnhandled)
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
