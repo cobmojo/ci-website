@@ -7,13 +7,13 @@
 import {
   FEEDBACK_FIELD_MESSAGES,
   FEEDBACK_TYPE_LABELS,
-  SUBMISSION_STATUS_ID,
   type FeedbackFieldError,
   type FeedbackType,
   feedbackTypes,
   isAcceptableEmail,
   isAcceptableSourceUrl,
   type PublicationConsent,
+  SUBMISSION_STATUS_ID,
 } from '@ci/content-schema/feedback'
 import { buttonVariants } from '@ci/ui'
 import { useForm } from '@tanstack/react-form'
