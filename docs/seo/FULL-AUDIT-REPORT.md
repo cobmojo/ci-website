@@ -48,9 +48,10 @@ production build, and a crawl of the served build rather than of React source.
 | Measure | Baseline |
 | --- | --- |
 | Prerendered HTML documents | 122 |
-| Pages seen by the internal link checker | 121 |
-| Canonical routes in the sitemap | 120 |
-| Deliberately noindex public routes | 2 (`/full-case/`, `/search/`) |
+| — canonical routes in the sitemap | **118** (21 static + 40 case sections + 18 passages + 27 topics + 12 changelog) |
+| — deliberately noindex public routes | 2 (`/full-case/`, `/search/`) |
+| — framework error documents (`_not-found`, `_global-error`) | 2 |
+| Pages walked by the internal link checker | 121 |
 | Internal links resolved | 9,543 |
 | External links catalogued (not fetched in CI) | 188 |
 | Duplicate element ids | 0 |
@@ -329,6 +330,7 @@ did not exist before.
 | --- | --- |
 | **A** Production origin fallback | `resolveSiteUrl` refuses to invent an origin: a build either names one or declares itself local. Validated for scheme, credentials, query, fragment and path. 100% branch coverage, plus `canonical-check.ts` proving the resolved origin reached every canonical, `og:url`, `og:image` and `<loc>` in the output. |
 | **M** Social-image host | Same mechanism; `canonical-check.ts` covers `og:image` explicitly. |
+| Production-origin build | Every other check in this audit ran against a localhost build, so the production path was verified separately: a build with `NEXT_PUBLIC_SITE_URL=https://…` and `SITE_ENV=production` was checked with `content:canonical`, and every canonical, `og:url`, `og:image`, sitemap `<loc>` and robots directive across 121 pages agrees with that HTTPS origin. No localhost string survives into a production build. |
 | **K** Route metadata consistency | Verified by rendered inventory, not by assumption: all routes carry exactly one canonical pointing at themselves, and **no two pages share a title or a description**. |
 | **L** `noindex` strategy | `/full-case/` and `/search/` are noindex, absent from the sitemap, and still reachable and linked. Deliberate and internally consistent. |
 | Sitemap ↔ registry parity | The sitemap is now proven to equal the registries exactly, in both directions. |

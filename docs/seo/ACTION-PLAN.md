@@ -30,7 +30,7 @@ that was skipped.
 
 Recorded so a future audit does not re-open them: the canonical-origin resolver
 and its fail-fast behaviour, social-image host resolution, per-route metadata
-consistency across all 120 sitemap routes, the deliberate `noindex` strategy for
+consistency across all 118 sitemap routes, the deliberate `noindex` strategy for
 `/full-case/` and `/search/`, sitemap-to-registry parity in both directions,
 trailing-slash agreement, the 20 permanent alias redirects, the absence of
 `hreflang` on an English-only site, and server-rendered primary content. Each is

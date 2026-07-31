@@ -121,7 +121,7 @@ local run and not from an earlier estimate.
 | Playwright — cross-browser smoke (Gecko, WebKit) | **45 passed** |
 | Playwright — text geometry (Chromium, Gecko, WebKit) | **70 passed** |
 | Playwright — visual regression | **14 passed** |
-| Prerendered pages / orphans | 121 / **0** |
+| Sitemap routes / prerendered documents / orphans | 118 / 122 / **0** |
 | Generated-file drift | none |
 
 Playwright total: **575**. Browser engines are Chromium, Gecko and Playwright's
