@@ -37,10 +37,15 @@ const ALLOWED_EXCESS = 0.03
  */
 const ALLOWANCES: Record<string, { readonly maxBytes: number; readonly reason: string }> = {
   '/corrections': {
-    maxBytes: 680_000,
+    maxBytes: 681_000,
     reason:
       'TanStack Form: per-field validators, touched state and submit handling for nine fields, ' +
-      'on a form that is progressively enhanced and works with scripting disabled.',
+      'on a form that is progressively enhanced and works with scripting disabled. ' +
+      'Raised by 1kB for the print-disclosure handler in the root layout, which every route ' +
+      'carries: Firefox declines `content-visibility` on `::details-content`, so without it a ' +
+      'collapsed disclosure prints as its summary and nothing else. 585 bytes of that kB are ' +
+      'spent; the rest is not headroom to spend, it is the next increase having to be argued ' +
+      'for as this one was.',
   },
 }
 

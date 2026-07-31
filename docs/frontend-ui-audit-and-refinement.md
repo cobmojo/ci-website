@@ -1305,6 +1305,14 @@ while this branch leans on `:has()`, `::details-content`, `scrollbar-gutter`,
   present in the stylesheet, which it is. A new print suite measures rendered
   output on both affected pages in Chromium, Firefox and WebKit, and runs in
   CI beside the others.
+
+  The handler sits in the root layout, so every route carries it, and 585 of
+  those bytes put `/corrections/` over its first-load budget. That budget was
+  raised by a kilobyte rather than worked around, with the reason recorded
+  beside it. The earlier increase in this branch was refused and the bytes
+  found in the code instead; this one is shared infrastructure fixing a
+  correctness bug on every page, which is the kind of growth a budget exists
+  to surface and then permit once it has been argued for.
 - **The poster link threw away the moment the reader asked for.** Its `href`
   was a constant, so everything that follows it as a link rather than running
   its handler — Ctrl or middle click, "open in a new tab", dragging it, the
