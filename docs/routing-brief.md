@@ -27,7 +27,9 @@ Binding rules for anyone adding a route to `apps/conditional-immortality`.
    text label.
 8. **Never print the author's email or phone.** Feedback goes through `/corrections/`.
 9. **Tables use real `<table>`** with `<caption>`, `<thead>` and `scope` on header cells.
-   Wrap wide tables in `<div className="overflow-x-auto">`.
+   Wrap a wide table in `<ScrollRegion label="...">`, which is the one owner of the
+   scrolling, the keyboard access and the accessible name. MDX tables get it
+   automatically from `rehypeScrollableTables`.
 10. **No horizontal page scrolling at 320 CSS pixels.** Test long words and URLs.
 11. **Do not add a client-side data library** to a page that only renders static content.
 12. Use `<Link>` from `next/link` for internal navigation, plain `<a>` with

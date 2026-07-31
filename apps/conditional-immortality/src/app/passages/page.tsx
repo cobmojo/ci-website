@@ -73,11 +73,14 @@ export default function PassagesIndexPage() {
         </header>
 
         <nav
-          aria-label="Jump to a testament"
+          aria-labelledby="jump-to-testament"
           className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
         >
-          <h2 className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
-            Jump to
+          <h2
+            id="jump-to-testament"
+            className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
+          >
+            Jump to a testament
           </h2>
           <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-sans text-[0.9rem]">
             {TESTAMENT_GROUPS.map(group => (

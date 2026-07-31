@@ -43,7 +43,9 @@ progress and every cross-reference key off the id.
 **Server components by default.** An article page ships no client JavaScript for
 its prose. The only client components are the mobile navigation sheet, the
 search dialog, the click-to-load video, the feedback form, reading progress, the
-print button and two progressive-enhancement filters. Every one degrades to
+print button, two progressive-enhancement filters, and two leaves in the shell:
+the primary navigation item, which reads the path to mark the current page, and
+the smooth-anchor scroller, which renders nothing at all. Every one degrades to
 working markup with scripting disabled. The text-layout runtime the search
 dialog uses is in a chunk of its own that an article page never requests; an
 end-to-end test finds that chunk in the production output and proves it.

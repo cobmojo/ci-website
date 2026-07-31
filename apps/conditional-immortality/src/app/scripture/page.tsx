@@ -109,10 +109,13 @@ export default function ScriptureIndexPage() {
         </header>
 
         <nav
-          aria-label="Jump to a book"
+          aria-labelledby="jump-to-book"
           className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
         >
-          <h2 className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
+          <h2
+            id="jump-to-book"
+            className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
+          >
             Jump to a book
           </h2>
           {TESTAMENTS.map(testament => (

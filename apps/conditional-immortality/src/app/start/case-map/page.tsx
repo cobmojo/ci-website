@@ -208,9 +208,9 @@ export default function CaseMapPage() {
           which claim.
         </p>
         <p className="m-0">
-          The diagram and the list below it carry the same information. If the diagram is hard to
-          read at your text size, or you are using a screen reader, the list is the map and loses
-          nothing.
+          The diagram and the list below it carry the same information. The diagram is shown on
+          wider screens; everywhere else, and for anyone using a screen reader or reading the
+          printed page, the list is the map and loses nothing.
         </p>
       </div>
 

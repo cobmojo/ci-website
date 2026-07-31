@@ -2,10 +2,9 @@
 
 import { MATCH_FIELD_LABELS, SEARCH_DOC_TYPE_LABELS, type SearchResult } from '@ci/search'
 import Link from 'next/link'
-import { useRef } from 'react'
+import { type MouseEvent, useRef } from 'react'
 import { FittedSearchExcerpt } from '@/components/search/fitted-search-excerpt'
 import { HighlightedText } from '@/components/search/highlighted-text'
-import { isModifiedClick } from '@/lib/modified-click'
 import {
   type FittingRuntime,
   useFittedSearchExcerpts,
@@ -29,7 +28,12 @@ export function QuickSearchResults({
 }: {
   results: readonly SearchResult[]
   open: boolean
-  onNavigate: () => void
+  /**
+   * Called when a row is followed. Receives the event so the dialog can leave
+   * a modified click to the browser: a new background tab must not also tear
+   * down the dialog the reader is still using.
+   */
+  onNavigate: (event: MouseEvent<HTMLAnchorElement>) => void
   /** Replaced in component tests; production always uses the real one. */
   runtime?: FittingRuntime
 }) {
@@ -47,12 +51,7 @@ export function QuickSearchResults({
         <li key={result.doc.id} className="border-b border-border py-2.5 last:border-0">
           <Link
             href={result.doc.route}
-            // A modified click opens the result in a new tab and leaves this
-            // one where it was, so the dialog, the query and the result list
-            // must survive it.
-            onClick={event => {
-              if (!isModifiedClick(event)) onNavigate()
-            }}
+            onClick={onNavigate}
             className="block rounded px-1 no-underline hover:bg-panel"
           >
             <span className="flex flex-wrap items-baseline gap-x-2">

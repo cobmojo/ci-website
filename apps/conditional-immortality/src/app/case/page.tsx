@@ -98,11 +98,14 @@ export default function CaseHubPage() {
         </header>
 
         <nav
-          aria-label="Jump to a group of parts"
+          aria-labelledby="jump-to-group"
           className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
         >
-          <h2 className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
-            Jump to a group
+          <h2
+            id="jump-to-group"
+            className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
+          >
+            Jump to a group of parts
           </h2>
           <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-sans text-[0.9rem]">
             {caseSectionsByGroup.map(bucket => (

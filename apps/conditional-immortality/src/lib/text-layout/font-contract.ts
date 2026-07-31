@@ -204,9 +204,10 @@ function pixels(value: string): number {
  *
  * Deliberately not "the styles we think we wrote": the cascade, a container
  * query, a user stylesheet or a browser default could all have had an opinion,
- * and Pretext has to be told what won. The width is the content box, computed
- * by removing padding and border from the border-box rectangle, so a stray
- * `padding-inline` could never be silently measured as space for text.
+ * and Pretext has to be told what won. The width is the content box, taken
+ * from the layout width and less its padding, so neither a stray
+ * `padding-inline` nor an ancestor transform can be measured as space for
+ * text. See the comment on the measurement itself.
  */
 export function readExcerptGeometry(element: HTMLElement, locale: string): ExcerptGeometry | null {
   if (typeof getComputedStyle !== 'function') return null

@@ -90,7 +90,7 @@ export default function FullCasePage() {
 
           <nav
             aria-labelledby="contents-title"
-            className="mb-12 rounded-md border border-border bg-panel/50 p-5"
+            className="mb-12 rounded-md border border-border bg-panel/50 p-5 print:hidden"
           >
             <h2 id="contents-title" className="mt-0 mb-3 text-[1.18rem]">
               Contents

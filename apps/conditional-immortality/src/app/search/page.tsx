@@ -166,7 +166,10 @@ export default async function SearchPage({
             </div>
           </fieldset>
 
-          <details className="mt-4">
+          {/* Held open when a filter inside it is active. A GET submit
+              re-renders the page, and a disclosure that snaps shut would hide
+              the case-category or book filter still shaping the results. */}
+          <details className="mt-4" open={selectedGroups.length > 0 || selectedBooks.length > 0}>
             <summary className="summary-hit-area font-sans text-[0.9rem] font-medium text-navy">
               More filters
             </summary>

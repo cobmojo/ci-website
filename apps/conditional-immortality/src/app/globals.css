@@ -877,12 +877,14 @@
       scale: 0.97;
     }
 
-    /* The skip link's travel is its affordance. Under `reduce` it simply
-       appears where it belongs, instantly, which is the correct still variant
-       of an element whose entire animation is movement. */
+    /* Tier 3. The skip link's travel is its affordance: a reader watching it
+       arrive understands it came from above the page and will go back there.
+       It arrives on the entrance token like every other Tier 3 arrival. Under
+       `reduce` it simply appears where it belongs, instantly, which is the
+       correct still variant of an element whose entire animation is movement. */
     .skip-link {
       transition-property: translate;
-      transition-duration: var(--motion-overlay-exit);
+      transition-duration: var(--motion-overlay);
       transition-timing-function: var(--ease-out-quad);
     }
   }
@@ -936,9 +938,16 @@
     text-decoration: underline;
   }
 
-  /* Surface destinations for external links only; internal anchors would
-     produce noise on every cross-reference. */
-  .prose-article a[href^="http"]::after {
+  /*
+   * Surface destinations for external links only; internal anchors would
+   * produce noise on every cross-reference.
+   *
+   * Scoped to `main` rather than to `.prose-article`: the sources-cited list
+   * on every section, passage and topic page sits outside the article body,
+   * and its "View original" links printed as bare words with no destination,
+   * which is the one thing a printed citation cannot afford.
+   */
+  main a[href^="http"]::after {
     content: " (" attr(href) ")";
     font-size: 0.82em;
     word-break: break-all;

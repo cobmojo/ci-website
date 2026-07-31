@@ -109,6 +109,12 @@ export function useFittedSearchExcerpts({
     if (!enabled || !container || results.length === 0) {
       tokenRef.current += 1
       geometryRef.current = null
+      // Fitting stops, but what is already fitted stays on screen. Dropping
+      // the map here would rewrite every excerpt back to its fallback text
+      // while the panel is still painted through its exit fade, so the reader
+      // would watch the words change as the dialog leaves. A later open
+      // re-measures and replaces them anyway.
+      if (results.length > 0) return
       setFitted(previous =>
         previous.map === EMPTY ? previous : { forResults: NO_RESULTS, map: EMPTY },
       )

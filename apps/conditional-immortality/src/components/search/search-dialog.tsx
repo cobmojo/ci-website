@@ -3,7 +3,7 @@
 import { type SearchIndex, search } from '@ci/search'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type MouseEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
 import { pluralise } from '@/lib/format'
@@ -86,6 +86,18 @@ export function SearchDialogTrigger() {
     setOpen(false)
     triggerRef.current?.focus()
   }, [])
+
+  /**
+   * Following a link out of the dialog closes it, but a modified click is not
+   * following anything: it opens a new tab and leaves this one where it was,
+   * so the dialog, the query and the results have to survive it.
+   */
+  const onLinkClick = useCallback(
+    (event: MouseEvent) => {
+      if (!isModifiedClick(event)) closeDialog()
+    },
+    [closeDialog],
+  )
 
   // Close on route change, exactly as the navigation sheet does: without this
   // the dialog survives browser Back and Forward and stays modally open over
@@ -228,30 +240,38 @@ export function SearchDialogTrigger() {
             <p id={statusId} aria-live="polite" className="sr-only">
               {loading
                 ? 'Loading the search index.'
-                : failed
-                  ? 'Search could not load. Reopen search to try again, or use the full search page.'
-                  : outcome
-                    ? `${outcome.total} ${pluralise(outcome.total, 'result')} for ${query}.`
-                    : ''}
+                : outcome
+                  ? `${outcome.total} ${pluralise(outcome.total, 'result')} for ${query}.`
+                  : ''}
             </p>
 
             {!index && loading ? (
               <p className="py-4 font-sans text-[0.92rem] text-ink-subtle">Loading search…</p>
             ) : null}
 
-            {!index && !loading && failed ? (
-              <p aria-hidden="true" className="py-4 font-sans text-[0.92rem] text-ink-muted">
-                Search could not load, which usually means the connection dropped. Reopen search to
-                try again, or use the{' '}
-                <Link href="/search/" onClick={closeDialog}>
-                  full search page
-                </Link>
-                .
-              </p>
-            ) : null}
+            {/*
+              The failure is announced by being written into a region that is
+              already in the accessibility tree, which is how the correction
+              form reports its own results too. One channel, not two: the
+              visible text is the announced text, so the recovery link inside
+              it stays reachable by keyboard and readable in browse mode. An
+              `aria-hidden` twin would have made that link a silent tab stop.
+            */}
+            <div aria-live="polite">
+              {!index && !loading && failed ? (
+                <p className="py-4 font-sans text-[0.92rem] text-ink-muted">
+                  Search could not load, which usually means the connection dropped. Reopen search
+                  to try again, or use the{' '}
+                  <Link href="/search/" onClick={onLinkClick}>
+                    full search page
+                  </Link>
+                  .
+                </p>
+              ) : null}
+            </div>
 
             {outcome && outcome.results.length > 0 ? (
-              <QuickSearchResults results={outcome.results} open={open} onNavigate={closeDialog} />
+              <QuickSearchResults results={outcome.results} open={open} onNavigate={onLinkClick} />
             ) : null}
 
             {outcome && outcome.results.length === 0 ? (
@@ -279,7 +299,7 @@ export function SearchDialogTrigger() {
             </span>
             <Link
               href={query ? `/search/?q=${encodeURIComponent(query)}` : '/search/'}
-              onClick={closeDialog}
+              onClick={onLinkClick}
               className="inline-flex min-h-11 items-center"
             >
               Full search page

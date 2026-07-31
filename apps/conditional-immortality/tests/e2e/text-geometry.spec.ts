@@ -467,11 +467,10 @@ test.describe('Pretext agrees with the browser', () => {
         if (!probe) return null
         const style = getComputedStyle(probe)
         const px = (value: string) => Number.parseFloat(value) || 0
-        return (
-          probe.getBoundingClientRect().width -
-          px(style.paddingInlineStart) -
-          px(style.paddingInlineEnd)
-        )
+        // `clientWidth`, matching production: the rect is the transformed
+        // box, and the panel arrives on a scale transition, so a rect read
+        // here would disagree with the width the fitter actually used.
+        return probe.clientWidth - px(style.paddingInlineStart) - px(style.paddingInlineEnd)
       })
       expect(live, 'a real excerpt element must exist to take the width from').not.toBeNull()
       const realWidth = Math.round(live ?? 0)

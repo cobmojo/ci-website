@@ -115,13 +115,45 @@ test('a search index that fails to load says so, in words and to assistive techn
   const dialog = page.getByRole('dialog', { name: 'Search this site' })
   await expect(dialog).toBeVisible()
 
-  const status = dialog.locator('[aria-live="polite"]')
-  await expect(status).toContainText(/could not load/i)
-  await expect(dialog.getByText(/could not load/i).first()).toBeVisible()
+  // One channel, both ways: the failure is written into a region already in
+  // the accessibility tree, so the same words are announced and readable.
+  const status = dialog.locator('[aria-live="polite"]', { hasText: /could not load/i })
+  await expect(status).toBeVisible()
 
-  // No unhandled rejection reached the page, and the recovery route works.
-  await dialog.getByRole('link', { name: /full search page/i }).click()
+  // The recovery link inside that message is a real, reachable link: it must
+  // be in the accessibility tree, not hidden inside an aria-hidden twin, and
+  // Playwright's role engine ignores aria-hidden subtrees, so finding it here
+  // is the assertion.
+  const recovery = status.getByRole('link', { name: /full search page/i })
+  await expect(recovery).toHaveCount(1)
+
+  // It is also a genuine tab stop, in order, rather than a silent one.
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).focus()
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Tab')
+  await expect(recovery).toBeFocused()
+
+  await recovery.click()
   await expect(page).toHaveURL(/\/search\//)
+})
+
+test('a modified click on a quick-search result leaves the dialog standing', async ({ page }) => {
+  // Cmd/Ctrl-clicking a result opens it in a background tab and leaves this
+  // one where it was, so the dialog, the query and the result list have to
+  // survive: tearing them down would lose the reader's place in exchange for
+  // a navigation they did not ask this tab to make.
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Search', exact: true }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('gehenna')
+
+  const firstResult = dialog.getByRole('link').first()
+  await expect(firstResult).toBeVisible()
+  await firstResult.click({ modifiers: ['ControlOrMeta'] })
+
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('searchbox', { name: 'Search terms' })).toHaveValue('gehenna')
 })
 
 test('a visitor can find Revelation 14:11 through search', async ({ page }) => {

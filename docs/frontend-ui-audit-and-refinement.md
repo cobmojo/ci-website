@@ -202,7 +202,7 @@ matrix.
 | Full case | `/full-case/` | continuous edition, id-prefixed bodies | read everything, print |
 | Method/About | `/method/`, `/about/` | article-style | assess credibility |
 | Corrections | `/corrections/` | `FeedbackForm` | submit a correction |
-| Changelog | `/changelog/` + 13 per-section | revision lists | see what changed |
+| Changelog | `/changelog/` + 12 per-section | revision lists | see what changed |
 | Original document | `/original-document/`, `/download/` | provenance and download cards | verify the source |
 | Search | `/search/` (noindex) | server-rendered form + client results | find anything |
 | Meta | `/accessibility/`, `/privacy/`, 404 | article-style | policy, recovery |
@@ -556,6 +556,65 @@ is exactly what a second sweep is for. All are corrected:
   plus eight language notes carrying `specialist-review-pending` (not "six
   pages"), the `test:browser` suite descriptions in two documents, and this
   ledger's own PII and bundle rows brought to their merged-tree values.
+
+### Gap sweep 3 (completed tree)
+
+Six angles over the tree at `04555d3`, auditing the previous sweep's own
+fixes alongside fresh reads. Twenty findings confirmed, three refuted; five
+were regressions from sweep 2, which is why the sweeps repeat. All corrected:
+
+- **The `aria-hidden` twin was the wrong shape.** Sweep 2's visible failure
+  message was marked `aria-hidden` to avoid double-announcing, but it
+  contains the recovery link, so that link became a silent tab stop and the
+  failure text vanished from browse mode (axe `aria-hidden-focus`, WCAG
+  4.1.2). The failure now goes into a persistent `aria-live` region that
+  wraps the visible text, which is the pattern the correction form already
+  uses: one channel, announced and readable, with a reachable link. The
+  end-to-end test now asserts the link is in the accessibility tree and is a
+  real tab stop in order.
+- **Modified clicks, the two sites sweep 2 missed.** The guard reached the
+  trigger and the result rows but not the dialog's own recovery and footer
+  links, which still closed the dialog on a background-tab click. One
+  `onLinkClick` handler now serves all of them, and an end-to-end test
+  Cmd/Ctrl-clicks a result and asserts the dialog and query survive.
+- **The backdrop mirror case in the sheet.** Sweep 2 fixed it in the search
+  dialog only; the navigation sheet kept the one-sided guard.
+- **Focus could still reach `<body>`.** The sheet's trigger is `xl:hidden`
+  while the sheet is not, so a viewport crossing 1280px with the sheet open
+  left `close()` focusing a hidden element. Focus now falls back to the main
+  region, the same landing the skip link uses.
+- **Two tests could not fail.** The target-size contract looked for the
+  `min-h-11` its base class always supplies, so only the literal `min-h-9`
+  could ever trip it; it now reads every `min-h-*` and rejects any step below
+  eleven. The failure-path test's role query silently matched the footer link
+  rather than the hidden one it meant to click.
+- **Excerpts no longer rewrite themselves as the dialog leaves.** Closing
+  dropped every fitted excerpt back to its fallback while the panel was still
+  painted through its 150ms exit, so the words changed under the reader.
+- **The geometry suite measures the way production measures.** It still
+  derived the excerpt width from `getBoundingClientRect()`, the transformed
+  box that sweep 2 abandoned.
+- **The skip link has a tier.** Its `translate` arrival is a shipped
+  animation the five-tier taxonomy never named, and it was running an arrival
+  on the Tier 3 *exit* token. It is now documented as Tier 3 and uses the
+  entrance token.
+- **Printed citations carry their destinations.** The rule that appends a
+  URL after an external link was scoped to `.prose-article`, so the
+  sources-cited list on roughly eighty-five pages printed "View original"
+  with no address. It is scoped to `main`.
+- **Two claims the pages did not honour.** The continuous edition said its
+  contents panel is removed from print and it was not; the case map offered
+  every reader a fallback "if the diagram is hard to read" when the diagram
+  is only shown from `lg` up.
+- **The filter disclosure stays open** when a filter inside it is active,
+  instead of hiding the state it just applied.
+- **Four jump navigations name themselves by their visible heading**, so the
+  landmark name and the words on screen cannot drift; three of them had said
+  something different.
+- **Three documentation corrections**: the routing brief still taught the
+  bare `overflow-x-auto` wrapper that `ScrollRegion` replaced, the
+  implementation report's exhaustive client-component list omitted two, and
+  the route table contradicted this document's own changelog-page count.
 
 ## 11. PR #5 compatibility
 

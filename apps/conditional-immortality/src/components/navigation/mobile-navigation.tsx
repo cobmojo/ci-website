@@ -29,11 +29,30 @@ export function MobileNavigation() {
 
   useEffect(() => setMounted(true), [])
 
+  /**
+   * Give focus back to the trigger, or to the main region if the trigger is
+   * not there to take it.
+   *
+   * The trigger is `xl:hidden` and the sheet is not, so a viewport that grows
+   * past `xl` while the sheet is open leaves a hidden trigger behind; focusing
+   * it does nothing and the reader is dropped on `<body>`, at the top of the
+   * document with no position. `main` carries `tabIndex={-1}` for the skip
+   * link and is the same landing the skip link uses.
+   */
+  const restoreFocus = useCallback(() => {
+    const trigger = triggerRef.current
+    if (trigger?.offsetParent) {
+      trigger.focus()
+      return
+    }
+    document.getElementById('main-content')?.focus()
+  }, [])
+
   const close = useCallback(() => {
     dialogRef.current?.close()
     setOpen(false)
-    triggerRef.current?.focus()
-  }, [])
+    restoreFocus()
+  }, [restoreFocus])
 
   // Close on route change, otherwise the sheet survives client navigation.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reacting to pathname is the point
@@ -82,14 +101,17 @@ export function MobileNavigation() {
         aria-labelledby={`${dialogId}-title`}
         onClose={() => {
           setOpen(false)
-          triggerRef.current?.focus()
+          restoreFocus()
         }}
         onPointerDown={event => {
           // A click whose press and release land on different elements is
-          // retargeted to their common ancestor, so a drag that starts inside
-          // the sheet and ends on the backdrop would read as a backdrop click.
-          // Only a press that begins on the backdrop itself may dismiss.
+          // retargeted to their common ancestor, so either half of a drag
+          // between the sheet and the backdrop would otherwise read as a
+          // backdrop click. Dismissal requires both ends on the backdrop.
           backdropPressRef.current = event.target === dialogRef.current
+        }}
+        onPointerUp={event => {
+          if (event.target !== dialogRef.current) backdropPressRef.current = false
         }}
         onClick={event => {
           // Clicking the backdrop (the dialog element itself) closes the sheet.
