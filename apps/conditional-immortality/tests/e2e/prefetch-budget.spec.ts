@@ -71,6 +71,14 @@ const ROUTES = [
   '/download/',
   '/scripture/',
   '/case/key-texts/eternal-punishment/',
+  /*
+   * The two routes that reach `next/link` by a path of their own — the
+   * correction form's prose links, and the transcript's timestamps. Both were
+   * outside this list while the policy they break was being documented as
+   * site-wide, which is exactly the gap a route list has to be checked for.
+   */
+  '/corrections/',
+  '/watch/',
 ] as const
 
 for (const route of ROUTES) {
@@ -100,6 +108,64 @@ for (const route of ROUTES) {
     ).toBeLessThan(TOTAL_PREFETCH_BUDGET)
   })
 }
+
+test('the transcript does not prefetch the page it is already on', async ({ page }) => {
+  /*
+   * Every timestamp in the transcript is a query-only link back to `/watch/`.
+   * The router keys its cache on `{pathname, search}`, so each distinct `?t=`
+   * is a distinct prefetch target, and left to the framework's default the
+   * transcript speculatively downloads the page the reader is already holding
+   * — once per timestamp, the first of them a full copy of the document.
+   *
+   * The timestamps sit below the fold, so this only appears once the reader
+   * scrolls into the transcript. The route budget above measures a page load
+   * and would never have seen it. Scrolling is not folded into that helper
+   * because `/case/…` is *supposed* to prefetch Previous and Next when they
+   * come into view, which the next test asserts.
+   */
+  const seen: Prefetch[] = []
+  page.on('response', response => {
+    const url = new URL(response.url())
+    if (!url.searchParams.has('_rsc')) return
+    void response
+      .body()
+      .then(body => seen.push({ route: `${url.pathname}${url.search}`, bytes: body.length }))
+      .catch(() => {
+        /* a payload that never arrived cost nothing */
+      })
+  })
+
+  await page.goto('/watch/')
+  await page.waitForLoadState('networkidle')
+
+  // Walk the whole transcript past the viewport, a screen at a time, so the
+  // observer sees every timestamp rather than only the last one.
+  await page.evaluate(async () => {
+    const step = window.innerHeight
+    for (let y = 0; y < document.body.scrollHeight; y += step) {
+      window.scrollTo(0, y)
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+  })
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(500)
+
+  const total = seen.reduce((sum, entry) => sum + entry.bytes, 0)
+  console.log(
+    `    /watch/ scrolled${' '.repeat(24)} ${String(seen.length).padStart(2)} prefetches, ` +
+      `${String(total).padStart(7)} bytes`,
+  )
+
+  expect(
+    seen.filter(entry => entry.route.startsWith('/watch/')),
+    'the transcript prefetched the page it is already on',
+  ).toEqual([])
+
+  expect(
+    total,
+    `reading the transcript started ${total} bytes of speculative route payload`,
+  ).toBeLessThan(TOTAL_PREFETCH_BUDGET)
+})
 
 test('the one link that is allowed to prefetch does, once it is in view', async ({ page }) => {
   /*

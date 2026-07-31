@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { type MouseEvent, type ReactNode, useCallback } from 'react'
+import { Link } from '@/components/navigation/link'
 import { isModifiedClick } from '@/lib/modified-click'
 
 /**
@@ -36,6 +36,15 @@ import { isModifiedClick } from '@/lib/modified-click'
  * fights the scroll the browser has already done.
  *
  * The scroll is instant. Tier 4 anchor scrolling is untouched.
+ *
+ * The link is the repository's own `Link`, not `next/link`. It used to be
+ * `next/link`, which prefetches on sight — and because the router keys its
+ * cache on `{pathname, search}`, every distinct `?t=` here counts as a
+ * different destination. Reading the transcript on `/watch/` therefore
+ * downloaded the page the reader was already holding, once per timestamp:
+ * 33 requests and 142 kB, measured. The destination is this page, so there was
+ * never anything to gain. `tests/e2e/prefetch-budget.spec.ts` scrolls the
+ * transcript and holds it at zero.
  */
 export function FocusOnArrivalLink({
   href,
