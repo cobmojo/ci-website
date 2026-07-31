@@ -6,7 +6,14 @@
  * a missing thesis, an unknown source id or an unnormalisable Scripture reference.
  */
 import { z } from 'zod'
-import { feedbackStatuses, feedbackTypes, publicationConsents } from './feedback-vocabulary'
+import {
+  FEEDBACK_FIELD_MESSAGES,
+  feedbackStatuses,
+  feedbackTypes,
+  isAcceptableEmail,
+  isAcceptableSourceUrl,
+  publicationConsents,
+} from './feedback-vocabulary'
 
 export * from './bible'
 export * from './feedback-vocabulary'
@@ -556,21 +563,27 @@ export const FeedbackSubmissionInputSchema = z
       .trim()
       .min(20, 'Please give us at least a sentence or two so we can act on it.')
       .max(8000, 'Please keep submissions under 8000 characters.'),
+    // Both optional fields defer to the shared predicates in the feedback
+    // vocabulary, so the browser and the server accept exactly the same
+    // values. They used to disagree, and the disagreement discarded whole
+    // corrections over an address the reader did not have to give. The
+    // protocol check is still load-bearing: without it a no-JS submission
+    // could store a `javascript:` URL.
     sourceUrl: z
-      .union([
-        // Web addresses only. The form's client-side validator refuses any
-        // other scheme, and this schema is documented as its mirror; without
-        // the protocol constraint a no-JS submission could store a
-        // `javascript:` URL.
-        z.url({
-          protocol: /^https?$/,
-          error: 'Please give a web address beginning with http:// or https://.',
-        }),
-        z.literal(''),
-      ])
+      .string()
+      .trim()
+      .refine(value => value === '' || isAcceptableSourceUrl(value), {
+        error: FEEDBACK_FIELD_MESSAGES.sourceUrl,
+      })
       .optional(),
     name: z.string().trim().max(120).optional(),
-    email: z.union([z.email(), z.literal('')]).optional(),
+    email: z
+      .string()
+      .trim()
+      .refine(value => value === '' || isAcceptableEmail(value), {
+        error: FEEDBACK_FIELD_MESSAGES.email,
+      })
+      .optional(),
     publicationConsent: PublicationConsentSchema,
   })
   .strict()

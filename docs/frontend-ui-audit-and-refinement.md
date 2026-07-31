@@ -940,6 +940,70 @@ headed sections. The fourth is addressed in prose inside the second, so the
 count is defensible and rewording it would be an editorial preference rather
 than a correction.
 
+### Gap sweep 8 (completed tree)
+
+Two angles over the tree at `0398656`: code paths no test exercises, and
+whether the branch's own documentation tells the truth about the branch.
+Nineteen findings confirmed — four in the code, fifteen in the documentation,
+which by then was the least accurate thing in the tree.
+
+The correction form is the serious one, and it fails in the way this whole
+audit is about: the promise was in the docstring, and nobody had checked it.
+
+- **The form did not work without JavaScript, on the site that promises it
+  does.** The API route's own comment says "It works without JavaScript. A
+  form-encoded POST is answered with a 303 redirect back to the corrections
+  page." It was answered with a redirect to a page that says nothing.
+  `/corrections/` was statically prerendered and read its query string in the
+  browser inside a Suspense boundary — deliberately, so the route could stay
+  static. A static page cannot vary by query string, so the server sent the
+  same bytes to everyone: `curl` proves `/corrections/?submitted=1` and
+  `/corrections/` are byte-identical. A reader without scripting submitted a
+  correction, was redirected back, and saw a page that looked untouched. No
+  confirmation, no error, and the `?section=S04` every section page's feedback
+  link carries dropped from the hidden field, so the author received
+  corrections with no page attached. The natural response to silence is to
+  send it again; five times, and the rate limit locks them out for ten
+  minutes. The page resolves its own query string on the server now, which
+  costs this route its prerendering — the same price `/search/` already pays,
+  for the same reason.
+- **A storage failure was reported to that reader as their own mistake.** Both
+  a schema rejection and a failed write redirected to `?submitted=0`, which
+  says the values could not be accepted and to check the wording. A reader
+  whose text was fine was told to fix it and resend, into a failure that would
+  repeat identically. The scripted path had always drawn the distinction; only
+  the redirect threw it away. There is a third state now.
+- **The client and server validators disagreed, and discarded whole
+  corrections over an optional field.** The form's comment calls them mirrors
+  of the server schema. The browser accepted anything non-space either side of
+  an `@`; the server used Zod's ASCII-only rule, so `josé@münchen.de` passed
+  every check the reader could see and then returned a 400 naming a field they
+  did not have to fill in — with Zod's raw string, on a form whose brief is
+  prose "phrased for a reader rather than for a log", and with no field marked,
+  so focus never moved. Both sides now call the same predicates, which live in
+  the dependency-free vocabulary module because the client cannot import Zod.
+- **Two appendix headings could not be linked or found.** `Callout` put its
+  `id` on the `aside` rather than the heading, and `extractHeadings` reads
+  markdown only, so the level-2 callout each appendix opens with — the caveat
+  saying the page proves nothing about what Scripture teaches — had no id at
+  all and "On this page" began at the second heading. The id is on the heading
+  now, and a test fails if a level-2 callout lacks one or is missing from the
+  extracted headings.
+
+Deliberately bounded: the thirty level-3 callouts across twenty-four pages get
+the same id treatment and stay out of "On this page". Listing every aside
+would change what a contents list is for, which is an editorial decision
+rather than a correction.
+
+The documentation findings are recorded in the commit that fixes them. The
+worst was that the README still carried the sentence sweep 6 disproved —
+"Search runs in the browser and no query is transmitted" — because that sweep
+corrected `/privacy/`, `/search/`, the index builder and the implementation
+report, and missed the one place left. The second worst was in this document:
+it said the ranking-baseline correction moved 25 of 30 queries when 25 are
+byte-identical and five moved, a figure carried over from a measurement taken
+with the wrong limit and repeated in the pin's own docstring.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

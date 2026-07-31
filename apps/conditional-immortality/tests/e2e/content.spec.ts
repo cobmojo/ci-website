@@ -378,3 +378,45 @@ test('every heading claimed by the search index exists on its page', async ({ re
   expect(missing, 'a search document names a heading its page does not render').toEqual([])
   expect(unclaimed, 'a page renders a heading its search document never claims').toEqual([])
 })
+
+/* ------------------------------------------------------------------ *
+ * The correction form without JavaScript
+ * ------------------------------------------------------------------ */
+
+/**
+ * The API route's own docstring promises this form works without JavaScript,
+ * and it did not. The page was statically prerendered and read its query
+ * string in the browser, so the server sent the same bytes to everyone: a
+ * reader without scripting submitted a correction, was redirected back, and
+ * saw a page that looked untouched — no confirmation, no error, and the
+ * section they were correcting silently dropped from the hidden field. The
+ * natural response is to send it again, five times, into the rate limit.
+ */
+test.describe('the correction form without scripting', () => {
+  test.use({ javaScriptEnabled: false })
+
+  test('says a submission was received', async ({ page }) => {
+    await page.goto('/corrections/?submitted=1')
+    await expect(page.getByText('Received.')).toBeVisible()
+  })
+
+  test('tells a rejected submission apart from one the server could not store', async ({
+    page,
+  }) => {
+    await page.goto('/corrections/?submitted=0')
+    await expect(page.getByText(/values sent could not be accepted/)).toBeVisible()
+
+    // A storage failure is not the reader's fault, and telling them to check
+    // their wording sends them back into a failure that will repeat.
+    await page.goto('/corrections/?submitted=error')
+    await expect(page.getByText(/fault at our end, not with what you wrote/)).toBeVisible()
+  })
+
+  test('carries the section and the type a reader arrived with', async ({ page }) => {
+    await page.goto('/corrections/?section=S04&heading=the-text&type=broken-link#form')
+
+    await expect(page.locator('input[name="sectionId"]')).toHaveValue('S04')
+    await expect(page.locator('input[name="headingId"]')).toHaveValue('the-text')
+    await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')
+  })
+})

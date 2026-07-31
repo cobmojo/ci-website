@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { caseSections } from '../case/index'
-import { mdxExists, readMdx, sectionFileName } from '../mdx'
+import { extractHeadings, listMdx, mdxExists, readMdx, sectionFileName } from '../mdx'
 import { sources } from '../sources/index'
 
 /**
@@ -61,5 +61,45 @@ describe('sources cited on a page', () => {
       }
     }
     expect(spurious, 'a page lists a source it never cites').toEqual([])
+  })
+})
+
+/**
+ * A callout that renders a level-2 heading has to carry its own id.
+ *
+ * It is literal JSX, so `rehype-slug` never sees it and cannot supply one. Both
+ * appendices opened on such a heading — the caveat saying the page proves
+ * nothing about what Scripture teaches — with no id at all, so it could not be
+ * linked and "On this page" began at the second heading instead of the first.
+ * `extractHeadings` reads the id straight off the tag, which means a missing
+ * one fails silently by omission rather than loudly.
+ */
+describe('callout headings that act as sections', () => {
+  const MDX_DIRECTORIES = ['case', 'appendices'] as const
+
+  it('gives every level-2 callout an id, and lists it in the contents', () => {
+    const withoutId: string[] = []
+    const unlisted: string[] = []
+
+    for (const collection of MDX_DIRECTORIES) {
+      for (const file of listMdx(collection)) {
+        const body = readMdx(collection, file)
+        const headings = extractHeadings(body)
+        for (const [, attributes] of body.matchAll(/<Callout\b([^>]*\bas="h2"[^>]*)>/g)) {
+          const title = /\btitle="([^"]*)"/.exec(attributes ?? '')?.[1] ?? ''
+          const id = /\bid="([^"]*)"/.exec(attributes ?? '')?.[1]
+          if (!id) {
+            withoutId.push(`${file}: "${title}"`)
+            continue
+          }
+          if (!headings.some(heading => heading.id === id)) {
+            unlisted.push(`${file}: "${title}" (#${id})`)
+          }
+        }
+      }
+    }
+
+    expect(withoutId, 'a level-2 callout with no id cannot be linked').toEqual([])
+    expect(unlisted, 'a level-2 callout missing from the extracted headings').toEqual([])
   })
 })

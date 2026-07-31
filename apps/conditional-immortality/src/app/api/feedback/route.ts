@@ -37,6 +37,13 @@ const STORE_DIR = process.env.FEEDBACK_STORE_DIR ?? '.feedback-store'
 /** Where a form-encoded submission is sent back to. */
 const SUCCESS_REDIRECT = '/corrections/?submitted=1'
 const FAILURE_REDIRECT = '/corrections/?submitted=0'
+/**
+ * A submission the server could not store is not a submission the server
+ * rejected, and telling a reader to check their wording when their wording was
+ * fine sends them back into a failure that will repeat identically. The JSON
+ * path has always drawn this distinction; the redirect now does too.
+ */
+const NOT_RECORDED_REDIRECT = '/corrections/?submitted=error'
 
 /** The honeypot control rendered off screen by the form. */
 const HONEYPOT_FIELD = 'website'
@@ -251,7 +258,7 @@ export async function POST(request: Request): Promise<Response> {
     // Deliberately no detail: an fs error message can contain the payload in
     // some runtimes, and the submission id is enough to correlate.
     console.error(`[feedback] could not persist submission ${submission.id}`)
-    if (!wantsJson) return redirect(FAILURE_REDIRECT)
+    if (!wantsJson) return redirect(NOT_RECORDED_REDIRECT)
     return json({ ok: false, error: 'not-recorded' }, 500)
   }
 

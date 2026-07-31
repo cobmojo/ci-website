@@ -22,7 +22,25 @@ export const metadata = pageMetadata({
 /** Newest first, matching the changelog. */
 const ACCEPTED = revisions
 
-export default function CorrectionsPage() {
+/**
+ * The query string is resolved here, on the server.
+ *
+ * That makes this route render per request rather than being prerendered, and
+ * it is the price of the promise the API route makes: that the form works
+ * without JavaScript. A static page cannot vary by query string, so a reader
+ * without scripting who submitted a correction was redirected back to a page
+ * that looked untouched — no confirmation, no error, and the section they were
+ * correcting dropped from the hidden field. `/search/` pays the same price for
+ * the same reason.
+ */
+export default async function CorrectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const one = (value: string | string[] | undefined): string | undefined =>
+    Array.isArray(value) ? value[0] : value
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(CRUMBS)} />
@@ -117,7 +135,12 @@ export default function CorrectionsPage() {
               </p>
             </div>
 
-            <FeedbackForm />
+            <FeedbackForm
+              sectionId={one(params.section) ?? one(params.sectionId) ?? ''}
+              headingId={one(params.heading) ?? one(params.headingId) ?? ''}
+              type={one(params.type)}
+              submitted={one(params.submitted)}
+            />
           </section>
 
           <section aria-labelledby="record">

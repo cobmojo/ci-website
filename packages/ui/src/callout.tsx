@@ -50,8 +50,13 @@ export function Callout({
 }: CalloutProps) {
   const spec = TONES[tone]
   return (
-    <aside id={id} className={cn('my-6 rounded-md border p-4 sm:p-5', spec.container, className)}>
+    <aside className={cn('my-6 rounded-md border p-4 sm:p-5', spec.container, className)}>
+      {/* The id belongs on the heading, not the box around it: it is what a
+          contents list links to and what a reader copies out of the address
+          bar, and an id on the `aside` scrolls to the same place while being
+          invisible to anything that walks headings. */}
       <Heading
+        id={id}
         className={cn(
           'mt-0 mb-2 flex items-baseline gap-2 font-sans text-[0.95rem] font-semibold',
           'tracking-wide uppercase',

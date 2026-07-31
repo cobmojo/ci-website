@@ -61,3 +61,46 @@ export const feedbackStatuses = [
 ] as const
 
 export type FeedbackStatus = (typeof feedbackStatuses)[number]
+
+/* ------------------------------------------------------------------ *
+ * Optional-field rules, shared by the form and the schema
+ *
+ * The form's validators are documented as mirrors of the server schema, and
+ * they were not. The browser accepted any non-space characters either side of
+ * an `@`; the server used Zod's ASCII-only rule. So `josé@münchen.de` passed
+ * every check the reader could see, and the whole correction was then thrown
+ * away by a 400 that named an *optional* field. The same gap existed on the
+ * source address, where the browser parsed with `URL` and the server did not
+ * accept an internationalised host.
+ *
+ * The rules live here, in the dependency-free vocabulary both sides already
+ * import, because the client cannot import Zod — the comment at the top of
+ * `feedback-form.tsx` records what that cost when it was tried. The server
+ * wraps these with `.refine()`.
+ *
+ * Both are deliberately permissive. Neither field is required, both exist so
+ * the author can reply or check a source, and refusing a correction over the
+ * spelling of an address the reader did not have to give is the worse failure.
+ * ------------------------------------------------------------------ */
+
+/** Something with a local part, one `@`, and a dotted host. */
+export function isAcceptableEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
+/** A complete http or https address, internationalised hosts included. */
+export function isAcceptableSourceUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim())
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+/** The wording the reader sees, on whichever side rejects the value. */
+export const FEEDBACK_FIELD_MESSAGES = {
+  email: 'That does not look like an email address. Correct it, or leave it empty.',
+  sourceUrl:
+    'That does not look like a complete web address. Include https://, or leave this empty.',
+} as const
