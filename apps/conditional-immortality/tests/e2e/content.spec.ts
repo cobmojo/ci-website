@@ -444,7 +444,10 @@ test.describe('the correction form without scripting', () => {
     const poster = page.locator('a.video-play')
     await expect(poster).toBeVisible()
     await expect(poster).toHaveAttribute('href', /youtu\.be|youtube/)
-    await expect(page.locator('button.video-play')).toHaveCount(0)
+    await expect(poster).toHaveAttribute('target', '_blank')
+    // It says what it will do, rather than promising to load a player that
+    // cannot load.
+    await expect(poster).toContainText('Watch it on YouTube')
   })
 
   test('carries the section and the type a reader arrived with', async ({ page }) => {
@@ -525,7 +528,7 @@ test('paper carries no control and no navigation', async ({ page }) => {
 
 test('a transcript timestamp seeks a video that is already playing', async ({ page }) => {
   await page.goto('/watch/')
-  await page.getByRole('button', { name: /Press play/ }).click()
+  await page.locator('a.video-play').click()
 
   const player = page.locator('iframe.video-frame')
   await expect(player).toBeVisible()

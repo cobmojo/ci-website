@@ -1249,8 +1249,16 @@ The print and no-JS reader found five things ten code sweeps had not:
 
 - **The play button silently did nothing without scripting**, on the home page
   and `/watch/`: an 830x466 control producing no request, no iframe and no
-  explanation. It is a link to the video until the script that can load it in
-  place has run.
+  explanation. It is a link to the video now, upgraded in place once the script
+  that can load the player has run.
+
+  The first attempt rendered a link and swapped it for a button at hydration,
+  which fixed the reported defect and introduced a subtler one: the swap
+  replaces the DOM node, so a reader already focused on the poster loses focus
+  to the body. The keyboard-reachability test caught it as a flake in the very
+  next chain — the probe it had written onto the element went with the element.
+  One element throughout, with the click intercepted when it can be, has
+  neither problem, and is the shape the search trigger already uses.
 - **`/corrections/` printed a page and a half of dead form controls** —
   a select, a textarea, three text fields, three radios and "Send submission" —
   under a statement promising interactive controls are removed from the printed

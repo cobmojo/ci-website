@@ -325,7 +325,10 @@ test('nothing is requested from YouTube until the reader presses play', async ({
   expect(contacted).toEqual([])
   await expect(page.locator('iframe')).toHaveCount(0)
 
-  const play = page.getByRole('button', { name: /press play to load it from youtube/i })
+  // A link throughout, not a button: without scripting it opens the video, and
+  // with scripting the same element loads the player in place. Swapping the
+  // element at hydration would drop the focus of anyone already on it.
+  const play = page.getByRole('link', { name: /press play to load it from youtube/i })
   await expect(play).toBeVisible()
   // Label in name: the poster shows the video's title, so the accessible name
   // must carry it too, or a speech-input user reading the title aloud cannot

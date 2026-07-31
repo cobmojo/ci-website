@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NewTabLink } from '@/components/content/new-tab-link'
 import { formatTimestamp } from '@/lib/format'
+import { isModifiedClick } from '@/lib/modified-click'
 import { siteConfig } from '@/lib/site-config'
 
 /**
@@ -177,12 +178,20 @@ export function ClickToLoadVideo({
 }
 
 /**
- * The poster, as a button where scripting can load the player in place and as
- * a link to YouTube where it cannot.
+ * The poster: always a link to the video, upgraded in place when it can be.
  *
- * Same face either way. The difference is that the link works: a reader with
- * scripting off was previously given a large, inviting control that produced
- * no request, no iframe and no explanation when pressed.
+ * Without scripting it is exactly what it looks like — a link that opens the
+ * video. It used to be a `button` there, an 830x466 control that produced no
+ * request, no iframe and no explanation when pressed.
+ *
+ * Rendering a link and swapping it for a button after hydration would fix that
+ * and introduce something subtler: the swap replaces the DOM node, so a reader
+ * who had already focused the poster loses focus to the body, and anything
+ * holding a reference to it is dropped. (The keyboard-reachability test caught
+ * this as a flake before a reader could.) One element throughout, with the
+ * click intercepted once the script that can load the player in place has run,
+ * has neither problem. It is the same shape as the search trigger, which is a
+ * link to `/search/` until it can open the dialog instead.
  */
 function PosterControl({
   scripted,
@@ -197,17 +206,25 @@ function PosterControl({
   durationSeconds?: number
   onPlay: () => void
 }) {
-  // `video-play` moves the glyph rather than the poster on hover and press.
-  // Scaling a 16:9 panel would drag its border across the page and shift
-  // everything below it.
-  const className =
-    'video-play absolute inset-0 flex min-h-11 w-full cursor-pointer flex-col items-center justify-center gap-3 p-5 text-center text-navy no-underline hover:bg-panel-strong sm:p-8'
-
-  // No aria-label: the visible poster text, including the video's title and the
-  // line about where it loads from, is the accessible name, so what a speech
-  // input user reads aloud is what the control answers to (WCAG 2.5.3).
-  const face = (
-    <>
+  return (
+    // No aria-label: the visible poster text, including the video's title, is
+    // the accessible name, so what a speech-input user reads aloud is what the
+    // control answers to (WCAG 2.5.3). `video-play` moves the glyph rather than
+    // the poster on hover and press: scaling a 16:9 panel would drag its border
+    // across the page and shift everything below it.
+    <a
+      href={watchUrl}
+      rel="noopener noreferrer"
+      target={scripted ? undefined : '_blank'}
+      onClick={event => {
+        // Before hydration this is an ordinary link, and a modified click is
+        // always a request for the browser's own behaviour.
+        if (!scripted || isModifiedClick(event)) return
+        event.preventDefault()
+        onPlay()
+      }}
+      className="video-play absolute inset-0 flex min-h-11 w-full cursor-pointer flex-col items-center justify-center gap-3 p-5 text-center text-navy no-underline hover:bg-panel-strong sm:p-8"
+    >
       <svg
         viewBox="0 0 64 64"
         className="video-play__glyph h-12 w-12 sm:h-16 sm:w-16"
@@ -233,21 +250,7 @@ function PosterControl({
         ) : null}
         {scripted ? 'Press play to load it from YouTube' : 'Watch it on YouTube'}
       </span>
-    </>
-  )
-
-  if (!scripted) {
-    return (
-      <a href={watchUrl} rel="noopener noreferrer" target="_blank" className={className}>
-        {face}
-        <span className="sr-only"> (opens in a new tab)</span>
-      </a>
-    )
-  }
-
-  return (
-    <button type="button" onClick={onPlay} className={className}>
-      {face}
-    </button>
+      {scripted ? null : <span className="sr-only"> (opens in a new tab)</span>}
+    </a>
   )
 }
