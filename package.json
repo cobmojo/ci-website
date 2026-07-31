@@ -45,7 +45,8 @@
     "qa:production": "export NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 && bun run validate && bun run test:coverage && bun run seo:matrix && bun run test:browser",
     "ci": "bun run qa:production",
     "test:smoke": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:smoke",
-    "test:interaction": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:interaction"
+    "test:interaction": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:interaction",
+    "test:print": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:print"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",

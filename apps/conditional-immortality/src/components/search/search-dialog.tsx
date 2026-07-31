@@ -2,11 +2,12 @@
 
 import { type SearchIndex, search } from '@ci/search'
 import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type MouseEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { DialogCloseButton } from '@/components/navigation/dialog-close-button'
 import { Link } from '@/components/navigation/link'
 import { QuickSearchResults } from '@/components/search/quick-search-results'
 import { pluralise } from '@/lib/format'
+import { isModifiedClick } from '@/lib/modified-click'
 import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
 
 /**
@@ -17,7 +18,10 @@ import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
  * scripting available the link opens a dialog instead, and the index is
  * fetched lazily on first open so pages that are never searched pay nothing.
  *
- * Searching runs entirely in the browser. No query is ever sent to a server.
+ * Searching in this panel runs entirely in the browser: the index is a static
+ * file and what a reader types here is never transmitted. The `/search/` page
+ * it falls back to is server-rendered, so a term reaching that page travels in
+ * the URL — `/privacy/` states the distinction.
  *
  * The text-layout runtime that fits excerpts follows the same rule as the
  * index: nothing is fetched until a reader shows an interest in searching, and
@@ -39,10 +43,19 @@ export function SearchDialogTrigger() {
   const [query, setQuery] = useState('')
   const pathname = usePathname()
 
+  /** Set the moment a load begins, where `loading` state lags by a render. */
+  const loadStarted = useRef(false)
+
   useEffect(() => setMounted(true), [])
 
   const loadIndex = useCallback(async () => {
-    if (index || loading) return
+    // A ref, not the `loading` state: two prewarm calls can arrive inside one
+    // gesture — `pointerenter` then the anchor's `focus`, 8ms apart on a tap —
+    // and React has not committed the state between them, so both passed the
+    // guard and the 610kB index was fetched twice. Every touch tap and every
+    // Ctrl+K paid it.
+    if (index || loadStarted.current) return
+    loadStarted.current = true
     setLoading(true)
     setFailed(false)
     try {
@@ -57,7 +70,7 @@ export function SearchDialogTrigger() {
     } finally {
       setLoading(false)
     }
-  }, [index, loading])
+  }, [index])
 
   /**
    * Search intent: hovering or focusing the trigger.
@@ -85,6 +98,18 @@ export function SearchDialogTrigger() {
     setOpen(false)
     triggerRef.current?.focus()
   }, [])
+
+  /**
+   * Following a link out of the dialog closes it, but a modified click is not
+   * following anything: it opens a new tab and leaves this one where it was,
+   * so the dialog, the query and the results have to survive it.
+   */
+  const onLinkClick = useCallback(
+    (event: MouseEvent) => {
+      if (!isModifiedClick(event)) closeDialog()
+    },
+    [closeDialog],
+  )
 
   // Close on route change, exactly as the navigation sheet does: without this
   // the dialog survives browser Back and Forward and stays modally open over
@@ -153,7 +178,10 @@ export function SearchDialogTrigger() {
           if (mounted) prewarm()
         }}
         onClick={event => {
-          if (!mounted) return
+          // A modified click is a request for the real link: open `/search/`
+          // in a new tab or window rather than swallowing it into a dialog
+          // the reader cannot put anywhere.
+          if (!mounted || isModifiedClick(event)) return
           event.preventDefault()
           openDialog()
         }}
@@ -176,11 +204,13 @@ export function SearchDialogTrigger() {
           }}
           onPointerDown={event => {
             // A click whose press and release land on different elements is
-            // retargeted to their common ancestor, so a text-selection drag
-            // that starts inside the panel and ends on the backdrop would
-            // read as a backdrop click. Only a press that begins on the
-            // backdrop itself may dismiss.
+            // retargeted to their common ancestor, so either half of a drag
+            // between the panel and the backdrop would otherwise read as a
+            // backdrop click. Dismissal requires both ends on the backdrop.
             backdropPressRef.current = event.target === dialogRef.current
+          }}
+          onPointerUp={event => {
+            if (event.target !== dialogRef.current) backdropPressRef.current = false
           }}
           onClick={event => {
             if (event.target === dialogRef.current && backdropPressRef.current) closeDialog()
@@ -204,6 +234,21 @@ export function SearchDialogTrigger() {
               value={query}
               onChange={event => setQuery(event.target.value)}
               onFocus={prewarm}
+              /**
+               * Escape closes the dialog, as it does from anywhere else in it.
+               *
+               * A `type="search"` field consumes the first Escape to clear
+               * itself, so a reader who had typed something lost the query and
+               * kept the panel: two losses from one keypress, and a second
+               * press needed to leave. With the field empty it closed on the
+               * first press, so the control changed behaviour exactly when
+               * there was something to lose.
+               */
+              onKeyDown={event => {
+                if (event.key !== 'Escape') return
+                event.preventDefault()
+                closeDialog()
+              }}
               placeholder="Search passages, sections, topics, sources"
               autoComplete="off"
               aria-describedby={statusId}
@@ -231,19 +276,29 @@ export function SearchDialogTrigger() {
               <p className="py-4 font-sans text-[0.92rem] text-ink-subtle">Loading search…</p>
             ) : null}
 
-            {!index && !loading && failed ? (
-              <p className="py-4 font-sans text-[0.92rem] text-ink-muted">
-                Search could not load, which usually means the connection dropped. Reopen search to
-                try again, or use the{' '}
-                <Link href="/search/" onClick={closeDialog}>
-                  full search page
-                </Link>
-                .
-              </p>
-            ) : null}
+            {/*
+              The failure is announced by being written into a region that is
+              already in the accessibility tree, which is how the correction
+              form reports its own results too. One channel, not two: the
+              visible text is the announced text, so the recovery link inside
+              it stays reachable by keyboard and readable in browse mode. An
+              `aria-hidden` twin would have made that link a silent tab stop.
+            */}
+            <div aria-live="polite">
+              {!index && !loading && failed ? (
+                <p className="py-4 font-sans text-[0.92rem] text-ink-muted">
+                  Search could not load, which usually means the connection dropped. Reopen search
+                  to try again, or use the{' '}
+                  <Link href="/search/" onClick={onLinkClick}>
+                    full search page
+                  </Link>
+                  .
+                </p>
+              ) : null}
+            </div>
 
             {outcome && outcome.results.length > 0 ? (
-              <QuickSearchResults results={outcome.results} open={open} onNavigate={closeDialog} />
+              <QuickSearchResults results={outcome.results} open={open} onNavigate={onLinkClick} />
             ) : null}
 
             {outcome && outcome.results.length === 0 ? (
@@ -271,7 +326,7 @@ export function SearchDialogTrigger() {
             </span>
             <Link
               href={query ? `/search/?q=${encodeURIComponent(query)}` : '/search/'}
-              onClick={closeDialog}
+              onClick={onLinkClick}
               className="inline-flex min-h-11 items-center"
             >
               Full search page

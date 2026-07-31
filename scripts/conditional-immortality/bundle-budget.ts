@@ -49,7 +49,9 @@ const ALLOWANCES: Record<string, { readonly overMedianBytes: number; readonly re
     reason:
       'TanStack Form: per-field validators, touched state and submit handling for nine fields, ' +
       'on a form that is progressively enhanced and works with scripting disabled. ' +
-      'Measured at 76 kB over the median, held at 82.',
+      'Measured at 76 kB over the median, held at 82. The print-disclosure handler that every ' +
+      'route now carries needed no increase here, which is the whole argument for expressing ' +
+      'this as a difference: it moved the median and the allowance with it.',
   },
 }
 

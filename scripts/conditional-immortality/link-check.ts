@@ -89,9 +89,14 @@ if (pages.size === 0) {
 /**
  * Routes that legitimately produce no prerendered HTML file.
  *
- * Route handlers emit text, JSON or images. `/search/` and `/og` are rendered
- * on demand because they read query parameters, so no static file exists for
- * them either. None of these is a broken link.
+ * Route handlers emit text, JSON or images. `/search/`, `/og` and
+ * `/corrections/` are rendered on demand because they read query parameters,
+ * so no static file exists for them either. None of these is a broken link.
+ *
+ * `/corrections/` earns its place the hard way: it has to answer
+ * `?submitted=1`, `?submitted=error` and `?section=S04` on the server, or a
+ * reader without scripting submits a correction and is returned to a page that
+ * looks untouched. Prerendering it made every one of those states invisible.
  */
 const KNOWN_NON_HTML_ROUTES = new Set([
   '/search-index.json',
@@ -108,6 +113,7 @@ const KNOWN_NON_HTML_ROUTES = new Set([
   // generates, so there is no prerendered HTML for it and the href on every
   // page carries a hash this check cannot predict.
   '/icon.svg',
+  '/corrections',
 ])
 
 /** Build asset prefixes. These are emitted by the bundler, not by a route. */

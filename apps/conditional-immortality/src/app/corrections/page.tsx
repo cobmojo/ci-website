@@ -1,11 +1,12 @@
 import { revisions } from '@ci/content/revisions'
+import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
 import { RevisionEntry } from '@/components/changelog/revision-entry'
 import { FeedbackForm } from '@/components/feedback/feedback-form'
-import { Link } from '@/components/navigation/link'
 import { RelatedPages } from '@/components/navigation/related-pages'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
+import { siteConfig } from '@/lib/site-config'
 
 const CRUMBS: readonly Crumb[] = [
   { href: '/', label: 'Home' },
@@ -22,7 +23,25 @@ export const metadata = pageMetadata({
 /** Newest first, matching the changelog. */
 const ACCEPTED = revisions
 
-export default function CorrectionsPage() {
+/**
+ * The query string is resolved here, on the server.
+ *
+ * That makes this route render per request rather than being prerendered, and
+ * it is the price of the promise the API route makes: that the form works
+ * without JavaScript. A static page cannot vary by query string, so a reader
+ * without scripting who submitted a correction was redirected back to a page
+ * that looked untouched — no confirmation, no error, and the section they were
+ * correcting dropped from the hidden field. `/search/` pays the same price for
+ * the same reason.
+ */
+export default async function CorrectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const one = (value: string | string[] | undefined): string | undefined =>
+    Array.isArray(value) ? value[0] : value
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(CRUMBS)} />
@@ -117,53 +136,19 @@ export default function CorrectionsPage() {
               </p>
             </div>
 
-            {/*
-              The receipt a reader gets when they submit with no scripting.
-              The endpoint answers a form-encoded POST with a 303 to one of
-              these two fragments, and `:target` reveals the matching one. It
-              has to be server-rendered and unconditional: the form is a client
-              component, so with scripting off nothing it renders ever appears,
-              and the previous `?submitted=1` round trip returned the reader to
-              an apparently untouched empty form whether their correction had
-              been recorded or not.
+            {/* The form itself is dropped from the printed copy, where it
+                would be a page of boxes nobody can fill in. A paper reader
+                still needs to know where to go. */}
+            <p className="m-0 hidden font-sans text-[0.95rem] text-ink-muted print:block">
+              To send a correction, visit {siteConfig.url}/corrections/ in a browser.
+            </p>
 
-              With scripting on the form posts with `fetch` and never
-              navigates, so neither fragment is ever reached and the form's own
-              status region remains the only message.
-
-              `tabIndex={-1}` is what makes the browser move focus here on the
-              fragment navigation, which is what announces it.
-
-              The wording differs from the form's own status region on purpose:
-              both are in the DOM at once, and two elements reading "Received."
-              on one page is ambiguous to anything scanning it, test or reader.
-            */}
-            <div
-              className="submission-receipt m-0 mb-5 rounded-md border border-affirm/30 bg-affirm-soft p-4 font-sans text-[0.95rem] text-ink"
-              id="submission-received"
-              tabIndex={-1}
-            >
-              <p className="m-0">
-                <strong className="font-semibold text-affirm">Recorded.</strong> Your submission was
-                saved. Every submission is read. If it leads to a change, that change is published
-                in the <Link href="/changelog/">changelog</Link> with the issue and the decision.
-              </p>
-            </div>
-            <div
-              className="submission-receipt m-0 mb-5 rounded-md border border-deny/30 bg-deny-soft p-4 font-sans text-[0.95rem] text-ink"
-              id="submission-not-recorded"
-              tabIndex={-1}
-            >
-              <p className="m-0">
-                <strong className="font-semibold text-deny">Not saved.</strong> Nothing was stored,
-                and because your browser reloaded this page the form below is empty again. Either a
-                field was not accepted, or the site could not write the submission down. A message
-                needs at least twenty characters, and a source address has to begin with http:// or
-                https://. We are sorry to ask you to type it again.
-              </p>
-            </div>
-
-            <FeedbackForm />
+            <FeedbackForm
+              sectionId={one(params.section) ?? one(params.sectionId) ?? ''}
+              headingId={one(params.heading) ?? one(params.headingId) ?? ''}
+              type={one(params.type)}
+              submitted={one(params.submitted)}
+            />
           </section>
 
           <section aria-labelledby="record">

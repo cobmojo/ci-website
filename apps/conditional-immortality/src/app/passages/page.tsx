@@ -19,10 +19,17 @@ const CRUMBS: readonly Crumb[] = [
   { href: '/passages/', label: 'Key Passages' },
 ]
 
+/**
+ * The bookends are read off the registry rather than written out. Named by
+ * hand they had already rotted: the description said the index ran to
+ * Revelation 20 after a Revelation 21 passage was added at the end.
+ */
+const FIRST_PASSAGE = passages[0]?.normalizedReference ?? ''
+const LAST_PASSAGE = passages[passages.length - 1]?.normalizedReference ?? ''
+
 export const metadata = pageMetadata({
   title: 'Key Passages',
-  description:
-    'Passage by passage treatments of the texts the argument turns on, from Isaiah 66 to Revelation 20, each with the traditional reading stated before the conditionalist response.',
+  description: `Passage by passage treatments of the texts the argument turns on, from ${FIRST_PASSAGE} to ${LAST_PASSAGE}, each with the traditional reading stated before the conditionalist response.`,
   route: '/passages/',
 })
 
@@ -66,18 +73,21 @@ export default function PassagesIndexPage() {
             what both sides agree on, and the single point where they part company.
           </p>
           <p className="m-0 mt-4 text-[1rem] text-ink-muted">
-            A passage gets a page only where the case works through it at length. Every other
-            reference in the argument, and there are many, is listed in the{' '}
-            <Link href="/scripture/">complete Scripture index</Link> with the parts that use it.
+            A passage gets a page only where the case works through it at length. The other
+            references each part is built on, and there are many, are listed in the{' '}
+            <Link href="/scripture/">Scripture index</Link> with the parts that use them.
           </p>
         </header>
 
         <nav
-          aria-label="Jump to a testament"
+          aria-labelledby="jump-to-testament"
           className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
         >
-          <h2 className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
-            Jump to
+          <h2
+            id="jump-to-testament"
+            className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
+          >
+            Jump to a testament
           </h2>
           <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-sans text-[0.9rem]">
             {TESTAMENT_GROUPS.map(group => (

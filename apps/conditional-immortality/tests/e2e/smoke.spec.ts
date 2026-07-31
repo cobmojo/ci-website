@@ -89,19 +89,22 @@ test('the quick-search dialog opens, answers, and closes on Escape', async ({ pa
   await expect(dialog.getByRole('listitem').first()).toBeVisible()
 
   /*
-   * Two presses, and the first is the platform's. Escape inside a non-empty
-   * `<input type="search">` clears the field and consumes the event, which the
-   * dialog neither adds nor fights. Written as a conditional second press
-   * because this is a place engines genuinely differ, and either behaviour is
-   * acceptable so long as Escape ends with the dialog closed.
+   * One press, and it closes — in every engine this project runs.
+   *
+   * This used to allow two presses, on the reasoning that Escape inside a
+   * non-empty `<input type="search">` clears the field first and the dialog
+   * should not fight the platform. That decision was reversed: losing the
+   * query *and* keeping the panel open costs the reader two things at once,
+   * and only when they have something to lose. Escape dismissing a modal is
+   * what the ARIA authoring practices describe.
+   *
+   * Asserted on the dialog rather than on a conditional read of its
+   * visibility: the panel stays painted through its 150ms exit, so
+   * `isVisible()` immediately after the press answers "yes" to a dialog that
+   * is already closing, and the branch it used to take then waited fifteen
+   * seconds for a field that was being removed.
    */
   await page.keyboard.press('Escape')
-  if (await dialog.isVisible()) {
-    // The field was cleared rather than the dialog closed, which is the
-    // documented behaviour in Chromium. The second press reaches the dialog.
-    await expect(field).toHaveValue('')
-    await page.keyboard.press('Escape')
-  }
   await expect(dialog).toBeHidden()
   await expect(trigger).toBeFocused()
 })
@@ -178,8 +181,14 @@ test('the video is only fetched once a reader activates it', async ({ page }) =>
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   expect(youtube, 'YouTube was contacted before activation').toEqual([])
 
+  /*
+   * A link, not a button. The poster is a single element: before hydration it
+   * is an ordinary link to YouTube, and once scripting has run it intercepts
+   * the click and swaps in the player. A locator that asks for a button here
+   * matched nothing and spent the whole test timeout finding that out.
+   */
   await page
-    .getByRole('button', { name: /watch|play/i })
+    .getByRole('link', { name: /press play to load it from youtube/i })
     .first()
     .click()
   await expect(page.locator('iframe')).toBeVisible()

@@ -260,10 +260,9 @@ export default function MethodPage() {
                 </li>
               </ol>
               <p className="m-0">
-                Two claims in the source document were narrowed under this rule and one was
-                withdrawn entirely. Those decisions are in the{' '}
-                <Link href="/changelog/">changelog</Link>, each with the original claim, the
-                problem, and what replaced it.
+                One claim in the source document was narrowed under this rule and two were withdrawn
+                entirely. Those decisions are in the <Link href="/changelog/">changelog</Link>, each
+                with the original claim, the problem, and what replaced it.
               </p>
             </section>
 

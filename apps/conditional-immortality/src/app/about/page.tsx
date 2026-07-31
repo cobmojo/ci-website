@@ -105,10 +105,10 @@ export default function AboutPage() {
                 What this site is for
               </h2>
               <p className="m-0 mb-3">
-                The document was a fifty-two page file passed between people, with no way to check a
-                citation, no record of what had been changed, and no way for a reader to send back a
-                correction that anyone else would ever see. This site exists to fix those four
-                problems.
+                The document was a fifty-two page file passed between people, with no way to find a
+                single argument inside it, no way to check a citation, no record of what had been
+                changed, and no way for a reader to send back a correction that anyone else would
+                ever see. This site exists to fix those four problems.
               </p>
               <ul className="m-0 mb-3 list-disc space-y-2 pl-6">
                 <li>

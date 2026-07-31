@@ -260,7 +260,10 @@ test.describe('reading', () => {
 
   test('the video facade hands over to the player', async ({ page }) => {
     await arriveSettled(page, '/watch/')
-    const play = page.getByRole('button', { name: /press play to load it from youtube/i }).first()
+    // A link, not a button: the poster is one element that works before
+    // hydration as an ordinary link to YouTube and takes over the click once
+    // scripting has run, rather than two elements swapped at hydration.
+    const play = page.getByRole('link', { name: /press play to load it from youtube/i }).first()
     await expect(play).toBeVisible()
     await play.click()
     await expect(page.locator('iframe')).toBeVisible()

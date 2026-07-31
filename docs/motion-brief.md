@@ -71,6 +71,16 @@ Never on a prose link — a word that shrinks inside a sentence is grotesque —
 and never on a card. A 300px card scaling by three per cent reads as a glitch,
 so cards get Tier 1 only.
 
+One surface extends this tier with a hover growth as well as a press: the
+video poster, the largest interactive target on the site, grows its play
+glyph to 1.04 on hover at the Tier 1 duration and presses it to 0.97 at the
+Tier 2 duration and curve. The glyph moves and the poster does not, because
+scaling a 16:9 panel would drag its border across the page and shift
+everything below it. Both halves sit inside `no-preference`, and the hover
+half is additionally gated on `(hover: hover) and (pointer: fine)` so a touch
+reader never gets a stuck hover state. No other element takes a hover
+transform.
+
 ### Tier 3 — Overlay and disclosure · 150–200ms · `--ease-out-quad`
 
 Enter and exit for things that appear over or inside the page:
@@ -85,6 +95,13 @@ Enter and exit for things that appear over or inside the page:
 - **Post-hydration UI.** Controls that cannot exist until scripting has run —
   the reading progress panel, the two index filters, the print button — fade in
   over 180ms instead of popping.
+- **The skip link.** It travels in from above the viewport on focus, at the
+  quicker of the two Tier 3 durations. Its movement *is* its affordance: a
+  reader watching it arrive understands where it came from and that it will go
+  back. It takes the shorter token deliberately, against the usual rule that
+  entrances are slower, because it is the first control a keyboard reader
+  meets and an arrival they have to wait for is an arrival in the way.
+  `translate` rather than `top`, so it is composited rather than relaid out.
 
 Exits are faster than entrances throughout, and every duration is under 300ms.
 

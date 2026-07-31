@@ -1,4 +1,8 @@
-import { type FeedbackFieldError, FeedbackSubmissionInputSchema } from '@ci/content-schema'
+import {
+  type FeedbackFieldError,
+  FeedbackSubmissionInputSchema,
+  SUBMISSION_STATUS_ID,
+} from '@ci/content-schema'
 import { clientAddress, rateLimit } from '../rate-limit'
 import type { FeedbackConfig } from './config'
 import type { FeedbackStore, StoredSubmission } from './store'
@@ -43,11 +47,72 @@ export const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
  */
 export const MAX_BODY_BYTES = 64 * 1024
 
-/** Where a form-encoded submission is sent back to. */
-export const SUCCESS_FRAGMENT = 'submission-received'
-export const FAILURE_FRAGMENT = 'submission-not-recorded'
-const SUCCESS_REDIRECT = `/corrections/#${SUCCESS_FRAGMENT}`
-const FAILURE_REDIRECT = `/corrections/#${FAILURE_FRAGMENT}`
+type RawBody = Record<string, unknown>
+
+/**
+ * Where a form-encoded submission is sent back to.
+ *
+ * Three things have to be right about this URL, and each was wrong once.
+ *
+ * The `submitted` value distinguishes a schema rejection from a submission the
+ * server could not store. Telling a reader whose wording was fine to check
+ * their wording sends them back into a failure that will repeat identically,
+ * and spends their rate-limit allowance doing it. The JSON path always drew
+ * this distinction; the redirect now does too.
+ *
+ * The fragment matters as much. Without it the browser lands at the top and
+ * the answer renders where it sits in the document — measured at y=2090 on an
+ * 812px viewport — so the reader sees an untouched page and the whole point of
+ * the redirect is lost.
+ *
+ * And a failure has to carry back the context the reader arrived with. Without
+ * it the retry is sent from a form that has silently dropped the section, the
+ * heading and the feedback type, so a correction to S04 arrives labelled a
+ * factual correction with no page attached — the exact harm this route was
+ * changed to fix, reappearing on the path where a reader is *told* to try
+ * again.
+ */
+export const STATUS_FRAGMENT = `#${SUBMISSION_STATUS_ID}`
+export const SUCCESS_REDIRECT = `/corrections/?submitted=1${STATUS_FRAGMENT}`
+
+/**
+ * Echoed values are bounded by what the schema would accept.
+ *
+ * A section id longer than 16 characters is one the schema will reject again,
+ * so carrying it back only guarantees a repeat; at around 16kB it also produces
+ * a `location` header no client will parse. The reader's *text* is never echoed
+ * — a correction is often the most considered thing somebody will write all
+ * week, and a query string puts it in browser history, in any proxy log on the
+ * way, and in the address bar of a shared screen.
+ */
+const ECHO_LIMITS = { sectionId: 16, headingId: 128, type: 64 } as const
+
+const ECHOED_FIELDS = [
+  ['sectionId', 'section'],
+  ['headingId', 'heading'],
+  ['type', 'type'],
+] as const
+
+function echoedContext(body: RawBody): URLSearchParams {
+  const params = new URLSearchParams()
+  for (const [field, key] of ECHOED_FIELDS) {
+    const value = asString(body[field])?.trim()
+    if (value && value.length <= ECHO_LIMITS[field]) params.set(key, value)
+  }
+  return params
+}
+
+export function failureRedirect(outcome: '0' | 'error', body: RawBody): string {
+  const params = echoedContext(body)
+  params.set('submitted', outcome)
+  return `/corrections/?${params.toString()}${STATUS_FRAGMENT}`
+}
+
+/** The same context, for the one failure that answers with a page of its own. */
+function correctionsHref(body: RawBody): string {
+  const query = echoedContext(body).toString()
+  return `/corrections/${query ? `?${query}` : ''}#form`
+}
 
 /** The honeypot control rendered off screen by the form. */
 const HONEYPOT_FIELD = 'website'
@@ -78,8 +143,6 @@ export interface FeedbackDeps {
    */
   readonly canonicalOrigin?: string
 }
-
-type RawBody = Record<string, unknown>
 
 interface ParsedRequest {
   readonly body: RawBody
@@ -238,7 +301,15 @@ function candidateFrom(body: RawBody): Record<string, unknown> {
   return candidate
 }
 
-function rateLimitedResponse(wantsJson: boolean, retryAfterSeconds: number): Response {
+function escapeAttribute(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+}
+
+function rateLimitedResponse(
+  wantsJson: boolean,
+  retryAfterSeconds: number,
+  body: RawBody,
+): Response {
   const headers = { 'retry-after': String(retryAfterSeconds) }
   if (wantsJson) {
     return json(
@@ -263,7 +334,10 @@ function rateLimitedResponse(wantsJson: boolean, retryAfterSeconds: number): Res
       `<h1>Too many submissions</h1>` +
       `<p>This connection has reached the submission limit. Please try again in about ${minutes} ` +
       `${minutes === 1 ? 'minute' : 'minutes'}. Nothing you sent was recorded.</p>` +
-      `<p><a href="/corrections/">Return to the corrections page</a></p>` +
+      // The reader is told to try again, so the way back has to be the form
+      // they came from. A bare `/corrections/` sent the retry with no page
+      // attached and relabelled, on the path that most explicitly invites one.
+      `<p><a href="${escapeAttribute(correctionsHref(body))}">Return to the corrections page</a></p>` +
       `</body></html>`,
     { status: 429, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } },
   )
@@ -287,7 +361,10 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
     contentType.includes('application/x-www-form-urlencoded') ||
     contentType.includes('multipart/form-data')
   const refuse = (error: string, status: number, extra: Record<string, unknown> = {}) =>
-    isBrowserFormPost ? redirect(FAILURE_REDIRECT) : json({ ok: false, error, ...extra }, status)
+    isBrowserFormPost
+      ? // Nothing has been parsed yet, so there is no context to carry back.
+        redirect(failureRedirect('0', {}))
+      : json({ ok: false, error, ...extra }, status)
 
   if (!isSameSiteRequest(request, deps.canonicalOrigin)) return refuse('cross-site', 403)
 
@@ -312,7 +389,7 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
     `feedback:${clientAddress(request.headers, deps.config.trustedProxyHops)}`,
     { limit: RATE_LIMIT, windowMs: RATE_LIMIT_WINDOW_MS },
   )
-  if (!limit.allowed) return rateLimitedResponse(wantsJson, limit.retryAfterSeconds)
+  if (!limit.allowed) return rateLimitedResponse(wantsJson, limit.retryAfterSeconds, body)
 
   /**
    * Honeypot. A filled field means an automated client, so the response is
@@ -327,7 +404,7 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
   const result = FeedbackSubmissionInputSchema.safeParse(candidateFrom(body))
 
   if (!result.success) {
-    if (!wantsJson) return redirect(FAILURE_REDIRECT)
+    if (!wantsJson) return redirect(failureRedirect('0', body))
     // Field paths and schema messages only. No submitted value is echoed back.
     const fieldErrors: FeedbackFieldError[] = result.error.issues.map(issue => ({
       field: issue.path.join('.') || 'form',
@@ -358,7 +435,7 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
           },
           503,
         )
-      : redirect(FAILURE_REDIRECT)
+      : redirect(failureRedirect('error', body))
   }
 
   const value = result.data
@@ -385,7 +462,7 @@ export async function handleFeedback(request: Request, deps: FeedbackDeps): Prom
     // the payload in some runtimes, and the submission id is enough to
     // correlate.
     deps.log('error', `[feedback] could not persist submission ${submission.id}`)
-    if (!wantsJson) return redirect(FAILURE_REDIRECT)
+    if (!wantsJson) return redirect(failureRedirect('error', body))
     return json({ ok: false, error: 'not-recorded' }, 500)
   }
 

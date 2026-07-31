@@ -386,24 +386,35 @@ describe('animation craft', () => {
 
 describe('print', () => {
   it('leaves no animation able to hide content on paper', () => {
-    // No rule anywhere may collapse or clip `::details-content`. A rule that
-    // makes it *visible* is the opposite and is required below, so the ban is
-    // on the values that hide rather than on naming the pseudo-element at all.
+    // This guard forbade every `::details-content` rule, on the premise that
+    // nothing collapses the pseudo-element so nothing needs to un-collapse it.
+    // The premise was false, and the printed page proved it: the browser's own
+    // stylesheet puts `content-visibility: hidden` there on a closed
+    // disclosure, `display: revert` on the children cannot reach a
+    // pseudo-element, and every collapsed disclosure printed as its summary and
+    // nothing else. So the rule is now what the test's name always meant —
+    // nothing may collapse it, and print must actively un-collapse it.
     const live = withoutComments(css)
-    for (const rule of live.matchAll(/::details-content\s*\{([^}]*)\}/g)) {
-      const body = rule[1] as string
-      expect(body, 'a disclosure body may not be given a fixed size').not.toMatch(/block-size/)
-      expect(body, 'a disclosure body may not be clipped').not.toMatch(/overflow\s*:\s*hidden/)
-      const visibility = body.match(/content-visibility\s*:\s*([a-z-]+)/)
-      if (visibility) expect(visibility[1]).toBe('visible')
-    }
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*block-size/)
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*content-visibility:\s*hidden/)
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*overflow:\s*hidden/)
+
+    const print = live.slice(live.indexOf('@media print'))
+    expect(print).toMatch(
+      /details::details-content\s*\{\s*content-visibility:\s*visible\s*!important/,
+    )
   })
 
   it('keeps disclosures open on paper', () => {
     // Index into the stripped string, not the original: comments shift offsets.
     const live = withoutComments(css)
     const print = live.slice(live.indexOf('@media print'))
-    expect(print).toMatch(/details\s*\{\s*display:\s*block\s*!important/)
+    // Pinned to the exact selector. `details[^{]*` would also accept
+    // `details[open]`, which forces open only what is already open — the
+    // regression this line exists to catch.
+    expect(print).toMatch(
+      /details:not\(\[class~="print:hidden"\]\)\s*\{\s*display:\s*block\s*!important/,
+    )
     expect(print).toMatch(/display:\s*revert\s*!important/)
   })
 

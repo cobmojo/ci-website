@@ -5,12 +5,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { resetRateLimit } from '../../rate-limit'
 import { resolveFeedbackConfig } from '../config'
 import {
-  FAILURE_FRAGMENT,
   type FeedbackDeps,
+  failureRedirect,
   handleFeedback,
   MAX_BODY_BYTES,
   RATE_LIMIT,
-  SUCCESS_FRAGMENT,
+  STATUS_FRAGMENT,
+  SUCCESS_REDIRECT,
 } from '../handler'
 import { createFeedbackStore, type FeedbackStore, type StoredSubmission } from '../store'
 
@@ -98,7 +99,7 @@ describe('a valid submission', () => {
   it('answers a scripting-free submission with a 303 to a receipt the page can render', async () => {
     const response = await handleFeedback(formRequest(VALID), deps())
     expect(response.status).toBe(303)
-    expect(response.headers.get('location')).toBe(`/corrections/#${SUCCESS_FRAGMENT}`)
+    expect(response.headers.get('location')).toBe(SUCCESS_REDIRECT)
     expect(store.records?.()).toHaveLength(1)
   })
 
@@ -221,7 +222,7 @@ describe('what the endpoint refuses', () => {
     for (const [label, request] of cases) {
       const response = await handleFeedback(request, deps())
       expect(response.status, label).toBe(303)
-      expect(response.headers.get('location'), label).toBe(`/corrections/#${FAILURE_FRAGMENT}`)
+      expect(response.headers.get('location'), label).toBe(failureRedirect('0', {}))
       expect(await response.text(), label).toBe('')
     }
   })
@@ -303,9 +304,20 @@ describe('validation is the server’s job', () => {
   })
 
   it('sends a scripting-free reader to a failure receipt rather than a bare status', async () => {
-    const response = await handleFeedback(formRequest({ ...VALID, message: 'no' }), deps())
+    const rejected = { ...VALID, message: 'no' }
+    const response = await handleFeedback(formRequest(rejected), deps())
     expect(response.status).toBe(303)
-    expect(response.headers.get('location')).toBe(`/corrections/#${FAILURE_FRAGMENT}`)
+    expect(response.headers.get('location')).toBe(failureRedirect('0', rejected))
+    /*
+     * `0`, not `error`: the wording was at fault, so the page has to say so
+     * rather than blame the server. And the section, heading and kind come
+     * back with it — a reader told to try again must not be sent to a form
+     * that has silently dropped what they were correcting.
+     */
+    const location = new URL(response.headers.get('location') as string, 'https://example.org')
+    expect(location.searchParams.get('submitted')).toBe('0')
+    expect(location.searchParams.get('type')).toBe(VALID.type)
+    expect(location.hash).toBe(STATUS_FRAGMENT)
   })
 })
 
@@ -345,7 +357,7 @@ describe('the honeypot', () => {
 
   it('is answered with the success redirect for a form post', async () => {
     const response = await handleFeedback(formRequest({ ...VALID, website: 'spam' }), deps())
-    expect(response.headers.get('location')).toBe(`/corrections/#${SUCCESS_FRAGMENT}`)
+    expect(response.headers.get('location')).toBe(SUCCESS_REDIRECT)
     expect(store.records?.()).toHaveLength(0)
   })
 })
@@ -424,12 +436,15 @@ describe('when the store cannot be trusted', () => {
     expect((await response.json()).message).toMatch(/nothing you sent was stored/i)
   })
 
-  it('sends a scripting-free reader to the failure receipt', async () => {
+  it('sends a scripting-free reader to the failure receipt, and blames the site', async () => {
     const response = await handleFeedback(
       formRequest(VALID),
       deps({ config: unusable, store: null }),
     )
-    expect(response.headers.get('location')).toBe(`/corrections/#${FAILURE_FRAGMENT}`)
+    // `error`, not `0`. Nothing was wrong with what the reader wrote, and
+    // telling them to check their wording would send them into a failure that
+    // repeats identically.
+    expect(response.headers.get('location')).toBe(failureRedirect('error', VALID))
   })
 })
 
@@ -532,13 +547,38 @@ describe('the receipts the redirects point at exist on the page', () => {
    */
   const page = readFileSync(path.resolve(__dirname, '../../../app/corrections/page.tsx'), 'utf8')
 
-  for (const fragment of [SUCCESS_FRAGMENT, FAILURE_FRAGMENT]) {
-    it(`/corrections/ renders an element with id="${fragment}"`, () => {
-      expect(page).toContain(`id="${fragment}"`)
-    })
-  }
+  const form = readFileSync(
+    path.resolve(__dirname, '../../../components/feedback/feedback-form.tsx'),
+    'utf8',
+  )
 
-  it('and the two are not the same element', () => {
-    expect(SUCCESS_FRAGMENT).not.toBe(FAILURE_FRAGMENT)
+  it('the corrections page reads the outcome the redirect carries', () => {
+    expect(page).toMatch(/submitted=\{one\(params\.submitted\)\}/)
+  })
+
+  it('and passes back the context a failed submission returns with', () => {
+    for (const key of ['section', 'heading', 'type']) {
+      expect(page, `${key} is not read back off the query string`).toContain(`params.${key}`)
+    }
+  })
+
+  it('and the form renders an element carrying the id every redirect ends at', () => {
+    /*
+     * The two halves of the no-scripting answer live in different files: this
+     * endpoint redirects to a fragment, and the form renders the element with
+     * that id. Nothing connected them, so renaming either left a redirect
+     * pointing at nothing and every test still green — the reader would land
+     * on the corrections page with no receipt at all, which is the exact
+     * behaviour the redirect exists for.
+     *
+     * The id is deliberately not `useId()`-derived, because the server has to
+     * be able to write it into a URL. That is asserted here rather than
+     * assumed: a change to a generated id would break the fragment silently.
+     */
+    expect(form, 'the status region no longer takes its id from the shared constant').toMatch(
+      /status:\s*SUBMISSION_STATUS_ID/,
+    )
+    expect(form, 'the status id is not applied to any element').toMatch(/id=\{ids\.status\}/)
+    expect(STATUS_FRAGMENT).toBe('#submission-status')
   })
 })

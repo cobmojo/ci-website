@@ -232,7 +232,9 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Link</dt>
                         <dd className="m-0 break-words text-ink">
-                          <NewTabLink href={source.url}>{source.url}</NewTabLink>
+                          <NewTabLink href={source.url} showsUrl>
+                            {source.url}
+                          </NewTabLink>
                         </dd>
                       </div>
                     ) : null}
@@ -240,7 +242,9 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Archived copy</dt>
                         <dd className="m-0 break-words text-ink">
-                          <NewTabLink href={source.archiveUrl}>{source.archiveUrl}</NewTabLink>
+                          <NewTabLink href={source.archiveUrl} showsUrl>
+                            {source.archiveUrl}
+                          </NewTabLink>
                         </dd>
                       </div>
                     ) : null}
@@ -248,7 +252,7 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Link as given in the original document</dt>
                         <dd className="m-0 break-words text-ink">
-                          <NewTabLink href={source.sourceDocumentUrl}>
+                          <NewTabLink href={source.sourceDocumentUrl} showsUrl>
                             {source.sourceDocumentUrl}
                           </NewTabLink>
                         </dd>

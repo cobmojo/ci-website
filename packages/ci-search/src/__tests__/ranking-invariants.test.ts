@@ -14,6 +14,36 @@ import baseline from './ranking-baseline.json'
  * score to six decimal places, matched fields in their rendered order, and the
  * matched-term set. If a change moves any of it, this fails and the change is
  * wrong, not the file.
+ *
+ * One exception, and only one: the snapshot is taken against real content, so
+ * correcting what is *indexed* legitimately moves it. A ranker change is still
+ * wrong. Regenerate only when the content going in was wrong, and only with
+ * the diff inspected and explained. That has happened twice.
+ *
+ * The first was the hand-authored `headings` on the page, topic and passage
+ * documents, which named sections their pages do not render — search was
+ * reporting "matched in heading" against text that was not there, and quoting
+ * it back as the excerpt.
+ *
+ * The second was the transcript summaries, which read "from 1 minutes 26
+ * seconds". "Seconds" stems to "second", so every chapter of the video matched
+ * the query "second death" — a central term of the case — on its timestamp.
+ * Writing the timestamp as `1:26` dropped 18 chapters that never mention death
+ * from that query's 114 results.
+ *
+ * The third was the same correction's collateral damage. Four of the labels
+ * removed from `/start/compare-the-views/` were not phantom headings at all:
+ * they are the row headers of its comparison table, real text on the page,
+ * and deleting them from `headings` without putting them in `body` dropped the
+ * one orientation page about immortality, resurrection, judgment and
+ * punishment from the first page of results for "resurrection" and "ect" to
+ * fifteenth. Restoring them to the body brings it back, which is the whole of
+ * that diff.
+ *
+ * Across all three, 27 of the 30 pinned queries are byte-identical to what
+ * `main` recorded. "second death" fell from 114 to 97 as the video timestamps
+ * stopped matching it, "resurrection" swapped a glossary entry for the
+ * comparison page, and "traditional view" moved by score alone.
  */
 
 const index = buildSearchIndex()

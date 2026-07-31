@@ -476,6 +476,35 @@
   }
 
   /*
+   * A modal must not leave the page behind it operable. `showModal()` makes
+   * the background inert to activation but does nothing about scrolling, so a
+   * wheel or trackpad gesture over the backdrop scrolled the document behind
+   * the panel: eight hundred pixels, at every width, on both overlays. Closing
+   * then returned the reader to a place they never chose, and at high zoom,
+   * where the sheet fills the viewport, there was no way to tell it had
+   * happened.
+   *
+   * Stated once, against any open dialog, so a third overlay cannot forget it.
+   * `scrollbar-gutter` is the other half: without it, taking the scrollbar
+   * away would shift the whole page sideways as the dialog opened, and this
+   * layout does not move.
+   */
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  /*
+   * Screen only. The print block hides dialogs with `display: none` but does
+   * not clear their `open` attribute, so `:has()` would still match and lock
+   * the printed document if a reader printed with an overlay open.
+   */
+  @media screen {
+    html:has(dialog[open]) {
+      overflow: hidden;
+    }
+  }
+
+  /*
    * Tier 3. Anything that appears in place: the correction form's status
    * messages, and the controls that cannot exist until scripting has run.
    *
@@ -921,17 +950,23 @@
     }
 
     .video-play:active .video-play__glyph {
-      /* Tier 2 presses share one clock and one curve. The hover growth above
-         keeps the Tier 1 feedback timing; the press itself takes the press
-         token and the press curve, exactly as `.pressable` does. */
+      /* The press itself takes the press token and the press curve. Unlike
+         `.pressable`, which states them on its base rule and so shares them in
+         both directions, these sit on `:active`, so the release returns on the
+         hover clock the glyph rests with. Deliberate: the growth on hover is
+         Tier 1 feedback and keeps its own timing. */
       transition-duration: var(--motion-press);
       transition-timing-function: var(--ease-out-quad);
       scale: 0.97;
     }
 
-    /* The skip link's travel is its affordance. Under `reduce` it simply
-       appears where it belongs, instantly, which is the correct still variant
-       of an element whose entire animation is movement. */
+    /* Tier 3, at the quicker of its two durations. The skip link's travel is
+       its affordance: a reader watching it arrive understands it came from
+       above the page and will go back there. It takes the shorter token
+       deliberately, because it is the first control a keyboard reader meets
+       and an arrival they have to wait for is an arrival in the way. Under
+       `reduce` it simply appears where it belongs, instantly, which is the
+       correct still variant of an element whose entire animation is movement. */
     .skip-link {
       transition-property: translate;
       transition-duration: var(--motion-overlay-exit);
@@ -964,7 +999,6 @@
     line-height: 1.45;
   }
 
-  .print-hidden,
   .site-header,
   .site-footer nav,
   .chapter-navigation,
@@ -974,6 +1008,15 @@
   .search-trigger,
   .video-embed,
   dialog,
+  /*
+   * A form on paper is a page and a half of empty boxes and a button that
+   * cannot be pressed. The correction form printed exactly that — a select, a
+   * textarea, three text fields, three radios and "Send submission" — under an
+   * accessibility statement promising that interactive controls are removed
+   * from the printed copy. The prose around it, which says what corrections
+   * are for and how they are published, stays.
+   */
+  form,
   [data-print="hide"] {
     display: none !important;
   }
@@ -992,22 +1035,12 @@
    * Surface destinations for external links only; internal anchors would
    * produce noise on every cross-reference.
    *
-   * Scoped to `main` rather than to `.prose-article`. It was the latter, and
-   * measured across all 118 routes that selector matched exactly nothing: the
-   * site's 278 external links live in citation lists, source records, related
-   * reading and the transcript, none of which is inside the MDX body. So the
-   * accessibility statement's promise that "external link destinations are
-   * printed after the link text" was true of no page at all.
-   *
-   * `[href^="http"]` is most of the filter it needs: every internal link on this
-   * site is rendered as a root-relative path, so an absolute one is external by
-   * construction. The exception is a link whose visible text is already the URL
-   * — the whole source library, and the video's direct link — which would
-   * otherwise print the same address twice, `break-all` wrapped, on the two
-   * pages most likely to be printed. `NewTabLink` marks those.
-   * `tests/e2e/print.spec.ts` holds both halves to a rendered page.
+   * Scoped to `main` rather than to `.prose-article`: the sources-cited list
+   * on every section, passage and topic page sits outside the article body,
+   * and its "View original" links printed as bare words with no destination,
+   * which is the one thing a printed citation cannot afford.
    */
-  main a[href^="http"]:not(.self-labelled)::after {
+  main a[href^="http"]:not([data-print-url="shown"])::after {
     content: " (" attr(href) ")";
     font-size: 0.82em;
     word-break: break-all;
@@ -1016,7 +1049,11 @@
   h1,
   h2,
   h3,
-  h4 {
+  h4,
+  /* A `dt` is a heading for the list beneath it. Two pages of the glossary
+     carried the tail of an occurrence list with its label left behind on the
+     page before. */
+  dt {
     color: #000 !important;
     break-after: avoid-page;
     page-break-after: avoid;
@@ -1035,7 +1072,22 @@
     page-break-before: always;
   }
 
-  details {
+  /* A scrolling region cannot scroll on paper. Let the table find its own
+     width and wrap inside the printed column instead of being clipped at the
+     edge with nothing to show that anything was lost. */
+  .table-scroll {
+    overflow-x: visible !important;
+  }
+
+  .table-scroll :is(th, td) {
+    min-width: 0 !important;
+  }
+
+  /* Disclosures are forced open on paper so nothing hides inside a collapsed
+     one. The `:not` keeps that from resurrecting a disclosure the page asked
+     to leave out of print entirely, whose `print:hidden` would otherwise lose
+     to this `!important`. */
+  details:not([class~="print:hidden"]) {
     display: block !important;
   }
 
@@ -1050,17 +1102,17 @@
   }
 
   /*
-   * `::details-content` is what actually hides a closed disclosure, and it is
-   * a user-agent pseudo-element, so `display: revert` on the children above
-   * cannot reach it. Without this rule a closed `<details>` prints as its
-   * summary and nothing else — measured under print emulation in Chromium,
-   * Firefox and WebKit, all three of which reported a collapsed box and no
-   * body text on paper.
+   * The pseudo-element the rule above cannot reach.
    *
-   * That was the opposite of what `/accessibility/`, the disclosure component
-   * and the comment previously in this place all said, and nothing tested it:
-   * the motion-contract test asserts that these CSS rules exist, which is a
-   * different claim from the content being on the page.
+   * This block used to assert that nothing collapses `::details-content`, and
+   * to describe precisely what would happen if something did. Something does:
+   * the browser's own stylesheet gives a closed disclosure
+   * `content-visibility: hidden` there, and `display: revert` on the children
+   * cannot touch a pseudo-element. So every collapsed disclosure printed as its
+   * summary and nothing else — measured, a `<details>` 49px tall on paper whose
+   * content is 3,902px and four tables — while `/accessibility/` told the
+   * reader that "disclosures are opened so that nothing is lost inside a
+   * collapsed section".
    */
   details::details-content {
     content-visibility: visible !important;

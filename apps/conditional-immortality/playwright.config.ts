@@ -84,8 +84,24 @@ const SEO_SPEC = /seo\.spec\.ts$/
  * once is two workers competing for the thread whose latency is under test.
  */
 const INTERACTION_SPEC = /interaction\.spec\.ts$/
+/**
+ * Print, in every engine.
+ *
+ * The one guarantee where the engines genuinely disagree: Firefox declines
+ * `content-visibility` on `::details-content`, so the rule that opens
+ * collapsed disclosures on paper does nothing there. A Chromium-only run reads
+ * green while a Firefox reader prints two pages of empty boxes.
+ */
+const PRINT_SPEC = /print\.spec\.ts$/
 /** Everything that is neither focused nor origin-agnostic. */
-const FOCUSED_SPECS = [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC, VISUAL_SPEC, INTERACTION_SPEC]
+const FOCUSED_SPECS = [
+  A11Y_SPEC,
+  GEOMETRY_SPEC,
+  SETUP_SPEC,
+  VISUAL_SPEC,
+  INTERACTION_SPEC,
+  PRINT_SPEC,
+]
 
 /**
  * Every project depends on this one, so no suite can report a result about a
@@ -237,6 +253,28 @@ export default defineConfig({
          */
         contextOptions: { reducedMotion: 'reduce' },
       },
+    },
+    /*
+     * Print, in the three engines, because this is the one guarantee they
+     * disagree about. See `PRINT_SPEC` above.
+     */
+    {
+      name: 'print-chromium',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'print-firefox',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'print-webkit',
+      dependencies: [...SERVED_BUILD_GUARD],
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
     },
     /*
      * Interaction latency: the thing a navigation-only Lighthouse audit cannot

@@ -100,6 +100,65 @@ test('a visitor can determine the site does not teach painless or instant annihi
  * 3, 7 and 8. Finding things
  * ------------------------------------------------------------------ */
 
+test('a search index that fails to load says so, in words and to assistive technology', async ({
+  page,
+}) => {
+  // The index is the one fetch the dialog cannot do without. When it fails the
+  // reader must be told, rather than left with an empty pane, and the telling
+  // has to reach a screen reader: the live region is the only channel that
+  // does not require moving focus.
+  await page.route('**/search-index.json', route => route.abort())
+
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Search', exact: true }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await expect(dialog).toBeVisible()
+
+  // One channel, both ways: the failure is written into a region already in
+  // the accessibility tree, so the same words are announced and readable.
+  const status = dialog.locator('[aria-live="polite"]', { hasText: /could not load/i })
+  await expect(status).toBeVisible()
+
+  // The recovery link inside that message is a real, reachable link: it must
+  // be in the accessibility tree, not hidden inside an aria-hidden twin, and
+  // Playwright's role engine ignores aria-hidden subtrees, so finding it here
+  // is the assertion.
+  const recovery = status.getByRole('link', { name: /full search page/i })
+  await expect(recovery).toHaveCount(1)
+
+  // It is also a genuine tab stop, in order, rather than a silent one.
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).focus()
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Tab')
+  await expect(recovery).toBeFocused()
+
+  await recovery.click()
+  await expect(page).toHaveURL(/\/search\//)
+})
+
+test('a modified click on a quick-search result leaves the dialog standing', async ({ page }) => {
+  // Cmd/Ctrl-clicking a result opens it in a background tab and leaves this
+  // one where it was, so the dialog, the query and the result list have to
+  // survive: tearing them down would lose the reader's place in exchange for
+  // a navigation they did not ask this tab to make.
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Search', exact: true }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('gehenna')
+
+  // Scoped to the result list. An unscoped query resolves to the footer link
+  // until the index arrives, and that link shares this handler, so the test
+  // would pass green while never touching the row wiring it is named for.
+  const firstResult = dialog.locator('.quick-search-results').getByRole('link').first()
+  await expect(firstResult).toBeVisible()
+  await firstResult.click({ modifiers: ['ControlOrMeta'] })
+
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('searchbox', { name: 'Search terms' })).toHaveValue('gehenna')
+})
+
 test('a visitor can find Revelation 14:11 through search', async ({ page }) => {
   await page.goto('/')
 
@@ -195,26 +254,19 @@ test('a visitor can locate the source behind an early church claim', async ({ pa
   await page.goto('/case/roadblocks/tradition/')
 
   const citation = page
-    .getByRole('link', { name: /^Lyons, Book II, chapter 34, section 3\./ })
+    .getByRole('link', { name: /^Irenaeus, Book II, chapter 34, section 3\./ })
     .first()
   await expect(citation).toBeVisible()
-  /*
-   * The accessible name leads with the *visible* marker and only then gives the
-   * full citation. That order is WCAG 2.2 SC 2.5.3 Label in Name: someone
-   * saying "click Lyons, Book Two" must be saying something their speech
-   * software can match against the control's name. It used to open "Source:
-   * Irenaeus of Lyons. Against Heresies…", interleaving the work and the year
-   * between the two halves of the visible marker. Anchoring the assertion,
-   * rather than merely asserting containment, is what stops the order
-   * silently reverting.
-   */
-  await expect(citation).toHaveAccessibleName(
-    /^Lyons, Book II, chapter 34, section 3\. Source: Irenaeus of Lyons\. Against Heresies/,
-  )
-  // Once, not twice: `formatCitation` appends the record's own locator, so
-  // repeating the marker's locator in the tail said it two or three times.
-  const spoken = (await citation.getAttribute('aria-label')) ?? ''
-  expect(spoken.match(/Book II, chapter 34, section 3/g) ?? []).toHaveLength(1)
+
+  // WCAG 2.5.3: the accessible name has to open with the text the link shows,
+  // or speech input cannot address the link by what the reader can see. Taken
+  // from the rendered text rather than repeated here, so the two cannot drift.
+  const visible = (await citation.innerText()).replace(/^\[|\]$/g, '')
+  const literal = visible.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  await expect(citation).toHaveAccessibleName(new RegExp(`^${literal}\\.`))
+  // The full citation follows it, so a reader knows the work and where to look
+  // before they follow the link.
+  await expect(citation).toHaveAccessibleName(/Source: Irenaeus of Lyons\. Against Heresies/)
 
   await citation.click()
   await expect(page).toHaveURL(/\/sources\/#irenaeus-against-heresies$/)
@@ -273,7 +325,10 @@ test('nothing is requested from YouTube until the reader presses play', async ({
   expect(contacted).toEqual([])
   await expect(page.locator('iframe')).toHaveCount(0)
 
-  const play = page.getByRole('button', { name: /press play to load it from youtube/i })
+  // A link throughout, not a button: without scripting it opens the video, and
+  // with scripting the same element loads the player in place. Swapping the
+  // element at hydration would drop the focus of anyone already on it.
+  const play = page.getByRole('link', { name: /press play to load it from youtube/i })
   await expect(play).toBeVisible()
   // Label in name: the poster shows the video's title, so the accessible name
   // must carry it too, or a speech-input user reading the title aloud cannot
@@ -374,18 +429,16 @@ test('a visitor can submit a correction for S04', async ({ page }, testInfo) => 
 
   await form.getByRole('button', { name: 'Send submission' }).click()
 
-  /*
-   * Scoped to the live region on purpose. The page carries a second, identical
-   * receipt in `#submission-received`: the no-JavaScript fallback, revealed by
-   * `:target` when the native form post redirects to it. Both are real and both
-   * say "Received.", so an unscoped match finds two elements and resolves to
-   * the hidden one. This asserts the scripted path, which is the one the click
-   * above took.
-   */
-  const status = page.locator('[aria-live="polite"]').filter({ hasText: 'Received.' })
-  await expect(status.getByText(/Received\./)).toBeVisible()
-  await expect(status).toContainText('Your submission has been recorded')
-  await expect(status.getByRole('link', { name: 'changelog' })).toBeVisible()
+  const receipt = page.getByText(/Received\./)
+  await expect(receipt).toBeVisible()
+  // Being in the document is not the same as being seen. The status region sits
+  // above the form, and a scripted submit never navigates, so the receipt
+  // rendered 987px above the top of the viewport while the reader sat looking
+  // at the Send button with their text gone. `toBeVisible` passed throughout.
+  await expect(receipt).toBeInViewport()
+  await expect(page.locator('#submission-status')).toBeFocused()
+  await expect(receipt.locator('xpath=..')).toContainText('Your submission has been recorded')
+  await expect(receipt.locator('xpath=..').getByRole('link', { name: 'changelog' })).toBeVisible()
 
   // A recorded submission clears the field, so the same text cannot be sent twice
   // by accident.
@@ -471,9 +524,13 @@ test.describe('narrow viewport navigation', () => {
 
     // The sheet marks where the reader is, exactly as the desktop nav does:
     // this page lives under The Case, so that entry carries aria-current.
+    // Exactly one, counted rather than sampled: the secondary link list
+    // repeats routes the primary list owns, and marking both would announce
+    // two current pages in a single navigation region.
     const current = dialog.locator('[aria-current="page"]')
-    await expect(current.first()).toBeVisible()
-    await expect(current.first()).toContainText('The Case')
+    await expect(current).toHaveCount(1)
+    await expect(current).toBeVisible()
+    await expect(current).toContainText('The Case')
 
     await page.keyboard.press('Escape')
 

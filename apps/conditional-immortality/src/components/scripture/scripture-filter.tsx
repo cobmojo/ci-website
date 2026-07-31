@@ -43,9 +43,28 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
   if (bookSelector) rules.push(`[data-scripture-row]:not(${bookSelector}){display:none}`)
   if (querySelector) rules.push(`[data-scripture-row]:not(${querySelector}){display:none}`)
   if (active) {
-    rules.push(
-      `[data-book-group]:not(:has([data-scripture-row]${bookSelector}${querySelector})){display:none}`,
-    )
+    const matching = `[data-scripture-row]${bookSelector}${querySelector}`
+    rules.push(`[data-book-group]:not(:has(${matching})){display:none}`)
+    // A testament heading counts references, so leaving it above nothing
+    // asserted "64 references" over an empty space. Same predicate, one level
+    // up: the section holds the rows too.
+    rules.push(`[data-testament]:not(:has(${matching})){display:none}`)
+    // Forty-four book links, forty-three of them now pointing at sections that
+    // are `display: none`. They stayed clickable and did nothing, silently:
+    // the address bar gained a fragment and the page did not move. The index
+    // is for finding a book among forty-four, which is not the situation once
+    // a filter is on, and it comes back the moment the filter is cleared.
+    rules.push(`[data-book-jump]{display:none}`)
+    // The counts belong to the unfiltered index. "New Testament, 144
+    // references" above two rows is the same false claim as the empty case,
+    // and every filter a reader actually uses is the non-empty case. The
+    // heading stops asserting a number rather than asserting a wrong one; the
+    // status line above says how many are showing.
+    //
+    // Screen only. The status line lives in this panel, which print drops, so
+    // hiding the counts on paper as well would leave a narrowed index with no
+    // number anywhere on it — 2 rows printed under a lede still saying 208.
+    rules.push(`@media screen{[data-reference-count]{display:none}}`)
   }
   const css = rules.join('')
 
@@ -143,6 +162,19 @@ export function ScriptureFilter({ books, total }: { books: readonly string[]; to
           ? `Showing ${shown} of ${total} references.`
           : `Showing all ${total} references. Filtering only hides rows; nothing is removed from the page.`}
       </p>
+
+      {/* Without this, a filter matching nothing left the page silent: the
+          index emptied out and the only words on it were a count of zero.
+          `/search/` answers the same situation in prose, and so does this. */}
+      {active && shown === 0 ? (
+        // Inside a live region: the status line announces "Showing 0 of 208"
+        // and this names the way out, so a screen-reader user who heard the
+        // first should hear the second.
+        <p aria-live="polite" className="m-0 mt-3 text-[1.02rem] text-ink-muted">
+          Nothing in the index matches that. Try a book name, a chapter, or a reference such as
+          Matthew 10:28, or show every reference again.
+        </p>
+      ) : null}
     </section>
   )
 }
