@@ -106,11 +106,30 @@ test('the quick-search dialog opens, answers, and closes on Escape', async ({ pa
   await expect(trigger).toBeFocused()
 })
 
-test('the skip link is reachable, visible once focused, and moves focus', async ({ page }) => {
+test('the skip link comes first, is visible once focused, and moves focus', async ({ page }) => {
   await page.goto('/')
-  await page.keyboard.press('Tab')
 
   const skip = page.getByRole('link', { name: 'Skip to main content' })
+
+  /*
+   * That it is *first* is the site's property, and is asserted in DOM order
+   * rather than by pressing Tab. WebKit does not move Tab focus to links at all
+   * unless the platform's full-keyboard-access preference is on — measured
+   * here: the first Tab lands on the video poster button, skipping the skip
+   * link and every navigation link — and that is a user-agent setting, not
+   * something this site controls. Asserting Tab order in a cross-engine suite
+   * would be asserting the preference. Tab reachability is covered where it is
+   * a site property, in `motion.spec.ts` and `reading.spec.ts`.
+   */
+  const isFirstFocusable = await page.evaluate(() => {
+    const candidates = document.querySelectorAll<HTMLElement>(
+      'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    )
+    return candidates[0]?.classList.contains('skip-link') ?? false
+  })
+  expect(isFirstFocusable, 'something focusable precedes the skip link').toBe(true)
+
+  await skip.focus()
   await expect(skip).toBeFocused()
 
   /*

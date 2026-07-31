@@ -291,6 +291,18 @@ test.describe('quick search', () => {
     // The query is percent-encoded, so the space arrives as %20.
     await expect(page).toHaveURL(/\/search\/\?q=unquenchable(%20|\+)fire/)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Search')
+
+    /*
+     * Wait for the dialog to go before asking for the search box.
+     *
+     * For a moment after the client-side navigation both exist — the dialog's
+     * field, still mounted while it closes, and the page's own — and a bare
+     * `getByRole('searchbox')` matches two elements and fails strict mode. It
+     * resolved most of the time and not under load, which is the shape of a
+     * flake rather than a finding. Waiting for the dialog is also the right
+     * assertion in its own right: closing on a route change is a contract.
+     */
+    await expect(dialog).toBeHidden()
     await expect(page.getByRole('searchbox', { name: 'Search terms' })).toHaveValue(
       'unquenchable fire',
     )
