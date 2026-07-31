@@ -93,7 +93,9 @@ export interface ExtractedHeading {
  *
  * Level-3 callouts are left out deliberately. There are thirty of them across
  * twenty-four pages, and listing every aside would change what the contents
- * are for; they take an id from the component so they can still be linked.
+ * are for. None of them carries an id today, so none is separately linkable;
+ * `Callout` will place one on the heading if a level-3 callout is ever given
+ * one, and that is the point at which it would also belong here.
  */
 const HEADING_PATTERN = /^(#{2,3})\s+(.+?)\s*$|<Callout\b([^>]*\bas="h2"[^>]*)>/gm
 

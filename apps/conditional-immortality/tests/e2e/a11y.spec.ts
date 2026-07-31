@@ -178,6 +178,24 @@ function headingSkips(headings: { level: number; text: string }[]): string[] {
  */
 async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded')
+
+  // Draining `getAnimations()` is not enough on a first load. The controls that
+  // fade in are the ones that only exist after hydration, so on `/sources/` —
+  // the route this was written for — the list was empty every time and the wait
+  // returned before the filter panel had mounted at all. Wait for the page to
+  // stop loading and for every revealing element to reach full opacity first.
+  await page.waitForLoadState('networkidle').catch(() => undefined)
+  await page
+    .waitForFunction(
+      () =>
+        [...document.querySelectorAll('.mount-reveal, .status-message, .video-frame')].every(
+          element => getComputedStyle(element).opacity === '1',
+        ),
+      undefined,
+      { timeout: 5000 },
+    )
+    .catch(() => undefined)
+
   await page
     .evaluate(() =>
       Promise.all(

@@ -60,6 +60,14 @@ export function Callout({
         className={cn(
           'mt-0 mb-2 flex items-baseline gap-2 font-sans text-[0.95rem] font-semibold',
           'tracking-wide uppercase',
+          // A callout label is not a section rule. `.prose-article h2` gives
+          // headings a bottom border, and the utilities here already override
+          // its margins but contested nothing else, so promoting the two
+          // appendix callouts to `h2` drew a full-width line inside the box —
+          // and made the same passage look different on `/full-case/`, where it
+          // demotes back to `h3`. Stated for every level, not just the one that
+          // showed it.
+          'border-0 pb-0',
           spec.label,
         )}
       >

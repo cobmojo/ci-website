@@ -898,9 +898,11 @@
     }
 
     .video-play:active .video-play__glyph {
-      /* Tier 2 presses share one clock and one curve. The hover growth above
-         keeps the Tier 1 feedback timing; the press itself takes the press
-         token and the press curve, exactly as `.pressable` does. */
+      /* The press itself takes the press token and the press curve. Unlike
+         `.pressable`, which states them on its base rule and so shares them in
+         both directions, these sit on `:active`, so the release returns on the
+         hover clock the glyph rests with. Deliberate: the growth on hover is
+         Tier 1 feedback and keeps its own timing. */
       transition-duration: var(--motion-press);
       transition-timing-function: var(--ease-out-quad);
       scale: 0.97;
@@ -1021,7 +1023,7 @@
      one. The `:not` keeps that from resurrecting a disclosure the page asked
      to leave out of print entirely, whose `print:hidden` would otherwise lose
      to this `!important`. */
-  details:not(.print-hidden, [class~="print:hidden"]) {
+  details:not([class~="print:hidden"]) {
     display: block !important;
   }
 

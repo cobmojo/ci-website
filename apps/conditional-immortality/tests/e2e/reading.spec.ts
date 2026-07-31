@@ -428,6 +428,12 @@ test('a visitor can submit a correction for S04', async ({ page }, testInfo) => 
 
   const receipt = page.getByText(/Received\./)
   await expect(receipt).toBeVisible()
+  // Being in the document is not the same as being seen. The status region sits
+  // above the form, and a scripted submit never navigates, so the receipt
+  // rendered 987px above the top of the viewport while the reader sat looking
+  // at the Send button with their text gone. `toBeVisible` passed throughout.
+  await expect(receipt).toBeInViewport()
+  await expect(page.locator('#submission-status')).toBeFocused()
   await expect(receipt.locator('xpath=..')).toContainText('Your submission has been recorded')
   await expect(receipt.locator('xpath=..').getByRole('link', { name: 'changelog' })).toBeVisible()
 

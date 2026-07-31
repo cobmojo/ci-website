@@ -104,3 +104,14 @@ export const FEEDBACK_FIELD_MESSAGES = {
   sourceUrl:
     'That does not look like a complete web address. Include https://, or leave this empty.',
 } as const
+
+/**
+ * The fragment a scriptless submission is sent back to.
+ *
+ * Declared here because two files have to agree on it and neither can import
+ * the other: the form renders it as an id, and the API route writes it into a
+ * `location` header. The route cannot import the form — that would pull the
+ * form library onto the server — so a literal in each place would be two
+ * strings with nothing holding them together.
+ */
+export const SUBMISSION_STATUS_ID = 'submission-status'

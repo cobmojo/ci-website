@@ -31,10 +31,19 @@ import baseline from './ranking-baseline.json'
  * Writing the timestamp as `1:26` dropped 18 chapters that never mention death
  * from that query's 114 results.
  *
- * Across both, 25 of the 30 pinned queries are byte-identical to what `main`
- * recorded. Four moved their total — "second death" 114 to 96, and `ect`,
- * `traditional view` and `the` by one apiece as headings became real — and one
- * moved by score alone.
+ * The third was the same correction's collateral damage. Four of the labels
+ * removed from `/start/compare-the-views/` were not phantom headings at all:
+ * they are the row headers of its comparison table, real text on the page,
+ * and deleting them from `headings` without putting them in `body` dropped the
+ * one orientation page about immortality, resurrection, judgment and
+ * punishment from the first page of results for "resurrection" and "ect" to
+ * fifteenth. Restoring them to the body brings it back, which is the whole of
+ * that diff.
+ *
+ * Across all three, 27 of the 30 pinned queries are byte-identical to what
+ * `main` recorded. "second death" fell from 114 to 97 as the video timestamps
+ * stopped matching it, "resurrection" swapped a glossary entry for the
+ * comparison page, and "traditional view" moved by score alone.
  */
 
 const index = buildSearchIndex()

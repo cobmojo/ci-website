@@ -11,12 +11,10 @@ import type { ReactNode } from 'react'
  */
 export function NewTabLink({
   href,
-  className,
   children,
   showsUrl = false,
 }: {
   href: string
-  className?: string
   children: ReactNode
   /**
    * True when the visible text is already the address. Print appends the
@@ -30,7 +28,6 @@ export function NewTabLink({
       href={href}
       rel="noopener noreferrer"
       target="_blank"
-      className={className}
       data-print-url={showsUrl ? 'shown' : undefined}
     >
       {children}

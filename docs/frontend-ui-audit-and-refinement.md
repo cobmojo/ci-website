@@ -1067,6 +1067,67 @@ Unreachable from any content in the tree, and the link check would have caught
 it, but the function's stated contract is to agree with `rehype-slug`
 character for character.
 
+### Gap sweep 10 (completed tree)
+
+Two angles over the tree at `d714155`: the newest changes, and the whole diff
+read as a pull request to approve or reject. Seven findings confirmed. The
+first is the fourth consecutive instance of one pattern, and by now the pattern
+is the finding.
+
+- **The confirmation was fixed for the reader without scripting and left
+  broken for the reader with it.** The status region sits above the form. A
+  scriptless submission navigates, so the redirect's `#submission-status`
+  fragment carries the reader to it. A scripted submission intercepts the
+  event: nothing navigates, nothing scrolls, and the receipt renders a full
+  screen *above* the reader — measured at 987px above the top of an 812px
+  viewport, with the reader still looking at the Send button and their text
+  gone from the textarea. Same defect as sweep 9's, opposite direction, on the
+  path most readers take. Every outcome was affected: success, rejection,
+  storage failure and rate limit.
+
+  **And the test that covers it is the assertion sweep 9's own commit message
+  called insufficient.** `toBeVisible` was upgraded to `toBeInViewport` in the
+  three scriptless tests and left alone in the scripted one. Focus now moves to
+  the result once it settles, which scrolls it into view and gives a keyboard
+  reader somewhere to carry on from; the test asserts both.
+- **The rate-limit page was the third failure path, and still threw the context
+  away.** Sweep 9 rebuilt two of the three no-JS failures from the submitted
+  body and missed the 429, whose only way back was a bare `/corrections/`. On
+  the one path that most explicitly says "try again", the retry arrived with no
+  page attached and relabelled.
+- **"As they left it" was not true.** The docstring promised the failure
+  redirect returns the reader to the form they came from as they left it; the
+  message, source address, name, email and consent choice are all gone.
+  Carrying an eight-thousand-character correction through a query string would
+  put it in browser history and every proxy log on the way, so the honest fix
+  is the copy: the failure messages now say the text was not kept, and the
+  docstring says what it does.
+- **Correcting the search index cost `/start/compare-the-views/` its
+  findability.** Four of the labels removed as phantom headings were not
+  phantoms at all — they are the row headers of the comparison table, real text
+  on the page — and deleting them without moving them into the body dropped the
+  one page whose whole job is that comparison from the first page of results
+  for "resurrection" and "ect" to fifteenth. All seven row labels are in the
+  body now. This is the third legitimate regeneration of the ranking baseline,
+  and it puts the page back where it belongs.
+- **Promoting the appendix callouts to level 2 drew a rule inside the box.**
+  `.prose-article h2` gives headings a bottom border and padding; the callout's
+  own utilities overrode the margins and contested nothing else, so both
+  appendices gained a full-width line under the caution label — and the same
+  passage rendered differently on `/full-case/`, where it demotes back to `h3`,
+  on a page whose footer invites readers to report exactly that. Stated for
+  every level rather than the one that showed it.
+- **`settle()` waited for nothing on the route it was written for.** The
+  `/sources/` filter panel is a client-only control that mounts after
+  hydration, so `document.getAnimations()` was empty every time and the wait
+  returned before the panel existed. The route's pass was still decided by a
+  race. It now waits for the revealing elements to reach full opacity first.
+- Smaller: a status-id constant exported for the server to use that nothing
+  imported, beside a literal in the server that had to match it; half a print
+  selector matching a class the codebase never sets, pinned in place by its own
+  test; an unused prop; and two code comments that described behaviour the code
+  does not have.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

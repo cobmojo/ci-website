@@ -264,7 +264,7 @@
     ]
   },
   "second death": {
-    "total": 96,
+    "total": 97,
     "usedTerms": ["second death", "second", "death", "lake of fire"],
     "results": [
       {
@@ -1189,6 +1189,12 @@
         "matchedTerms": ["resurrection"]
       },
       {
+        "id": "page:compare",
+        "score": 79.8,
+        "matchedFields": ["summary", "body"],
+        "matchedTerms": ["resurrection"]
+      },
+      {
         "id": "glossary:final-judgment",
         "score": 79.8,
         "matchedFields": ["summary", "body"],
@@ -1196,12 +1202,6 @@
       },
       {
         "id": "glossary:hades",
-        "score": 79.8,
-        "matchedFields": ["summary", "body"],
-        "matchedTerms": ["resurrection"]
-      },
-      {
-        "id": "glossary:intermediate-state",
         "score": 79.8,
         "matchedFields": ["summary", "body"],
         "matchedTerms": ["resurrection"]
@@ -1591,7 +1591,7 @@
       },
       {
         "id": "page:compare",
-        "score": 291.41,
+        "score": 295.01,
         "matchedFields": ["title", "id", "summary", "body", "heading"],
         "matchedTerms": [
           "ect",

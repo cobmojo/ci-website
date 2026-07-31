@@ -402,7 +402,7 @@ describe('print', () => {
     // `details[open]`, which forces open only what is already open — the
     // regression this line exists to catch.
     expect(print).toMatch(
-      /details:not\(\.print-hidden,\s*\[class~="print:hidden"\]\)\s*\{\s*display:\s*block\s*!important/,
+      /details:not\(\[class~="print:hidden"\]\)\s*\{\s*display:\s*block\s*!important/,
     )
     expect(print).toMatch(/display:\s*revert\s*!important/)
   })

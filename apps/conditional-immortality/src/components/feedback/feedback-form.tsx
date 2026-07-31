@@ -7,6 +7,7 @@
 import {
   FEEDBACK_FIELD_MESSAGES,
   FEEDBACK_TYPE_LABELS,
+  SUBMISSION_STATUS_ID,
   type FeedbackFieldError,
   type FeedbackType,
   feedbackTypes,
@@ -150,17 +151,6 @@ function firstError(errors: readonly unknown[]): string | undefined {
  * Public component
  * ------------------------------------------------------------------ */
 
-/**
- * The fragment the API route sends a scriptless submission back to.
- *
- * Without it the answer renders where it sits in the document — measured at
- * y=2090 on a 812px-tall viewport, two and a half screens below the fold — so
- * a reader who submitted a correction still landed on what looks like an
- * untouched page. `aria-live` does not help either: the message is present at
- * load rather than inserted, so nothing is announced.
- */
-export const SUBMISSION_STATUS_ID = 'submission-status'
-
 const DEFAULT_TYPE: FeedbackType = 'factual-correction'
 
 function readType(value: string | null): FeedbackType {
@@ -180,9 +170,9 @@ function readType(value: string | null): FeedbackType {
  */
 const REDIRECT_DETAIL: Partial<Record<SubmissionStatus, string>> = {
   invalid:
-    'The values sent could not be accepted. Check that the message is at least twenty characters and that any web address is complete, then send it again.',
+    'The values sent could not be accepted. Check that the message is at least twenty characters and that any web address is complete, then send it again. Your text was not kept, so it will need retyping.',
   error:
-    'The server did not record it. This is a fault at our end, not with what you wrote. Please try again in a few minutes.',
+    'The server did not record it. This is a fault at our end, not with what you wrote. Your text was not kept, so it will need retyping. Please try again in a few minutes.',
 }
 
 /** What `?submitted=` means, and what the reader is told about it. */
@@ -273,8 +263,34 @@ function FeedbackFormFields({
    */
   const [scripted, setScripted] = useState(false)
   const honeypotRef = useRef<HTMLInputElement>(null)
+  const statusRef = useRef<HTMLDivElement>(null)
+  const settledOnce = useRef(false)
 
   useEffect(() => setScripted(true), [])
+
+  /**
+   * Take the reader to the result of their submission.
+   *
+   * The status region sits above the form, so on a scripted submit — where the
+   * page never navigates and nothing scrolls — the answer rendered a full
+   * screen *above* the reader: measured at 987px above the top of an 812px
+   * viewport, with the reader still looking at the Send button and their text
+   * gone from the textarea. Without scripting the redirect's `#submission-status`
+   * fragment handles it; with scripting there is no navigation to carry one.
+   *
+   * Focus rather than a bare scroll, so a keyboard reader lands on the message
+   * and can carry on from there. The first render is skipped: arriving on a
+   * redirect, the browser has already done the scrolling, and stealing focus
+   * on page load would be its own defect.
+   */
+  useEffect(() => {
+    if (!settledOnce.current) {
+      settledOnce.current = true
+      return
+    }
+    if (status === 'idle' || status === 'submitting') return
+    statusRef.current?.focus()
+  }, [status])
 
   const form = useForm({
     defaultValues: {
@@ -364,7 +380,7 @@ function FeedbackFormFields({
           where motion is welcome. Enough to draw the eye to a form result the
           reader is waiting for, not far enough to be read on the way. The live
           region announces regardless: the animation is for the eye only. */}
-      <div aria-live="polite" id={ids.status}>
+      <div aria-live="polite" id={ids.status} ref={statusRef} tabIndex={-1}>
         {status === 'success' ? (
           <p className="status-message m-0 mb-5 rounded-md border border-affirm/30 bg-affirm-soft p-4 font-sans text-[0.95rem] text-ink">
             <strong className="font-semibold text-affirm">Received.</strong> Your submission has

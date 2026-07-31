@@ -330,7 +330,17 @@ const STATIC_PAGE_DOCS: SearchDoc[] = [
       'Where the argument is made',
     ],
     scriptureRefs: [],
-    body: 'comparison table eternal conscious torment conditional immortality universal reconciliation universalism traditional view differences agreements',
+    /**
+     * The seven row labels belong here, in the body, not in `headings`.
+     *
+     * They used to be claimed as headings, which was false — they are the row
+     * headers of the comparison table. Correcting that removed them from the
+     * index altogether, and the one page whose whole job is the side-by-side on
+     * these questions fell from the first page of results for "resurrection"
+     * and "ect" to fifteenth. A word on the page belongs in the body whether or
+     * not it is a heading.
+     */
+    body: 'comparison table eternal conscious torment conditional immortality universal reconciliation universalism traditional view differences agreements human immortality resurrection final judgment nature of punishment final fate of the unrighteous meaning of eternal life does punishment end in restoration in continued conscious existence or in death',
     notes: '',
     aliases: ['compare', 'ect vs ci', 'three views', 'comparison'],
     bibleBooks: [],
