@@ -441,12 +441,12 @@ against a production build.
 | `bun run content:validate` | Pass |
 | `bun run content:audit` | Pass, ledger exports unchanged |
 | `bun run content:docs` | Pass |
-| `bun run test` | **808 unit tests pass** on the merged tree (281 at the audit base; this branch added 21: button contract ×3, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×7; the balance arrived with PR #5's merge) |
+| `bun run test` | **815 unit tests pass** on the merged tree (281 at the audit base; this branch added 28: button contract ×3, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×7, modified click ×7; the balance arrived with PR #5's merge) |
 | `bun run build` | Pass, 129 static pages |
 | `bun run content:pii` | Pass: no source contact details in 1,753 built or 295 committed files |
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
 | `bun run content:bundle` | Pass on the merged tree: every route within budget; `/corrections` 663.7 kB against its 664.1 kB allowance |
-| `bun run test:e2e` | **308 tests, 0 failures** on the merged tree (224 at the audit base + 4 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
+| `bun run test:e2e` | **310 tests, 0 failures** on the merged tree (224 at the audit base + 5 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
 | `bun run test:a11y` | **64 tests, 0 failures** (32 at base, desktop only; now 32 × desktop + 32 × mobile via the new `accessibility-mobile` project) |
 
 **Rendered sweep** (production build, before and after): 360 loads over all
@@ -593,7 +593,7 @@ validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
 `test:a11y` 64 tests (63 + 1 axe timing flake retried green), 0 failures;
 `test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
 (67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
-Total automated coverage on the merged tree: 1,249 tests.
+Total automated coverage on the merged tree: 1,258 tests.
 
 **Review threads**: the automated review on the first commit raised two P2
 findings (permalink loss on demoted headings; component-rendered headings
