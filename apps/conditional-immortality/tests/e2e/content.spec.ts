@@ -395,21 +395,45 @@ test('every heading claimed by the search index exists on its page', async ({ re
 test.describe('the correction form without scripting', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('says a submission was received', async ({ page }) => {
-    await page.goto('/corrections/?submitted=1')
-    await expect(page.getByText('Received.')).toBeVisible()
+  test('says a submission was received, where the reader can see it', async ({ page }) => {
+    // The fragment is the whole point. `toBeVisible` is not enough on its own:
+    // it asks only for a non-empty box, and this message sits about 2,000px
+    // down the page, so without the fragment the reader lands on what still
+    // looks like an untouched form.
+    await page.goto('/corrections/?submitted=1#submission-status')
+    const status = page.getByText('Received.')
+    await expect(status).toBeVisible()
+    await expect(status).toBeInViewport()
   })
 
   test('tells a rejected submission apart from one the server could not store', async ({
     page,
   }) => {
-    await page.goto('/corrections/?submitted=0')
-    await expect(page.getByText(/values sent could not be accepted/)).toBeVisible()
+    await page.goto('/corrections/?submitted=0#submission-status')
+    const rejected = page.getByText(/values sent could not be accepted/)
+    await expect(rejected).toBeVisible()
+    await expect(rejected).toBeInViewport()
 
     // A storage failure is not the reader's fault, and telling them to check
     // their wording sends them back into a failure that will repeat.
-    await page.goto('/corrections/?submitted=error')
-    await expect(page.getByText(/fault at our end, not with what you wrote/)).toBeVisible()
+    await page.goto('/corrections/?submitted=error#submission-status')
+    const notRecorded = page.getByText(/fault at our end, not with what you wrote/)
+    await expect(notRecorded).toBeVisible()
+    await expect(notRecorded).toBeInViewport()
+  })
+
+  test('a failed submission keeps the section, heading and type for the retry', async ({
+    page,
+  }) => {
+    // The reader is told to send it again, so the form they resend from has to
+    // be the form they arrived with. Losing the context here delivers the
+    // retry with no page attached and relabelled as a factual correction —
+    // the exact failure the redirect was rebuilt to prevent.
+    await page.goto('/corrections/?submitted=0&section=S04&heading=the-text&type=broken-link')
+
+    await expect(page.locator('input[name="sectionId"]')).toHaveValue('S04')
+    await expect(page.locator('input[name="headingId"]')).toHaveValue('the-text')
+    await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')
   })
 
   test('carries the section and the type a reader arrived with', async ({ page }) => {

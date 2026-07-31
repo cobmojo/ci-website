@@ -149,7 +149,12 @@ export function extractHeadings(mdx: string): readonly ExtractedHeading[] {
       const text = plainText(attribute(calloutAttributes, 'title') ?? '')
       const id = attribute(calloutAttributes, 'id')
       if (!text || !id) continue
-      seen.set(id, (seen.get(id) ?? 0) + 1)
+      // Deliberately not seeded into `seen`: `rehype-slug` never sees a
+      // callout, so seeding it here would make a later markdown heading of the
+      // same slug come out `open-questions-1` while the rendered page says
+      // `open-questions`, and this function's whole contract is to agree with
+      // it character for character. A genuine collision is caught by the
+      // duplicate-id check instead.
       headings.push({ depth: 2, text, id })
       continue
     }

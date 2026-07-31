@@ -150,6 +150,17 @@ function firstError(errors: readonly unknown[]): string | undefined {
  * Public component
  * ------------------------------------------------------------------ */
 
+/**
+ * The fragment the API route sends a scriptless submission back to.
+ *
+ * Without it the answer renders where it sits in the document — measured at
+ * y=2090 on a 812px-tall viewport, two and a half screens below the fold — so
+ * a reader who submitted a correction still landed on what looks like an
+ * untouched page. `aria-live` does not help either: the message is present at
+ * load rather than inserted, so nothing is announced.
+ */
+export const SUBMISSION_STATUS_ID = 'submission-status'
+
 const DEFAULT_TYPE: FeedbackType = 'factual-correction'
 
 function readType(value: string | null): FeedbackType {
@@ -246,7 +257,12 @@ function FeedbackFormFields({
     emailError: `${uid}-email-error`,
     consent: `${uid}-consent`,
     honeypot: `${uid}-website`,
-    status: `${uid}-status`,
+    /**
+     * Deliberately not `useId()`-derived. The API route redirects a no-JS
+     * submission to this fragment, so the id has to be one the server can
+     * write into a URL. There is one correction form per page.
+     */
+    status: SUBMISSION_STATUS_ID,
   }
 
   const [status, setStatus] = useState<SubmissionStatus>(initialStatus)

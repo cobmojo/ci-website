@@ -1025,6 +1025,48 @@ it said the ranking-baseline correction moved 25 of 30 queries when 25 are
 byte-identical and five moved, a figure carried over from a measurement taken
 with the wrong limit and repeated in the pin's own docstring.
 
+### Gap sweep 9 (completed tree)
+
+One angle over the tree at `aec0c5e`, aimed at the four newest and least
+reviewed changes. Three findings confirmed, and two of them are the sweep-8
+fix being incomplete in the way this run keeps producing: the defect was
+addressed where it was described rather than where it was felt.
+
+- **The answer was moved off screen rather than supplied.** The redirects
+  carried no fragment, so a reader without scripting landed at the top of a
+  page whose status message sits at y=2090 on an 812px viewport — two and a
+  half screens down. The first screen was the unchanged top of the corrections
+  page, which is the exact thing the fix was written to prevent, and
+  `aria-live` announced nothing either because the message is present at load
+  rather than inserted. **The three tests added alongside could not see it:
+  Playwright's `toBeVisible` asks for a non-empty box, not for anything in the
+  viewport, so all three passed with the message two thousand pixels away.**
+  The status region has a stable id now, the redirects point at it, and the
+  tests assert `toBeInViewport`. Driven with scripting off: the browser lands
+  at `scrollY: 2011` with the message at `top: 80`.
+- **A failed submission dropped the context it told the reader to resend
+  with.** `FAILURE_REDIRECT` was a constant, so a reader who arrived from
+  `?section=S04&heading=the-text&type=broken-link`, was told "the values sent
+  could not be accepted… send it again", and did — sent it from a form that
+  had silently reset to no section, no heading, and "factual correction". The
+  retry reached the author with no page attached and the wrong label: the
+  original harm, reappearing on the one path where a reader is explicitly
+  *told* to try again. Failure redirects are built from the submitted body
+  now, and the round trip is asserted end to end.
+- **The animation wait went to sixteen of the eighteen axe tests and missed
+  the two that animate.** `settle()` was called in the route loop; the two
+  dialog tests called axe directly, sampling the nav sheet at 8% and the search
+  panel at 17% of a 200ms transition — the regime that produced the false
+  reading it was written to remove, on the only two tests where something is
+  deliberately animated into view.
+
+Also corrected while in there: `extractHeadings` was seeding its slugger with
+callout ids, which would have made a later markdown heading of the same slug
+come out `open-questions-1` where the rendered page says `open-questions`.
+Unreachable from any content in the tree, and the link check would have caught
+it, but the function's stated contract is to agree with `rehype-slug`
+character for character.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

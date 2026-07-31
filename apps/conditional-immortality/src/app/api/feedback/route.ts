@@ -34,16 +34,45 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 
 const STORE_DIR = process.env.FEEDBACK_STORE_DIR ?? '.feedback-store'
 
-/** Where a form-encoded submission is sent back to. */
-const SUCCESS_REDIRECT = '/corrections/?submitted=1'
-const FAILURE_REDIRECT = '/corrections/?submitted=0'
 /**
- * A submission the server could not store is not a submission the server
- * rejected, and telling a reader to check their wording when their wording was
- * fine sends them back into a failure that will repeat identically. The JSON
- * path has always drawn this distinction; the redirect now does too.
+ * Where a form-encoded submission is sent back to.
+ *
+ * Three things have to be right about this URL, and each was wrong once.
+ *
+ * The `submitted` value distinguishes a schema rejection from a submission the
+ * server could not store. Telling a reader whose wording was fine to check
+ * their wording sends them back into a failure that will repeat identically,
+ * and spends their rate-limit allowance doing it. The JSON path always drew
+ * this distinction; the redirect now does too.
+ *
+ * The fragment matters as much. Without it the browser lands at the top and
+ * the answer renders where it sits in the document — measured at y=2090 on an
+ * 812px viewport — so the reader sees an untouched page and the whole point of
+ * the redirect is lost.
+ *
+ * And a failure has to carry back the context the reader arrived with. Without
+ * it the retry is sent from a form that has silently dropped the section, the
+ * heading and the feedback type, so a correction to S04 arrives labelled a
+ * factual correction with no page attached — the exact harm this route was
+ * changed to fix, reappearing on the path where a reader is *told* to try
+ * again.
  */
-const NOT_RECORDED_REDIRECT = '/corrections/?submitted=error'
+const STATUS_FRAGMENT = '#submission-status'
+const SUCCESS_REDIRECT = `/corrections/?submitted=1${STATUS_FRAGMENT}`
+
+/** A failure returns the reader to the form they came from, as they left it. */
+function failureRedirect(outcome: '0' | 'error', body: RawBody): string {
+  const params = new URLSearchParams({ submitted: outcome })
+  for (const [field, key] of [
+    ['sectionId', 'section'],
+    ['headingId', 'heading'],
+    ['type', 'type'],
+  ] as const) {
+    const value = asString(body[field])?.trim()
+    if (value) params.set(key, value)
+  }
+  return `/corrections/?${params.toString()}${STATUS_FRAGMENT}`
+}
 
 /** The honeypot control rendered off screen by the form. */
 const HONEYPOT_FIELD = 'website'
@@ -226,7 +255,7 @@ export async function POST(request: Request): Promise<Response> {
   const result = FeedbackSubmissionInputSchema.safeParse(candidateFrom(body))
 
   if (!result.success) {
-    if (!wantsJson) return redirect(FAILURE_REDIRECT)
+    if (!wantsJson) return redirect(failureRedirect('0', body))
     // Field paths and schema messages only. No submitted value is echoed back.
     const fieldErrors: FeedbackFieldError[] = result.error.issues.map(issue => ({
       field: issue.path.join('.') || 'form',
@@ -258,7 +287,7 @@ export async function POST(request: Request): Promise<Response> {
     // Deliberately no detail: an fs error message can contain the payload in
     // some runtimes, and the submission id is enough to correlate.
     console.error(`[feedback] could not persist submission ${submission.id}`)
-    if (!wantsJson) return redirect(NOT_RECORDED_REDIRECT)
+    if (!wantsJson) return redirect(failureRedirect('error', body))
     return json({ ok: false, error: 'not-recorded' }, 500)
   }
 

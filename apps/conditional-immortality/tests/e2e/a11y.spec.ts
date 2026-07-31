@@ -202,6 +202,9 @@ test.describe('axe-core, WCAG 2.0 / 2.1 / 2.2 level AA', () => {
     const trigger = page.getByRole('button', { name: 'Menu' })
     await trigger.click()
     await expect(page.getByRole('dialog', { name: 'Site navigation' })).toBeVisible()
+    // The overlays are the two places something is deliberately animated into
+    // view, so they are the two that most need the wait.
+    await settle(page)
     expect(await axeViolations(page)).toEqual([])
   })
 
@@ -212,6 +215,7 @@ test.describe('axe-core, WCAG 2.0 / 2.1 / 2.2 level AA', () => {
     await expect(dialog).toBeVisible()
     await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('gehenna')
     await expect(dialog.getByRole('link', { name: /gehenna/i }).first()).toBeVisible()
+    await settle(page)
     expect(await axeViolations(page)).toEqual([])
   })
 })
