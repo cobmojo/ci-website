@@ -419,9 +419,32 @@ describe('print', () => {
 
     const [rule] = targeting
     const at = rule?.index ?? -1
+
+    /*
+     * Bounded by the block's closing brace, not by its opening one.
+     *
+     * `@media print` is the last block in the file, so "after `printAt`" is
+     * true of anything appended at the end — including this very rule lifted
+     * out of the block and left to apply on screen, which is the failure the
+     * guard exists for. Checked: that edit left every assertion here green.
+     */
+    let depth = 0
+    let printEnd = live.length
+    for (let index = printAt; index < live.length; index += 1) {
+      if (live[index] === '{') depth += 1
+      else if (live[index] === '}') {
+        depth -= 1
+        if (depth === 0) {
+          printEnd = index
+          break
+        }
+      }
+    }
+
     // On screen the premise still holds: nothing targets it, which is the only
     // configuration Chromium 148 opens correctly.
-    expect(at, 'a rule targets ::details-content outside @media print').toBeGreaterThan(printAt)
+    expect(at, 'a rule targets ::details-content before @media print').toBeGreaterThan(printAt)
+    expect(at, 'a rule targets ::details-content after @media print closes').toBeLessThan(printEnd)
 
     const declarations = (rule?.[2] ?? '')
       .split(';')

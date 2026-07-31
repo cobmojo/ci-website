@@ -59,7 +59,7 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   The correction form is the only thing the site keeps on purpose, and it keeps only
-                  what you type and the part identifier you arrived with.
+                  what you type, plus the part and heading you arrived from.
                 </li>
               </ul>
             </section>
@@ -174,8 +174,8 @@ export default function PrivacyPage() {
               </h2>
               <p className="m-0 mb-3">
                 The <Link href="/corrections/">corrections form</Link> is the only thing this site
-                keeps on purpose. It keeps what you type into it, and the part identifier you
-                arrived with, which is listed below. A search term from the full results page also
+                keeps on purpose. It keeps what you type into it, and the part and heading you
+                arrived from, both listed below. A search term from the full results page also
                 reaches the server, in the address, and is not kept.
               </p>
 
@@ -193,8 +193,11 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   <strong>Context:</strong> the part identifier of the page you came from, when you
-                  arrive from a link on a section page. This is a short code such as S04, and it
-                  exists so that a correction can be matched to the page it is about.
+                  arrive from a link on a section page, and a heading anchor if the address you
+                  arrived with carries one. These are a short code such as S04 and an anchor such as
+                  in-brief, and they exist so that a correction can be matched to the place it is
+                  about. No link on this site puts a heading in the address today; the field is read
+                  if one is there.
                 </li>
               </ul>
               <p className="m-0 mb-3">

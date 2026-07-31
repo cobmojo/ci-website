@@ -7,6 +7,7 @@ import { FeedbackForm } from '@/components/feedback/feedback-form'
 import { RelatedPages } from '@/components/navigation/related-pages'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
+import { loadSection, sectionBodyExists } from '@/lib/sections'
 import { siteConfig } from '@/lib/site-config'
 
 const CRUMBS: readonly Crumb[] = [
@@ -45,6 +46,22 @@ export default async function CorrectionsPage({
     Array.isArray(value) ? value[0] : value
   const knownSectionId = (value: string | undefined): string =>
     value && getSection(value) ? value : ''
+  /*
+   * A heading id is checked against the headings that section actually has,
+   * for the reason the section id is checked against the registry. Bounding it
+   * at the schema's 128 characters was not a check: a longer value was
+   * silently truncated to a prefix that resolves to no heading and stored
+   * anyway, where the section id was dropped rather than mangled. Both are
+   * listed on `/privacy/` as what a submission carries, so both have to be
+   * something this site put in the address.
+   */
+  const knownHeadingId = (section: string, value: string | undefined): string => {
+    if (!value || !section) return ''
+    const record = getSection(section)
+    if (!record || !sectionBodyExists(record)) return ''
+    return loadSection(record).headings.some(heading => heading.id === value) ? value : ''
+  }
+  const sectionId = knownSectionId(one(params.section) ?? one(params.sectionId))
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(CRUMBS)} />
@@ -115,8 +132,9 @@ export default async function CorrectionsPage({
                   empty and nothing is stored in their place.
                 </li>
                 <li>
-                  The part of the site you came from, when you arrive from a link on a section page.
-                  This is a section identifier such as S04, nothing more.
+                  The part of the site you came from, when you arrive from a link on a section page,
+                  and a heading anchor if the address carries one. These are a section identifier
+                  such as S04 and an anchor such as in-brief, nothing more.
                 </li>
                 <li>
                   Your network address is used only to limit how many submissions one connection can
@@ -165,8 +183,8 @@ export default async function CorrectionsPage({
              * is what the form does with no `?section=` at all.
              */}
             <FeedbackForm
-              sectionId={knownSectionId(one(params.section) ?? one(params.sectionId))}
-              headingId={(one(params.heading) ?? one(params.headingId) ?? '').slice(0, 128)}
+              sectionId={sectionId}
+              headingId={knownHeadingId(sectionId, one(params.heading) ?? one(params.headingId))}
               type={one(params.type)}
               submitted={one(params.submitted)}
             />

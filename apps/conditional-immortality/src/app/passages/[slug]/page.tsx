@@ -224,7 +224,7 @@ export default async function PassageRoute({ params }: { params: Promise<{ slug:
             ) : (
               <p className="m-0 text-[1rem] text-ink-muted">
                 This passage is treated on its own page rather than inside a numbered part of the
-                case. Every reference the argument makes is listed in the{' '}
+                case. Every reference the parts of the case record as their own is listed in the{' '}
                 <Link href="/scripture/">Scripture index</Link>.
               </p>
             )}

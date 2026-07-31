@@ -429,10 +429,10 @@ test.describe('the correction form without scripting', () => {
     // be the form they arrived with. Losing the context here delivers the
     // retry with no page attached and relabelled as a factual correction —
     // the exact failure the redirect was rebuilt to prevent.
-    await page.goto('/corrections/?submitted=0&section=S04&heading=the-text&type=broken-link')
+    await page.goto('/corrections/?submitted=0&section=S04&heading=in-brief&type=broken-link')
 
     await expect(page.locator('input[name="sectionId"]')).toHaveValue('S04')
-    await expect(page.locator('input[name="headingId"]')).toHaveValue('the-text')
+    await expect(page.locator('input[name="headingId"]')).toHaveValue('in-brief')
     await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')
   })
 
@@ -451,14 +451,14 @@ test.describe('the correction form without scripting', () => {
   })
 
   test('carries the section and the type a reader arrived with', async ({ page }) => {
-    await page.goto('/corrections/?section=S04&heading=the-text&type=broken-link#form')
+    await page.goto('/corrections/?section=S04&heading=in-brief&type=broken-link#form')
 
     // Every feedback link on the site ends in `#form`. The link checker cannot
     // see this page any more — it renders on demand, so there is no file for it
     // to read — so the anchor is asserted here instead.
     await expect(page.locator('#form')).toHaveCount(1)
     await expect(page.locator('input[name="sectionId"]')).toHaveValue('S04')
-    await expect(page.locator('input[name="headingId"]')).toHaveValue('the-text')
+    await expect(page.locator('input[name="headingId"]')).toHaveValue('in-brief')
     await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')
   })
 })
@@ -888,10 +888,13 @@ test('the case is never described as forty parts', async ({ page }) => {
  *
  * `/accessibility/` said "Three features degrade rather than disappear" and
  * named three that do. A fourth degrades — the video becomes a link that opens
- * on YouTube rather than a player that loads in place — and three panels are
+ * on YouTube rather than a player that loads in place — and four controls are
  * absent altogether: the filters above the source library and the Scripture
- * index, and the reading-progress panel on the case map. None of those four
- * was named, and a reader was told the list was complete.
+ * index, and the reading-progress panel and the print button on the case map.
+ * None of those five was named, and a reader was told the list was complete.
+ * The correction to "four" was itself made in a commit whose test asserted the
+ * three the copy still named, so it could not fail against the undercount it
+ * was added to prevent.
  *
  * The page now says what is missing, and this holds it to that: each panel is
  * gone, and the list it would have narrowed is rendered whole, which is why

@@ -114,10 +114,31 @@ describe('the Scripture index against the pages it indexes', () => {
     expect(listMdx('case').length + listMdx('appendices').length).toBe(caseSections.length)
   })
 
-  it('finds the blocks it is looking for', () => {
+  it('finds every block it is looking for', () => {
     // And without this, a change to how a full quotation is written in MDX
     // would silently reduce the check to an empty loop.
-    const displayed = [...BODIES.values()].flatMap(displayedIn)
-    expect(displayed.length).toBeGreaterThan(20)
+    //
+    // Counted against the bodies rather than floored. `> 20` was true of the
+    // 189 blocks the corpus holds and true of any 21 of them, so 38 of the 40
+    // pages could stop being matched and this stayed green — the same "true of
+    // 38 and true of 40" shape as the assertion two tests above.
+    const bodies = [...BODIES.values()]
+    const blocksIn = (body: string) => body.split('<Scripture').length - 1
+    const written = bodies.reduce((total, body) => total + blocksIn(body), 0)
+    const found = bodies.flatMap(displayedIn)
+    expect(written, 'the corpus stopped setting Scripture out in blocks').toBeGreaterThan(150)
+    // Distinct per body, so the two counts differ only by repeats within a page.
+    expect(new Set(found).size).toBeLessThanOrEqual(written)
+    expect(found.length, 'a block the reference pattern no longer matches').toBe(
+      bodies.reduce((total, body) => total + new Set(displayedIn(body)).size, 0),
+    )
+    for (const [id, body] of BODIES) {
+      if (blocksIn(body) > 0) {
+        expect(
+          displayedIn(body).length,
+          `${id} sets out blocks none of which parse`,
+        ).toBeGreaterThan(0)
+      }
+    }
   })
 })

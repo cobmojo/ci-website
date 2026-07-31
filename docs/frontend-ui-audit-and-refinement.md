@@ -1890,6 +1890,74 @@ decision that belongs to the author, not to a refinement pass.
   way, and the reader-visible effect is that "Related" frequently offers no route
   back.
 
+### Gap sweep 19 (follow-up branch)
+
+One finder, pointed at sweep 18's commit. Six findings, all substantiated, all in
+that commit or in what it claimed to have fixed. **Not clean.**
+
+- **`sources-cited.test.ts` was never updated, and both the commit message and
+  this ledger said it was.** The commit added `sectionCollection()` and explained
+  that two checks covered 38 of the 40 pages that can drift; it then fixed one of
+  them. The other still reads the `case` collection and still asserts
+  `caseSections.length - 2`, which does not merely record the stale premise but
+  blocks the fix, because correcting the reader makes the count 40. Both
+  appendices cite `welch-source-document` inline, so nothing there could have
+  failed against that source dropping `APP1` or `APP2` from `citedBy` — the
+  heading "Sources cited on this page" would have rendered above an empty list on
+  a page whose body cites it. Both checks read all forty now.
+- **The sibling guard kept the floor the commit had just removed.** Fifteen lines
+  above, `BODIES.size` was pinned to the registry with the reason written out:
+  a floor was true of 38 and true of 40, so it could not tell them apart. The
+  guard against a syntax migration emptying the loop was left as
+  `displayed.length > 20` against a corpus of 189 blocks — true of any 21 of
+  them, so 38 of the 40 pages could stop matching and it stayed green. It counts
+  the blocks written against the blocks parsed now, per page, and was confirmed
+  failing when a single body's `reference=` was renamed.
+- **`?heading=` was clamped, not checked**, on the line below the `?section=`
+  fix and under a comment beginning "Both are checked here, where they enter".
+  `.slice(0, 128)` is the schema's bound, so a longer value was silently
+  truncated to a prefix that resolves to no heading and stored anyway — where
+  the section id was dropped rather than mangled. It is checked against the
+  headings that section actually has now.
+- **And the privacy page did not know about it.** Three sentences there and one
+  on `/corrections/` said a submission carries what you type plus the part
+  identifier — "which is listed below", "nothing more" — while `headingId`
+  arrives from the address, is submitted and is persisted. The end-to-end test
+  that navigates to `?section=S04&heading=the-text` asserts the hidden field
+  carries it. All four now name both, and the new form-counting test could not
+  have caught this: it reads the set of form actions, not what is stored.
+- **The `::details-content` guard bounded the print block by its opening brace.**
+  `@media print` is the last block in `globals.css`, so "after `printAt`" was
+  true of anything appended at the end — including the rule itself lifted out of
+  the block and left to apply on screen, which is the failure the guard exists
+  for and which `globals.css` claims the guard prevents. Simulated against the
+  real stylesheet, that edit left every assertion green. Bounded by the block's
+  closing brace now, and confirmed failing against exactly that edit.
+- `/passages/[slug]/` still says "Every reference the argument makes is listed in
+  the Scripture index", the third copy of a sentence corrected in two other
+  places by the previous commit. It is the `usedInSections.length === 0`
+  fallback and unreachable today, since all 18 passages have a citing section; it
+  becomes visible the first time one does not. Corrected anyway.
+
+Checking the heading fix turned up something the finding had assumed the other
+way: **no link on this site puts a heading in the address at all.** Nothing in
+`src` emits `?heading=`, and the route's failure redirect only echoes what was
+submitted, which comes from the hidden field, which comes from `?heading=`. So
+`headingId` is plumbed end to end — schema, form, route, store — and no surface
+produces it. Two end-to-end tests asserted the field survived a value,
+`the-text`, that is not a heading of S04 and that the site could never have
+emitted; they use a real one now, and the validation stands, because a
+hand-typed address can still reach the field. The privacy and corrections copy
+says what is true: a heading anchor is read if the address carries one, and no
+link puts one there. Whether to wire per-heading feedback links or drop the
+field is a decision for the author, and is left.
+
+Also recorded: the new form-counting test reads only sitemap routes plus the
+three extras, so `/download/handout.html` and the 404 page are never fetched; it
+runs no script, so a form inside the search dialog's mounted branch is invisible;
+it compares a set of actions, so a second form posting to `/api/feedback/`
+changes nothing; and it does not read `formaction`. None is violated today.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch
