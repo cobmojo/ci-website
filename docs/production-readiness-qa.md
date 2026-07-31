@@ -438,9 +438,9 @@ appear, and the number rises as coverage falls.
 
 | Package | Statements | Branches | Functions | Lines |
 |---|---|---|---|---|
-| `apps/conditional-immortality` | 66.2% | 57.2% | 50.4% | 67.3% |
+| `apps/conditional-immortality` | 65.9% | 56.9% | 50.6% | 66.9% |
 | `packages/ci-content-schema` | 94.1% | 89.7% | 100% | 98.5% |
-| `packages/ci-content` | 71.1% | 61.3% | 66.1% | 76.6% |
+| `packages/ci-content` | 71.1% | 60.3% | 66.1% | 76.6% |
 | `packages/ci-search` | 95.6% | 89.7% | 100% | 97.8% |
 
 The app's global figure keeps 29 components in the denominator on purpose.
@@ -460,7 +460,7 @@ Where unit coverage is the right tool, the floors are strict:
 | `src/lib/rate-limit.ts` | 84.2% (floor 83) | 89.3% (floor 87) |
 | `src/lib/text-layout/**` | 85.8% (floor 84) | 74.8% (floor 72) |
 
-App line coverage went from 50.5% to 67.3% over this pass, entirely from tests
+App line coverage went from 50.5% to 66.9% over this pass, entirely from tests
 that pin behaviour rather than from exclusions.
 
 ## Test counts, from the final tree
