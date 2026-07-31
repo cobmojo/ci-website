@@ -291,9 +291,17 @@ test.describe('quick search', () => {
     // The query is percent-encoded, so the space arrives as %20.
     await expect(page).toHaveURL(/\/search\/\?q=unquenchable(%20|\+)fire/)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Search')
-    await expect(page.getByRole('searchbox', { name: 'Search terms' })).toHaveValue(
-      'unquenchable fire',
-    )
+
+    // Following the link closes the dialog. Asserted rather than assumed,
+    // because the panel stays painted through its exit transition, and until
+    // it goes the header still carries a search field of its own.
+    await expect(dialog).toBeHidden()
+
+    // The field on the page itself, not whichever one happens to match first:
+    // this test is about what the full search page received.
+    await expect(
+      page.getByRole('main').getByRole('searchbox', { name: 'Search terms' }),
+    ).toHaveValue('unquenchable fire')
   })
 })
 

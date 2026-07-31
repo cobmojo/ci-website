@@ -877,14 +877,16 @@
       scale: 0.97;
     }
 
-    /* Tier 3. The skip link's travel is its affordance: a reader watching it
-       arrive understands it came from above the page and will go back there.
-       It arrives on the entrance token like every other Tier 3 arrival. Under
+    /* Tier 3, at the quicker of its two durations. The skip link's travel is
+       its affordance: a reader watching it arrive understands it came from
+       above the page and will go back there. It takes the shorter token
+       deliberately, because it is the first control a keyboard reader meets
+       and an arrival they have to wait for is an arrival in the way. Under
        `reduce` it simply appears where it belongs, instantly, which is the
        correct still variant of an element whose entire animation is movement. */
     .skip-link {
       transition-property: translate;
-      transition-duration: var(--motion-overlay);
+      transition-duration: var(--motion-overlay-exit);
       transition-timing-function: var(--ease-out-quad);
     }
   }

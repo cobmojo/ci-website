@@ -419,10 +419,18 @@ test.describe('overlays still work', () => {
 
     const skip = page.getByRole('link', { name: 'Skip to main content' })
     await expect(skip).toBeFocused()
+    await expect(skip).toBeVisible()
+
     // Inside the viewport, not merely painted somewhere above it.
-    const box = await skip.boundingBox()
-    expect(box).not.toBeNull()
-    expect(box?.y ?? -1).toBeGreaterThanOrEqual(0)
+    //
+    // Polled rather than sampled once: the link arrives over a transition, so
+    // a single reading taken the instant focus lands is a race against it, and
+    // on a loaded machine it catches the link still travelling. This asserts
+    // the same thing — that it ends up on screen — and still fails if it never
+    // gets there.
+    await expect
+      .poll(async () => (await skip.boundingBox())?.y ?? Number.NEGATIVE_INFINITY)
+      .toBeGreaterThanOrEqual(0)
 
     await page.keyboard.press('Enter')
     await expect(page.locator('#main-content')).toBeFocused()

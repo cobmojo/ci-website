@@ -95,10 +95,13 @@ Enter and exit for things that appear over or inside the page:
 - **Post-hydration UI.** Controls that cannot exist until scripting has run —
   the reading progress panel, the two index filters, the print button — fade in
   over 180ms instead of popping.
-- **The skip link.** It travels in from above the viewport on focus, on the
-  entrance token. Its movement *is* its affordance: a reader watching it
-  arrive understands where it came from and that it will go back. `translate`
-  rather than `top`, so the arrival is composited rather than relaid out.
+- **The skip link.** It travels in from above the viewport on focus, at the
+  quicker of the two Tier 3 durations. Its movement *is* its affordance: a
+  reader watching it arrive understands where it came from and that it will go
+  back. It takes the shorter token deliberately, against the usual rule that
+  entrances are slower, because it is the first control a keyboard reader
+  meets and an arrival they have to wait for is an arrival in the way.
+  `translate` rather than `top`, so it is composited rather than relaid out.
 
 Exits are faster than entrances throughout, and every duration is under 300ms.
 

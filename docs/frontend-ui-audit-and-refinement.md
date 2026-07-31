@@ -446,7 +446,7 @@ against a production build.
 | `bun run content:pii` | Pass: no source contact details in 1,753 built or 295 committed files |
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
 | `bun run content:bundle` | Pass on the merged tree: every route within budget; `/corrections` 663.7 kB against its 664.1 kB allowance |
-| `bun run test:e2e` | **310 tests, 0 failures** on the merged tree (224 at the audit base + 5 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
+| `bun run test:e2e` | **312 tests, 0 failures** on the merged tree (224 at the audit base + 6 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
 | `bun run test:a11y` | **64 tests, 0 failures** (32 at base, desktop only; now 32 × desktop + 32 × mobile via the new `accessibility-mobile` project) |
 
 **Rendered sweep** (production build, before and after): 360 loads over all
@@ -616,6 +616,28 @@ were regressions from sweep 2, which is why the sweeps repeat. All corrected:
   implementation report's exhaustive client-component list omitted two, and
   the route table contradicted this document's own changelog-page count.
 
+### Two racy end-to-end tests, root-caused
+
+The sweep-3 pass left two end-to-end failures that reproduced on a loaded
+machine and were traced rather than retried away. Neither was a site defect;
+both were tests asserting against a moving target, and both are now
+deterministic.
+
+- **The skip link** was measured once, the instant focus landed, so the
+  assertion raced the arrival it was testing and caught the link still
+  travelling. It now polls until the link is on screen, which asserts the
+  same property and still fails if it never arrives. This also settled the
+  skip link's duration: the sweep had moved it to the Tier 3 entrance token,
+  but 150ms is deliberate for the first control a keyboard reader meets, so
+  the shipped timing is unchanged and the brief now records why it takes the
+  quicker of the two Tier 3 durations.
+- **"Carries the query through to the full search page"** asserted on
+  whichever search field matched first, within the 150ms the dialog stays
+  painted through its exit transition, so two fields matched and Playwright
+  treats a strict-mode violation as fatal rather than retrying it. The test
+  now asserts that following the link closes the dialog, then checks the
+  field on the page itself, which is what it was always claiming.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch
@@ -652,7 +674,7 @@ validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
 `test:a11y` 64 tests (63 + 1 axe timing flake retried green), 0 failures;
 `test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
 (67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
-Total automated coverage on the merged tree: 1,258 tests.
+Total automated coverage on the merged tree: 1,260 tests.
 
 **Review threads**: the automated review on the first commit raised two P2
 findings (permalink loss on demoted headings; component-rendered headings
