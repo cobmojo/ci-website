@@ -17,7 +17,7 @@
     "@ci/content-schema": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^24",
+    "@types/node": "^26",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
   }
