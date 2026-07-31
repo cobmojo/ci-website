@@ -47,6 +47,37 @@ export function formatCitation(source: SourceRecord): string {
   return parts.join('. ')
 }
 
+/**
+ * The name an inline citation marker shows, where the full line will not fit.
+ *
+ * A modern author is cited by surname, but the classical "X of Y" form names
+ * the see or city a father was bishop of, not a family: `Irenaeus of Lyons`
+ * cites as Irenaeus. Taking the last word would print "Lyons", which reads as
+ * a different person entirely.
+ */
+export function citationShortName(source: SourceRecord): string {
+  if (source.shortName) return source.shortName
+  if (!source.author) return source.title.split(' ')[0] ?? source.title
+  const [beforePlace, ...place] = source.author.split(' of ')
+  if (place.length > 0 && beforePlace) return beforePlace
+  const words = source.author.split(' ')
+  return words[words.length - 1] ?? source.author
+}
+
+/**
+ * The full citation for one marker, which may cite a narrower place than the
+ * record's own default locator.
+ *
+ * The marker's locator replaces the record's rather than following it. Most
+ * markers pass the same string the record carries, and appending produced
+ * "...chapter 34, section 3. Book II, chapter 34, section 3" — the reference
+ * twice, in both the tooltip and the link's accessible name.
+ */
+export function citationLabel(source: SourceRecord, locator?: string): string {
+  if (!locator) return formatCitation(source)
+  return `${formatCitation({ ...source, locator: undefined })}. ${locator}`
+}
+
 export const SOURCE_TYPE_FACETS = SOURCE_TYPE_LABELS
 export const PERSPECTIVE_FACETS = PERSPECTIVE_LABELS
 export { SOURCE_RECORDS }

@@ -19,10 +19,17 @@ const CRUMBS: readonly Crumb[] = [
   { href: '/passages/', label: 'Key Passages' },
 ]
 
+/**
+ * The bookends are read off the registry rather than written out. Named by
+ * hand they had already rotted: the description said the index ran to
+ * Revelation 20 after a Revelation 21 passage was added at the end.
+ */
+const FIRST_PASSAGE = passages[0]?.normalizedReference ?? ''
+const LAST_PASSAGE = passages[passages.length - 1]?.normalizedReference ?? ''
+
 export const metadata = pageMetadata({
   title: 'Key Passages',
-  description:
-    'Passage by passage treatments of the texts the argument turns on, from Isaiah 66 to Revelation 20, each with the traditional reading stated before the conditionalist response.',
+  description: `Passage by passage treatments of the texts the argument turns on, from ${FIRST_PASSAGE} to ${LAST_PASSAGE}, each with the traditional reading stated before the conditionalist response.`,
   route: '/passages/',
 })
 

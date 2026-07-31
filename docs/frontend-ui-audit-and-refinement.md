@@ -676,6 +676,151 @@ that measured rather than reasoned:
   `autoComplete="url"` is the autofill token for the reader's own home page,
   on a field that asks for a citation.
 
+### Gap sweep 5 (completed tree)
+
+Six angles over the tree at `c235dce`. Twelve findings confirmed, two refuted.
+The dominant one showed that sweep 4's search fix had been a patch on one
+instance of a class rather than a fix of the class:
+
+- **The search index described pages that do not exist.** Sweep 4 corrected
+  the hand-authored `headings` for `/start/`. Every other hand-authored entry
+  had the same defect: the 27 topic documents, `/method/`, `/about/`,
+  `/start/compare-the-views/` and every passage document. A verifier measured
+  the harm in both directions. Searching *distinctions* returned all 27 topics,
+  each quoting four section names, three of which appear nowhere on the page;
+  searching *why philosophy is not treated as proof*, which is a heading
+  `/method/` renders verbatim, returned that page nowhere at all. Every list
+  now names the headings its page renders, and a new end-to-end test walks one
+  document of each kind and fails if a claimed heading is not a heading on the
+  route, so the class cannot return silently.
+- **That correction moved the ranking baseline PR #5 pins.** The diff was
+  inspected before regenerating: 25 of 30 queries move by score and 3 by
+  order, each explained by heading text that is now real. The pin's docstring
+  now records when regeneration is legitimate, because a ranker change is not.
+- **`print:hidden` disclosures printed anyway.** Sweep 4 made closed
+  disclosures open on paper with `display: block !important`, which also
+  overrode the utility that exists to keep a disclosure off paper entirely.
+  The rule now excepts them.
+- **An inline citation's accessible name did not contain its visible text**
+  (WCAG 2.5.3), so speech input could not address the link by what it shows.
+- **The watch page promised "two places for further reading"** above a list
+  that renders three.
+- Four documentation claims disagreed with the tree: the axe route count, a
+  file extension, a static-generation claim that `/search/` is an exception
+  to, and a stale panel token in the handout.
+
+### Gap sweep 6 (completed tree)
+
+Three angles over the tree at `38ce63c`: rendered-output truth, accessibility
+beyond what axe can see, and the branch's own diff. Fourteen findings
+confirmed. The most serious is a false statement about data handling on the
+privacy page; the most instructive is that two of sweep 5's own fixes were
+weaker than they read.
+
+The first two came from chasing an end-to-end failure to its cause rather
+than to its symptom. The failing assertion was the one sweep 5 had re-pointed
+at the corrected accessible name; the fix was wrong in a way the old
+assertion had been hiding.
+
+- **Inline citations named a city instead of an author.** The marker took the
+  author's last word as a surname, which is right for `Edward Fudge` and wrong
+  for the classical "X of Y" form: `Irenaeus of Lyons` rendered as
+  `[Lyons, Book II, chapter 34, section 3]`, and `Augustine of Hippo` and
+  `Ignatius of Antioch` the same way. Three of the thirteen authors in the
+  library are cited this way, in prose, where "Lyons" reads as a different
+  person. Short names now come from `citationShortName`, beside
+  `formatCitation` where the rest of citation formatting lives.
+- **Citations stated their locator twice.** `formatCitation` already appends
+  the record's own locator, and the marker appended the call-site one after
+  it, so `/case/roadblocks/tradition/` served
+  `aria-label="… c. AD 174-189. Book II, chapter 34, section 3. Book II,
+  chapter 34, section 3"` — in the tooltip and in the accessible name.
+  `citationLabel` now treats the marker's locator as replacing the record's
+  default rather than following it, which also lets a marker cite a whole
+  chapter where the record defaults to one section. Nine unit tests cover
+  both functions, two of them over every source in the library.
+
+The privacy finding is the one to read first:
+
+- **The site told readers that nothing they searched for left their device,
+  and it was not true.** `/privacy/` said "Nothing you type into it leaves
+  your device" and "No query is transmitted anywhere, not to this site and not
+  to anyone else"; `/search/` said "Nothing you type is sent to a server" —
+  on the page that had just received it. `/search/` is a Server Component: it
+  reads `searchParams.q`, scores the index on the server and renders the
+  results. `curl` runs no JavaScript, and
+  `curl "…/search/?q=zzqxnotaword"` returns `No results for "zzqxnotaword"`
+  in the HTML, so an invented term demonstrably reached the server. Every
+  documented path leads there — the quick panel's own footer link, the
+  empty-state suggestions, and the scripting-disabled fallback the privacy
+  page offered as *proof* of the claim.
+
+  The claim is true of the quick panel, which matches the downloaded index in
+  the browser, and false of the results page, which is server-rendered so that
+  it works without scripting and so a page of results can be linked. The copy
+  now draws that distinction on all six surfaces plus the index builder's own
+  docstring, says the term travels in the URL and may appear in ordinary
+  request logs, and points a reader who would rather it did not to the panel.
+  Nothing about the architecture changed: the honest description was the fix.
+
+Two of sweep 5's own corrections turned out to be weaker than they read:
+
+- **The search index still described pages that do not exist**, in the class
+  sweep 5 believed it had closed. Both templates render several sections
+  conditionally, and the corrected lists were still unconditional: three
+  topics carry no objections and five passages no wording notes, so
+  "Objections that turn on this" was claimed for `/topics/gehenna/`,
+  `/topics/sheol/` and `/topics/sodom-and-gomorrah/`, which do not render it.
+  The passage list also omitted three headings that *are* rendered — "Where it
+  sits in the canon", "Notes on the wording" and "Editorial notes" — so real
+  headings were unfindable. Both lists are now built from the same predicates
+  the templates branch on.
+- **The guard test written to prevent exactly that could not see it.** It
+  sampled one document per type, and the topic it happened to sample was the
+  first alphabetically, which has all five sections. It now checks every route
+  in the index — fetched over HTTP and parsed, so covering 90-odd routes costs
+  seconds rather than a minute — and asserts the route count has not collapsed.
+
+The remaining findings, each with rendered proof:
+
+- **Inline markers printed the first word of the title for the 18 authorless
+  sources**, giving `[What]`, `[Weeping]`, `[God]` and `[Bible]` in prose, and
+  collapsing two different articles to `[Annihilation]` and two different
+  lexicon entries to `[Strong's]`. `SourceRecord` gains an optional
+  `shortName`, populated for all 18, and tests assert no authorless source
+  falls back to the title and no two unrelated sources share a marker. Two
+  works by one author sharing a surname is left alone: that is how citation
+  has always worked, and the locator tells them apart.
+- **"Sources cited on this page" disagreed with the citations on the page.**
+  `citedBy` is hand-maintained: `welch-source-document` is cited inline in S17
+  and S18 but was missing from both lists, and `sprinkle-introduction` was
+  listed on `/case/why-this-matters/`, whose text never mentions it. A
+  registry test now reads the MDX bodies and fails in both directions, exempting
+  the two appendices, which have no body to read.
+- **`/full-case/` contradicted itself in one sentence**, offering "About 247
+  minutes of reading, or roughly two hours at a careful pace". 247 minutes is
+  four hours, and a careful pace is slower, not faster. The hours are derived
+  now.
+- **`/method/` inverted the counts it invites the reader to check**, saying two
+  claims were narrowed and one withdrawn where the changelog records one
+  narrowed and two withdrawn — on the page that sets the site's evidentiary
+  standard.
+- **Video chapters read "1 minutes 26 seconds"** as their entire search
+  excerpt. They now read `1:26`, as the watch page has always written them.
+  This is also what moved the ranking baseline: "seconds" stems to "second",
+  so every chapter of the video matched the query "second death".
+- **`/passages/` named a range it does not end at** — "from Isaiah 66 to
+  Revelation 20", after a Revelation 21 passage was appended. Both bookends
+  are read off the registry now.
+- **Two contract tests could not fail for the regression they name.** The
+  button floor read `min-h-*` with a regex that consumed its own separator, so
+  `min-h-11 min-h-10` looked like one value, and it ignored arbitrary values
+  entirely though the button itself is written with them. The print rule for
+  disclosures had been widened to `details[^{]*`, which `details[open]` also
+  satisfies while forcing open only what is already open. Both now fail for
+  the thing they exist to catch, and an unreadable height fails rather than
+  being skipped.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

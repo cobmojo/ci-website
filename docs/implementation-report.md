@@ -57,9 +57,13 @@ reference. An author cannot misquote a verse, and an unknown reference fails the
 build. It also keeps a reference work of this size clear of modern-translation
 licensing. See `docs/rights-audit.md`.
 
-**Search runs in the browser.** The index is built from the registries at build
-time and served as a static asset. No query leaves the reader's machine and
-there is no hosted search service to depend on. Ranking is a plain weighted
+**Search has no hosted service behind it.** The index is built from the
+registries at build time and served as a static asset, so no query reaches a
+third party. Two surfaces score against it: the quick panel fetches the file
+and scores in the reader's browser, so what they type there is never
+transmitted; `/search/` scores the same index on this site's own server, which
+is what makes it work without scripting and makes a page of results linkable,
+at the cost of the term travelling in the URL. Ranking is a plain weighted
 scorer over title, id, summary, headings, Scripture references, body,
 transcript and notes, with synonym expansion at reduced weight.
 

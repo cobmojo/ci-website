@@ -253,11 +253,20 @@ test('a visitor can find every section that uses Matthew 10:28', async ({ page }
 test('a visitor can locate the source behind an early church claim', async ({ page }) => {
   await page.goto('/case/roadblocks/tradition/')
 
-  const citation = page.getByRole('link', { name: /^Source: Irenaeus of Lyons/ }).first()
+  const citation = page
+    .getByRole('link', { name: /^Irenaeus, Book II, chapter 34, section 3\./ })
+    .first()
   await expect(citation).toBeVisible()
-  // The citation itself carries the locator, so a reader knows where to look
-  // before they follow it.
-  await expect(citation).toHaveAccessibleName(/Book II, chapter 34, section 3/)
+
+  // WCAG 2.5.3: the accessible name has to open with the text the link shows,
+  // or speech input cannot address the link by what the reader can see. Taken
+  // from the rendered text rather than repeated here, so the two cannot drift.
+  const visible = (await citation.innerText()).replace(/^\[|\]$/g, '')
+  const literal = visible.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  await expect(citation).toHaveAccessibleName(new RegExp(`^${literal}\\.`))
+  // The full citation follows it, so a reader knows the work and where to look
+  // before they follow the link.
+  await expect(citation).toHaveAccessibleName(/Source: Irenaeus of Lyons\. Against Heresies/)
 
   await citation.click()
   await expect(page).toHaveURL(/\/sources\/#irenaeus-against-heresies$/)

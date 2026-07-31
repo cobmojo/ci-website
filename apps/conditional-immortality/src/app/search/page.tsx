@@ -19,7 +19,7 @@ import { searchIndex } from '@/lib/search-index'
 export const metadata: Metadata = pageMetadata({
   title: 'Search',
   description:
-    'Search case sections, key passages, objections, topics, the glossary, the source library and the video transcript. Searching runs in your browser.',
+    'Search case sections, key passages, objections, topics, the glossary, the source library and the video transcript.',
   route: '/search/',
   noindex: true,
 })
@@ -285,8 +285,10 @@ export default async function SearchPage({
         ) : null}
 
         <p className="mt-10 font-sans text-[0.88rem] text-ink-subtle">
-          Search runs entirely in your browser against an index built when the site was published.
-          Nothing you type is sent to a server, and no search history is kept.
+          Results come from an index built when the site was published. This page is an ordinary
+          form, so the term above is in the address and reached this site as any page request does.
+          No search history is kept. The quick panel, on Ctrl or Cmd and K, matches the same index
+          inside your browser instead.
         </p>
       </div>
     </>

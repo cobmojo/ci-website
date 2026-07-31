@@ -16,13 +16,21 @@ import baseline from './ranking-baseline.json'
  * wrong, not the file.
  *
  * One exception, and only one: the snapshot is taken against real content, so
- * correcting what is *indexed* legitimately moves it. That happened once, when
- * the hand-authored `headings` on the page, topic and passage documents were
- * found to name sections their pages do not render — search was reporting
- * "matched in heading" against text that was not there, and quoting it back as
- * the excerpt. Fixing the index moved 25 of the 30 queries by score and 3 by
- * order, and the file was regenerated with that diff inspected. A ranker change
- * is still wrong; regenerate only when the content going in was wrong.
+ * correcting what is *indexed* legitimately moves it. A ranker change is still
+ * wrong. Regenerate only when the content going in was wrong, and only with
+ * the diff inspected and explained. That has happened twice.
+ *
+ * The first was the hand-authored `headings` on the page, topic and passage
+ * documents, which named sections their pages do not render — search was
+ * reporting "matched in heading" against text that was not there, and quoting
+ * it back as the excerpt. Fixing them moved 25 of the 30 queries by score and
+ * 3 by order.
+ *
+ * The second moved exactly one query. Transcript summaries read "from 1
+ * minutes 26 seconds", and "seconds" stems to "second", so every chapter of
+ * the video matched the query "second death" — a central term of the case —
+ * on its timestamp. Writing the timestamp as `1:26` dropped 18 chapters that
+ * never mention death from that query's 114 results, and moved nothing else.
  */
 
 const index = buildSearchIndex()

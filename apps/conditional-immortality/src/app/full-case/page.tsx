@@ -58,7 +58,7 @@ export default function FullCasePage() {
             <p className="m-0 text-[1.13rem] leading-[1.6] text-ink-muted">
               Every part of the case in canonical order on a single page, assembled from the same
               text as the individual pages. About {totalMinutes} {pluralise(totalMinutes, 'minute')}{' '}
-              of reading, or roughly two hours at a careful pace.
+              of reading, or roughly {Math.round(totalMinutes / 60)} hours at a careful pace.
             </p>
             <p className="mt-4 mb-0 font-sans text-[0.9rem] text-ink-subtle">
               {loaded.length} sections{'. '}

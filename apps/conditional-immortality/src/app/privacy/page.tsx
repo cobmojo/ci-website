@@ -53,7 +53,8 @@ export default function PrivacyPage() {
                   play.
                 </li>
                 <li>
-                  Search runs inside your browser. Nothing you type into it leaves your device.
+                  The quick search panel matches inside your browser. The full results page is an
+                  ordinary form, so its term travels in the address, as with any link.
                 </li>
                 <li>
                   The correction form is the only place the site receives anything, and only what
@@ -121,17 +122,25 @@ export default function PrivacyPage() {
 
             <section aria-labelledby="search">
               <h2 id="search" className="mt-0 mb-3">
-                Search runs in your browser
+                Where a search term goes
               </h2>
               <p className="m-0 mb-3">
                 The search index is a single file downloaded from this site the first time you open
-                search. Matching happens inside your browser. No query is transmitted anywhere, not
-                to this site and not to anyone else, and no search is logged, stored or counted.
+                search. The quick panel matches inside that file, in your browser: what you type
+                there is not transmitted, and it keeps working with no network connection once the
+                index has been fetched.
+              </p>
+              <p className="m-0 mb-3">
+                The full results page is different, and deliberately so. It is an ordinary form that
+                submits to this site, which is what lets it work with scripting disabled and lets a
+                page of results be linked or bookmarked. The consequence is that the term is in the
+                address, and reaches the server answering the request as any address does, where it
+                may appear in ordinary request logs.
               </p>
               <p className="m-0">
-                That is why search works with no network connection once the index has been fetched,
-                and why the same page also works with scripting disabled, where the search control
-                becomes an ordinary link.
+                This site keeps no search history: nothing you search for is stored, counted or tied
+                to you. If you would rather a term never left the machine at all, the quick panel
+                answers the same index without ever loading that page.
               </p>
             </section>
 

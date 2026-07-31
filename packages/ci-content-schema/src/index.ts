@@ -395,6 +395,15 @@ export const SourceRecordSchema = z
 
     author: NonEmpty.optional(),
     title: Prose(3),
+    /**
+     * What an inline citation marker shows when there is no author to name.
+     *
+     * An authored source is cited by surname. Falling back to the title's
+     * first word gives markers like `[What]` and `[Weeping]`, and collides
+     * outright where two articles open the same way, so an authorless source
+     * names its own short form.
+     */
+    shortName: NonEmpty.optional(),
     publication: NonEmpty.optional(),
     publisher: NonEmpty.optional(),
     date: NonEmpty.optional(),

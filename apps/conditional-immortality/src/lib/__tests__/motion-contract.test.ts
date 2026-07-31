@@ -398,7 +398,12 @@ describe('print', () => {
     // Index into the stripped string, not the original: comments shift offsets.
     const live = withoutComments(css)
     const print = live.slice(live.indexOf('@media print'))
-    expect(print).toMatch(/details[^{]*\{\s*display:\s*block\s*!important/)
+    // Pinned to the exact selector. `details[^{]*` would also accept
+    // `details[open]`, which forces open only what is already open — the
+    // regression this line exists to catch.
+    expect(print).toMatch(
+      /details:not\(\.print-hidden,\s*\[class~="print:hidden"\]\)\s*\{\s*display:\s*block\s*!important/,
+    )
     expect(print).toMatch(/display:\s*revert\s*!important/)
   })
 })

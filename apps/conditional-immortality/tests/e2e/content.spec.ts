@@ -251,10 +251,26 @@ for (const download of DOWNLOADS) {
  * page, topic and passage documents are hand-authored, and when one of them
  * names a section the page does not have, search reports "matched in
  * heading" against text that is not there and quotes it back as the excerpt.
- * The templates share one list each, so one topic and one passage prove all
- * of them.
+ *
+ * Every route in the index is checked, not one of each kind. Several of the
+ * sections on those templates are conditional, so the kinds are not uniform:
+ * three topics carry no objections, five passages no wording notes, and a
+ * sampled document is exactly the one that hides them.
  */
-test('every heading claimed by the search index exists on its page', async ({ page, request }) => {
+
+/** Heading text as rendered, with React's comment markers and the anchor gone. */
+function headingsIn(html: string): string[] {
+  return [...html.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)].map(([, , inner]) =>
+    inner
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/\s+/g, ' ')
+      .replace(/#$/, '')
+      .trim(),
+  )
+}
+
+test('every heading claimed by the search index exists on its page', async ({ request }) => {
   const index = await (await request.get('/search-index.json')).json()
   const docs = index.docs as {
     id: string
@@ -263,25 +279,27 @@ test('every heading claimed by the search index exists on its page', async ({ pa
     headings: string[]
   }[]
 
-  const oneOfEach = new Map<string, (typeof docs)[number]>()
+  // Documents sharing a route (the glossary is one page of many entries) need
+  // the page fetched once, so this stays a few seconds rather than a minute.
+  const claimsByRoute = new Map<string, Set<string>>()
   for (const doc of docs) {
     if (doc.headings.length === 0) continue
-    if (doc.type === 'page') oneOfEach.set(doc.id, doc)
-    else if (!oneOfEach.has(doc.type)) oneOfEach.set(doc.type, doc)
+    const route = doc.route.split('#')[0] ?? doc.route
+    const claims = claimsByRoute.get(route) ?? new Set<string>()
+    for (const heading of doc.headings) claims.add(heading)
+    claimsByRoute.set(route, claims)
   }
+  // If this ever collapses to a handful, the index shrank and the guard went
+  // quiet with it.
+  expect(claimsByRoute.size).toBeGreaterThan(80)
 
   const missing: string[] = []
-  for (const doc of oneOfEach.values()) {
-    await page.goto(doc.route)
-    const rendered = await page.evaluate(() =>
-      [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].map(heading =>
-        (heading.textContent ?? '').replace(/\s+/g, ' ').replace(/#$/, '').trim(),
-      ),
-    )
-    for (const claimed of doc.headings) {
-      if (!rendered.some(text => text === claimed)) {
-        missing.push(`${doc.route} claims "${claimed}"`)
-      }
+  for (const [route, claims] of claimsByRoute) {
+    const response = await request.get(route)
+    expect(response.ok(), `${route} did not respond`).toBe(true)
+    const rendered = new Set(headingsIn(await response.text()))
+    for (const claimed of claims) {
+      if (!rendered.has(claimed)) missing.push(`${route} claims "${claimed}"`)
     }
   }
 

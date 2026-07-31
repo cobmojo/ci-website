@@ -20,13 +20,48 @@ import type { SearchDoc, SearchIndex } from './types'
 /**
  * Build the search index from the content registries.
  *
- * Runs at build time and is written out as a static JSON asset. Nothing is
- * queried at runtime: the reader's browser scores results locally, so no
- * search term ever leaves their machine and there is no hosted search service
- * to depend on.
+ * Runs at build time and is written out as a static JSON asset, so there is no
+ * hosted search service to depend on and no query ever reaches a third party.
+ *
+ * Two surfaces score against it. The quick panel fetches the file and scores
+ * in the reader's browser, so what they type there is never transmitted. The
+ * `/search/` page is a Server Component scoring the same index on this site's
+ * own server, which is what makes it work without scripting and makes a page
+ * of results linkable — at the cost of the term travelling in the URL. The
+ * privacy page states that distinction; keep the two in step.
  */
 
 const appendixIds = new Set(appendixSections.map(section => section.id))
+
+/**
+ * Headings on the templated pages are listed by hand, because those pages are
+ * TSX rather than MDX and there is no body to extract them from. Several of
+ * the sections are conditional, so the lists have to be conditional too: a
+ * heading claimed for a page that does not render it makes search report
+ * "matched in heading" against text the reader will never find, and one left
+ * out makes a real heading unfindable. `tests/e2e/content.spec.ts` fetches
+ * every route in the index and fails if either happens.
+ *
+ * Chrome that every page of a kind carries — the sources panel, the feedback
+ * form — is deliberately left out. Indexing it would match every passage on
+ * the word "sources" without telling a reader anything.
+ */
+const sectionIds = new Set(caseSections.map(section => section.id))
+const topicIds = new Set(topics.map(topic => topic.id))
+const passageSlugs = new Set(passages.map(passage => passage.slug))
+
+/** Does any of these ids resolve, as the page's own `.filter(Boolean)` asks? */
+const anyResolves = (ids: readonly string[], known: ReadonlySet<string>) =>
+  ids.some(id => known.has(id))
+
+/** A heading, but only when the section that carries it is rendered. */
+const headingIf = (rendered: boolean, heading: string) => (rendered ? [heading] : [])
+
+/** `86` -> `1:26`, matching how `/watch/` prints its timestamps. */
+const timestamp = (totalSeconds: number) => {
+  const seconds = Math.max(0, Math.floor(totalSeconds))
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
 
 function booksIn(references: readonly string[]): string[] {
   const books = new Set<string>()
@@ -100,10 +135,15 @@ function passageDocs(): SearchDoc[] {
       headings: [
         'The text',
         'The immediate context',
+        ...headingIf(Boolean(passage.canonicalContext), 'Where it sits in the canon'),
         'Why it matters',
         'How the passage is interpreted',
+        ...headingIf(passage.languageNotes.length > 0, 'Notes on the wording'),
+        ...headingIf(passage.notes.length > 0, 'Editorial notes'),
+        // This heading sits outside its own conditional: a passage with no
+        // section to point at still gets the heading, and a line saying so.
         'Where this passage appears in the case',
-        'Related passages',
+        ...headingIf(anyResolves(passage.relatedPassages, passageSlugs), 'Related passages'),
       ],
       scriptureRefs: normaliseRefs(references),
       body: [
@@ -134,11 +174,17 @@ function topicDocs(): SearchDoc[] {
     breadcrumb: 'Topic',
     summary: topic.definition,
     headings: [
-      'What this is not',
-      'Principal passages',
-      'Where this is argued in the case',
-      'Objections that turn on this',
-      'Related topics',
+      ...headingIf(topic.distinctions.length > 0, 'What this is not'),
+      ...headingIf(topic.principalPassages.length > 0, 'Principal passages'),
+      ...headingIf(
+        anyResolves(topic.relatedSections, sectionIds),
+        'Where this is argued in the case',
+      ),
+      ...headingIf(
+        anyResolves(topic.relatedObjections, sectionIds),
+        'Objections that turn on this',
+      ),
+      ...headingIf(anyResolves(topic.relatedTerms, topicIds), 'Related topics'),
     ],
     scriptureRefs: normaliseRefs(topic.principalPassages),
     body: [...topic.body, ...topic.distinctions, ...topic.openQuestions].join(' '),
@@ -227,7 +273,9 @@ function transcriptDocs(): SearchDoc[] {
       route: `/watch/#${chapter.id}`,
       title: chapter.title,
       breadcrumb: 'Video transcript',
-      summary: `Video overview, from ${Math.floor(chapter.start / 60)} minutes ${chapter.start % 60} seconds.`,
+      // A search row shows this whole string, so "1 minutes 26 seconds" was
+      // reaching readers. The site writes timestamps as `1:26` everywhere else.
+      summary: `Video overview, from ${timestamp(chapter.start)}.`,
       headings: [],
       scriptureRefs: [],
       body: text,

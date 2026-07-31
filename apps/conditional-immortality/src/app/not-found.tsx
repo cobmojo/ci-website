@@ -73,8 +73,8 @@ export default function NotFound() {
           <p className="m-0 mb-4 text-[1.02rem] text-ink-muted">
             Search covers every part, passage, topic, glossary term and source. Try a Scripture
             reference such as Matthew 10:28, a phrase such as unquenchable fire, or a part
-            identifier such as S04. Searching happens in your browser and nothing you type is sent
-            anywhere.
+            identifier such as S04. Press Ctrl or Cmd and K for the quick panel, which matches
+            inside your browser.
           </p>
           <Link href="/search/" className={buttonVariants({ variant: 'primary' })}>
             Go to search
