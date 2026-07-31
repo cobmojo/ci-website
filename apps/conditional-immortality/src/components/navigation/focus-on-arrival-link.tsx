@@ -17,11 +17,25 @@ import { isModifiedClick } from '@/lib/modified-click'
  * straight into the footer, skipping every new result.
  *
  * So focus follows the navigation. The target takes `tabindex="-1"` so it can
- * receive focus without becoming a tab stop of its own, and `preventScroll`
- * leaves the scrolling to the router rather than fighting it.
+ * receive focus without becoming a tab stop of its own.
  *
- * This is not a fragment link and adds no motion: Tier 4 anchor scrolling is
- * untouched.
+ * The scrolling is the platform's, through a fragment on the href. Leaving it
+ * to the router looked right on `/watch/`, where the player sits near the top
+ * and the router's scroll to the top of the document lands on it by
+ * coincidence. On `/search/` the heading, the form and the filters fill the
+ * first 840px, so at 375px wide the results began below the fold: focus went
+ * to an element with no pixels in the viewport, taking its focus ring with it,
+ * and the only evidence the page had changed — "Page 2 of 4" — was cut in half
+ * by the fold.
+ *
+ * Scrolling the element in by hand does not fix it either: the router resets
+ * the scroll position after the navigation commits, so it undoes anything done
+ * before that. A fragment is what the router itself honours, it lands on
+ * `scroll-padding-top` clear of the sticky header, and it makes the result a
+ * reader can link to. Focus then follows with `preventScroll`, so it never
+ * fights the scroll the browser has already done.
+ *
+ * The scroll is instant. Tier 4 anchor scrolling is untouched.
  */
 export function FocusOnArrivalLink({
   href,
@@ -52,7 +66,7 @@ export function FocusOnArrivalLink({
   )
 
   return (
-    <Link href={href} rel={rel} className={className} onClick={onClick}>
+    <Link href={`${href}#${focusId}`} rel={rel} className={className} onClick={onClick}>
       {children}
     </Link>
   )

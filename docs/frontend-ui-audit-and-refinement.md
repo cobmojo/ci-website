@@ -1136,6 +1136,37 @@ removed the separate effect and the render-guard ref along with the
 duplication. 679,930 bytes against 680,000, and the shorter path is the better
 one regardless.
 
+### Gap sweep 11 (completed tree)
+
+The pattern recurred a sixth time, and the sweep was aimed at finding it.
+
+- **Paging the search results moved focus somewhere with no pixels in it.**
+  `FocusOnArrivalLink` declined to scroll and left it to the router, which was
+  right on `/watch/` only by coincidence: the player sits near the top, and
+  the router scrolls to the top of the document. On `/search/` the heading,
+  the form and the filters fill the first 840px, so at 375px wide the results
+  section begins below an 812px fold. Focus went there and its ring went with
+  it, the count line — the only evidence the page had changed — was bisected by
+  the fold with the top half of the letters showing, and the first result sat
+  75px past it. **The assertion was `toBeFocused`: presence of focus standing
+  in for perceivability, the same substitution as the two before it.** The
+  three sibling assertions had been upgraded to `toBeInViewport` and this one
+  had not.
+
+  Scrolling the element in by hand does not fix it — the router resets the
+  scroll after the navigation commits and undoes it, which the upgraded test
+  then caught. The href carries a fragment now, which is what the router
+  honours; it lands on `scroll-padding-top` clear of the header, and makes a
+  page of results something a reader can link to. Both call sites assert
+  `toBeInViewport`.
+- Also removed: a print selector for a class nothing in the tree sets.
+
+Everything else the sweep measured came back sound, including every other
+place this branch moves focus — the correction form at every outcome and both
+viewports, all four no-JS redirect landings, the 429 retry, the transcript
+timestamps, video activation, the skip link, both dialogs — each landing clear
+of the sticky header.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

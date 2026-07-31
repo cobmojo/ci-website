@@ -280,12 +280,17 @@ test.describe('keyboard operation', () => {
     const timestamp = page.locator('a[href^="?t="]').filter({ hasText: 'Closing and further' })
     await expect(timestamp).toHaveCount(1)
     await timestamp.click()
-    await expect(page).toHaveURL(/\/watch\/\?t=\d+$/)
+    // The fragment is how the scroll happens: the router honours it, where it
+    // would otherwise reset to the top of the document.
+    await expect(page).toHaveURL(/\/watch\/\?t=\d+#video-player$/)
 
     // A query-only navigation is a soft one: the router resets the scroll
     // position but leaves focus behind, which stranded a keyboard reader
     // twenty-one thousand pixels below the player they had just asked for.
     await expect(page.locator('#video-player')).toBeFocused()
+    // Focus without pixels is not arrival. This one happens to land near the
+    // top; its sibling on /search/ did not, and the assertion could not tell.
+    await expect(page.locator('#video-player')).toBeInViewport()
   })
 
   test('paging the search results moves focus into them', async ({ page }) => {
@@ -297,6 +302,10 @@ test.describe('keyboard operation', () => {
     await expect(page).toHaveURL(/page=2/)
 
     await expect(page.locator('#search-results')).toBeFocused()
+    // At 375x812 the heading, form and filters fill the first 840px, so the
+    // results began below the fold with focus — and its ring — parked off
+    // screen. `toBeFocused` passed throughout.
+    await expect(page.locator('#search-results')).toBeInViewport()
     // The next tab stop belongs to the results, not to the footer beyond them.
     await page.keyboard.press('Tab')
     const inResults = await page.evaluate(() =>
