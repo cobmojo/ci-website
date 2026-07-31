@@ -120,10 +120,25 @@ export function cuesToParagraphs(
    * sentence it came from, not to a paragraph of its own: one chapter ends on
    * the single word "The", which read as a mistake standing alone. Joined, not
    * dropped — the words are the published ones.
+   *
+   * Only when the fragment is the whole of the last paragraph. Testing the
+   * paragraph rather than the sentence, and merging the last two paragraphs,
+   * looked the same on the one chapter it was written for and was not: 35 of
+   * the 39 chapters end without terminal punctuation, so it fired on nearly
+   * all of them and joined two full paragraphs of prose. The transcript went
+   * from 112 paragraphs to 79, twenty-one chapters became a single block, and
+   * one paragraph reached 195 words. The words were all still there, which is
+   * the promise this code exists to keep, and the reflow a reader can follow
+   * was gone.
    */
-  const last = paragraphs.at(-1)
-  if (paragraphs.length > 1 && last && !/[.!?]["')\]]*$/.test(last)) {
-    paragraphs.splice(-2, 2, `${paragraphs.at(-2)} ${last}`)
+  const fragment = sentences.at(-1)
+  if (
+    paragraphs.length > 1 &&
+    fragment &&
+    !/[.!?]["')\]]*$/.test(fragment) &&
+    paragraphs.at(-1) === fragment
+  ) {
+    paragraphs.splice(-2, 2, `${paragraphs.at(-2)} ${fragment}`)
   }
 
   return paragraphs

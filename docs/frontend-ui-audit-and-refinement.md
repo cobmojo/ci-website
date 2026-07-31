@@ -1508,6 +1508,40 @@ are served uncompressed, which is a deployment concern rather than a code one;
 and the site ships no favicon, so every tab request costs a 404. Each is
 written up with its measurement.
 
+### Gap sweep 16 (follow-up branch)
+
+The pattern recurred a twelfth time, in the transcript fix from the sweep
+before, and it is the clearest instance of the whole run.
+
+- **The trailing-fragment merge deleted a third of the transcript's paragraph
+  breaks.** The comment describes moving a stray word into the sentence it came
+  from. The code tested the last *paragraph* and merged the last *two
+  paragraphs* — and 35 of the 39 chapters end without terminal punctuation,
+  because a chapter boundary is a timestamp, so it fired almost everywhere. The
+  transcript went from 112 paragraphs to 79, twenty-one chapters became a
+  single unbroken block, and one paragraph reached 195 words where the captions
+  gave two. Every word was still present, which is the promise the code exists
+  to keep; the reflow a reader can follow was gone. It now merges only when the
+  stray sentence is the whole of the last paragraph: 100 paragraphs, seven
+  single-block chapters, longest 127 words, and every word still present.
+- **The test could not tell three implementations apart.** Shipped, described,
+  and "collapse the entire chapter into one paragraph" all passed every
+  assertion, because the new checks were rejoin-equality, which is blind to
+  grouping, and a fixture that returns a single paragraph — so the test named
+  for attaching a fragment "to the sentence before it" passed on output where
+  no preceding paragraph survived. The tests now assert exact paragraph arrays,
+  including a chapter that ends mid-sentence with the fragment sharing its
+  paragraph, and were confirmed to fail against both wrong implementations
+  before being accepted.
+
+Everything else the sweep measured on this branch came back clean: all 118 OG
+cards render in a mean 54ms with none hitting the fallback and the Arabic title
+now answering 200; the index ETag is deterministic across processes and the
+browser transfers 0 bytes on the second and third visits; releasing the fetch
+guard in `catch` recovers in 61ms without bringing the double fetch back; and
+removing `i.ytimg.com` from the policy refuses nothing, because no code, no
+rendered page and no `next/image` call ever referenced it.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

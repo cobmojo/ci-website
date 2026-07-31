@@ -219,17 +219,43 @@ describe('the published wording, paragraph by paragraph', () => {
     expect(cuesToParagraphs(cues).join(' ').replace(/\s+/g, ' ').trim()).toBe(published(cues))
   })
 
-  it('attaches a chapter that stops mid-sentence to the sentence before it', () => {
-    // The boundary is a timestamp, not a full stop, so the last cue of a
-    // chapter can end on a word. One chapter ends on the single word "The",
-    // which read as a mistake standing alone in a paragraph of its own.
+  it('attaches a stray fragment to the paragraph before it', () => {
+    // Six sentences group into two paragraphs of three, leaving the fragment
+    // alone in a third. That is the case this rule is for.
+    const cues = [cue('One here. Two here. Three here. Four here. Five here. Six here. The', 0)]
+    expect(cuesToParagraphs(cues)).toEqual([
+      'One here. Two here. Three here.',
+      'Four here. Five here. Six here. The',
+    ])
+  })
+
+  it('leaves every other paragraph break alone when a chapter ends mid-sentence', () => {
+    // Seven sentences plus a fragment: the fragment shares the last paragraph,
+    // so there is no stray to move. Testing the paragraph rather than the
+    // sentence merged these two paragraphs anyway — and because 35 of the 39
+    // chapters end without terminal punctuation, it did so nearly everywhere,
+    // taking the transcript from 112 paragraphs to 79 with twenty-one chapters
+    // reduced to a single block.
     const cues = [
-      cue('One sentence. Two sentences. Three sentences. Four sentences.', 0),
-      cue('Five sentences. The', 5),
+      cue('One here. Two here. Three here. Four here. Five here. Six here.', 0),
+      cue('Seven here. The', 5),
     ]
-    const paragraphs = cuesToParagraphs(cues)
-    expect(paragraphs.at(-1)).toMatch(/The$/)
-    expect(paragraphs.filter(paragraph => paragraph.length < 12)).toEqual([])
-    expect(paragraphs.join(' ').replace(/\s+/g, ' ').trim()).toBe(published(cues))
+    expect(cuesToParagraphs(cues)).toEqual([
+      'One here. Two here. Three here.',
+      'Four here. Five here. Six here.',
+      'Seven here. The',
+    ])
+  })
+
+  it('paragraphs a chapter the same whether or not it ends on a stray word', () => {
+    // A caption track that stops one word into a sentence is the same prose as
+    // one that stops cleanly; the trailing word must not change how the rest is
+    // broken up.
+    const nine = 'A one. B two. C three. D four. E five. F six. G seven. H eight. I nine.'
+    const clean = cuesToParagraphs([cue(nine, 0)])
+    const strayed = cuesToParagraphs([cue(`${nine} And`, 0)])
+    expect(strayed).toHaveLength(clean.length)
+    expect(strayed.slice(0, -1)).toEqual(clean.slice(0, -1))
+    expect(strayed.at(-1)).toBe(`${clean.at(-1)} And`)
   })
 })
