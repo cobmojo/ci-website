@@ -1,16 +1,18 @@
 import { getSection } from '@ci/content/case'
 import { formatCitation, sources } from '@ci/content/sources'
 import {
-  type LinkStatus,
+  LINK_STATUS_LABELS,
   PERSPECTIVE_LABELS,
+  PERSPECTIVE_UNSTATED_LABEL,
   type Perspective,
-  type RightsStatus,
+  RIGHTS_STATUS_LABELS,
   SOURCE_TYPE_LABELS,
   type SourceType,
 } from '@ci/content-schema'
 import { Badge } from '@ci/ui'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { type FilterOption, SourceFilter } from '@/components/sources/source-filter'
 import { formatLongDate, pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
@@ -36,27 +38,6 @@ export const metadata = pageMetadata({
   route: '/sources/',
 })
 
-/**
- * Rights and link vocabularies are defined in the content schema but carry no
- * label map there, so the human-readable wording lives here.
- */
-const RIGHTS_STATUS_LABELS: Record<RightsStatus, string> = {
-  'public-domain': 'Public domain',
-  cleared: 'Cleared for use',
-  'permission-needed': 'Permission needed before quoting',
-  'quoted-briefly': 'Quoted briefly with attribution',
-  paraphrased: 'Paraphrased rather than quoted',
-  'link-only': 'Linked rather than quoted',
-}
-
-const LINK_STATUS_LABELS: Record<LinkStatus, string> = {
-  live: 'Link checked and live',
-  redirected: 'Link redirects to a new location',
-  'archived-only': 'Available through an archive only',
-  dead: 'Link no longer resolves',
-  'not-checked': 'Link not checked',
-}
-
 const UNSTATED_PERSPECTIVE = 'unstated'
 
 function perspectiveValue(perspective?: Perspective): string {
@@ -64,7 +45,7 @@ function perspectiveValue(perspective?: Perspective): string {
 }
 
 function perspectiveLabel(perspective?: Perspective): string {
-  return perspective ? PERSPECTIVE_LABELS[perspective] : 'Perspective not stated'
+  return perspective ? PERSPECTIVE_LABELS[perspective] : PERSPECTIVE_UNSTATED_LABEL
 }
 
 /** Only the facets that actually occur in the library are offered. */
@@ -87,7 +68,7 @@ const PERSPECTIVE_OPTIONS: readonly FilterOption[] = (() => {
       value,
       label: `${
         value === UNSTATED_PERSPECTIVE
-          ? 'Perspective not stated'
+          ? PERSPECTIVE_UNSTATED_LABEL
           : PERSPECTIVE_LABELS[value as Perspective]
       } (${count})`,
     }))
@@ -162,7 +143,7 @@ export default function SourcesPage() {
                   data-source-perspective={perspectiveValue(source.perspective)}
                   className="rounded-md border border-border bg-paper-raised p-5"
                 >
-                  <h3 className="mt-0 mb-1 text-[1.08rem] leading-snug">
+                  <h3 className="mt-0 mb-1 text-[1.1rem] leading-snug">
                     {source.author ? (
                       <span className="text-ink-muted">{source.author}. </span>
                     ) : null}
@@ -251,9 +232,9 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Link</dt>
                         <dd className="m-0 break-words text-ink">
-                          <a href={source.url} rel="noopener noreferrer" target="_blank">
+                          <NewTabLink href={source.url} showsUrl>
                             {source.url}
-                          </a>
+                          </NewTabLink>
                         </dd>
                       </div>
                     ) : null}
@@ -261,9 +242,9 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Archived copy</dt>
                         <dd className="m-0 break-words text-ink">
-                          <a href={source.archiveUrl} rel="noopener noreferrer" target="_blank">
+                          <NewTabLink href={source.archiveUrl} showsUrl>
                             {source.archiveUrl}
-                          </a>
+                          </NewTabLink>
                         </dd>
                       </div>
                     ) : null}
@@ -271,13 +252,9 @@ export default function SourcesPage() {
                       <div className="min-w-0">
                         <dt className="text-ink-subtle">Link as given in the original document</dt>
                         <dd className="m-0 break-words text-ink">
-                          <a
-                            href={source.sourceDocumentUrl}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
+                          <NewTabLink href={source.sourceDocumentUrl} showsUrl>
                             {source.sourceDocumentUrl}
-                          </a>
+                          </NewTabLink>
                         </dd>
                       </div>
                     ) : null}

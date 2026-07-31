@@ -75,7 +75,8 @@ export function SearchEmptyState({ query }: { query?: string }) {
       ) : (
         <p className="mt-0 mb-4 text-[1.02rem] text-ink-muted">
           Search case sections, passages, objections, topics, the glossary, sources and the video
-          transcript. Searching happens in your browser; nothing you type is sent anywhere.
+          transcript. Press Ctrl or Cmd and K for the quick panel, which matches the same index
+          inside your browser.
         </p>
       )}
       <ul className="m-0 list-none space-y-2 p-0">

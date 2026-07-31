@@ -1,4 +1,4 @@
-import { caseSections, ESSENTIAL_PATH, getSection, PRINCIPAL_CLAIMS } from '@ci/content/case'
+import { ESSENTIAL_PATH, getSection, PRINCIPAL_CLAIMS } from '@ci/content/case'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
@@ -169,9 +169,9 @@ export default function StartHerePage() {
             The essential reading path
           </h2>
           <p className="m-0 mb-5">
-            The full case runs to <Link href="/case/">{caseSections.length} parts</Link>. These{' '}
-            {ESSENTIAL_SECTIONS.length} pages, read in this order, meet every load-bearing part of
-            the argument without reading all of them.
+            The full case runs to <Link href="/case/">thirty-seven parts</Link>, with a preface and
+            two appendices alongside them. These {ESSENTIAL_SECTIONS.length} pages, read in this
+            order, meet every load-bearing part of the argument without reading all of them.
           </p>
           <ol className="m-0 space-y-3 pl-6">
             {ESSENTIAL_SECTIONS.map(section => (

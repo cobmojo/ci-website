@@ -5,16 +5,20 @@
 // values from it put Zod and the whole schema graph into this page's bundle —
 // 369,610 bytes of it, for a form that works with scripting switched off.
 import {
+  FEEDBACK_FIELD_MESSAGES,
   FEEDBACK_TYPE_LABELS,
+  type FeedbackFieldError,
   type FeedbackType,
   feedbackTypes,
+  isAcceptableEmail,
+  isAcceptableSourceUrl,
   type PublicationConsent,
+  SUBMISSION_STATUS_ID,
 } from '@ci/content-schema/feedback'
 import { buttonVariants } from '@ci/ui'
 import { useForm } from '@tanstack/react-form'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 /**
  * The correction and counterargument form.
@@ -67,6 +71,26 @@ const MESSAGE_MIN = 20
 const MESSAGE_MAX = 8000
 
 /**
+ * The visible label for every field, keyed by wire name.
+ *
+ * One map serves both the rendered labels and the server-error report, so a
+ * server-side validation failure names each rejected field with exactly the
+ * words the reader sees above it.
+ */
+const FIELD_LABELS = {
+  type: 'What kind of feedback is this?',
+  message: 'Your correction, counterargument or report',
+  sourceUrl: 'Source web address',
+  name: 'Your name',
+  email: 'Your email',
+  publicationConsent: 'If this leads to a change, what may be published?',
+} as const
+
+function fieldLabel(field: string): string {
+  return field in FIELD_LABELS ? FIELD_LABELS[field as keyof typeof FIELD_LABELS] : 'Form'
+}
+
+/**
  * The trailing slash is load bearing. `trailingSlash: true` answers a POST to
  * the unslashed path with a 308, and a redirected submission is at best an
  * extra round trip and at worst dropped by an intermediary.
@@ -76,7 +100,10 @@ const FEEDBACK_ENDPOINT = '/api/feedback/'
 /* ------------------------------------------------------------------ *
  * Field validators
  *
- * Mirrors of the server schema, phrased for a reader rather than for a log.
+ * Phrased for a reader rather than for a log. The two optional fields call the
+ * same predicates the server schema refines with, so "mirror" is now enforced
+ * rather than asserted; the length rules below are still duplicated, and are
+ * plain enough to read against the schema.
  * ------------------------------------------------------------------ */
 
 function validateMessage(value: string): string | undefined {
@@ -94,15 +121,7 @@ function validateMessage(value: string): string | undefined {
 function validateSourceUrl(value: string): string | undefined {
   const trimmed = value.trim()
   if (trimmed.length === 0) return undefined
-  try {
-    const url = new URL(trimmed)
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      return 'Please give a web address beginning with http:// or https://, or leave this empty.'
-    }
-    return undefined
-  } catch {
-    return 'That does not look like a complete web address. Include https://, or leave this empty.'
-  }
+  return isAcceptableSourceUrl(trimmed) ? undefined : FEEDBACK_FIELD_MESSAGES.sourceUrl
 }
 
 function validateName(value: string): string | undefined {
@@ -113,10 +132,7 @@ function validateName(value: string): string | undefined {
 function validateEmail(value: string): string | undefined {
   const trimmed = value.trim()
   if (trimmed.length === 0) return undefined
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-    return 'That does not look like an email address. Correct it, or leave it empty.'
-  }
-  return undefined
+  return isAcceptableEmail(trimmed) ? undefined : FEEDBACK_FIELD_MESSAGES.email
 }
 
 /** Field errors arrive as strings from the validators above. */
@@ -141,38 +157,64 @@ function readType(value: string | null): FeedbackType {
   return feedbackTypes.find(type => type === value) ?? DEFAULT_TYPE
 }
 
-export function FeedbackForm() {
-  return (
-    <Suspense
-      fallback={
-        <FeedbackFormFields
-          sectionId=""
-          headingId=""
-          initialType={DEFAULT_TYPE}
-          initialStatus="idle"
-        />
-      }
-    >
-      <FeedbackFormWithQuery />
-    </Suspense>
-  )
+/**
+ * What a reader without scripting is told after the redirect.
+ *
+ * A rejected submission and a submission the server could not store are
+ * different failures and were being reported as the same one: both redirected
+ * to `?submitted=0`, which says the values could not be accepted. A reader
+ * whose perfectly good text hit a storage error was told to check their
+ * wording and send it again, into a failure that would repeat identically and
+ * spend their rate-limit allowance doing it. The scripted path had this right
+ * all along; only the redirect threw the distinction away.
+ */
+const REDIRECT_DETAIL: Partial<Record<SubmissionStatus, string>> = {
+  invalid:
+    'The values sent could not be accepted, and your text was not kept. Check that the message is at least twenty characters and that any web address is complete, then send it again.',
+  error:
+    'The server did not record it, and your text was not kept. This is a fault at our end, not with what you wrote. Please try again in a few minutes.',
+}
+
+/** What `?submitted=` means, and what the reader is told about it. */
+function readStatus(submitted: string | undefined): SubmissionStatus {
+  if (submitted === '1') return 'success'
+  if (submitted === '0') return 'invalid'
+  if (submitted === 'error') return 'error'
+  return 'idle'
 }
 
 /**
  * The query string carries the section and heading a reader came from, and
- * `submitted=1` after a redirect from a submission made without JavaScript.
- * `useSearchParams` is read inside its own boundary so the rest of the page
- * stays statically rendered.
+ * `submitted=` after a redirect from a submission made without JavaScript.
+ *
+ * The page resolves it and passes it in. It used to be read here with
+ * `useSearchParams`, inside a Suspense boundary, so that the route could stay
+ * statically prerendered — and that is precisely what broke the promise the
+ * API route states in its own docstring, that the form works without
+ * JavaScript. A static page cannot vary by query string, so the server sent
+ * the fallback to everyone: a reader without scripting submitted a correction,
+ * was redirected back, and saw a page that looked untouched. Nothing said it
+ * had worked, nothing said it had failed, and the section they were correcting
+ * was dropped from the hidden field. `/search/` already pays this cost for the
+ * same reason.
  */
-function FeedbackFormWithQuery() {
-  const params = useSearchParams()
-  const submitted = params.get('submitted')
+export function FeedbackForm({
+  sectionId = '',
+  headingId = '',
+  type,
+  submitted,
+}: {
+  sectionId?: string
+  headingId?: string
+  type?: string
+  submitted?: string
+}) {
   return (
     <FeedbackFormFields
-      sectionId={params.get('section') ?? params.get('sectionId') ?? ''}
-      headingId={params.get('heading') ?? params.get('headingId') ?? ''}
-      initialType={readType(params.get('type'))}
-      initialStatus={submitted === '1' ? 'success' : submitted === '0' ? 'invalid' : 'idle'}
+      sectionId={sectionId}
+      headingId={headingId}
+      initialType={readType(type ?? null)}
+      initialStatus={readStatus(submitted)}
     />
   )
 }
@@ -205,23 +247,46 @@ function FeedbackFormFields({
     emailError: `${uid}-email-error`,
     consent: `${uid}-consent`,
     honeypot: `${uid}-website`,
-    status: `${uid}-status`,
+    /**
+     * Deliberately not `useId()`-derived. The API route redirects a no-JS
+     * submission to this fragment, so the id has to be one the server can
+     * write into a URL. There is one correction form per page.
+     */
+    status: SUBMISSION_STATUS_ID,
   }
 
   const [status, setStatus] = useState<SubmissionStatus>(initialStatus)
-  const [detail, setDetail] = useState<string>(
-    initialStatus === 'invalid'
-      ? 'The values sent could not be accepted. Check that the message is at least twenty characters and that any web address is complete, then send it again.'
-      : '',
-  )
+  const [detail, setDetail] = useState<string>(REDIRECT_DETAIL[initialStatus] ?? '')
   /**
    * False during server rendering and the first client render, so the markup
    * the browser receives is a plain, working HTML form.
    */
   const [scripted, setScripted] = useState(false)
   const honeypotRef = useRef<HTMLInputElement>(null)
+  const statusRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => setScripted(true), [])
+
+  /**
+   * Report the outcome, and take the reader to it.
+   *
+   * The status region sits above the form, so on a scripted submit — where the
+   * page never navigates and nothing scrolls — the answer rendered a full
+   * screen *above* the reader: measured at 987px above the top of an 812px
+   * viewport, with the reader still looking at the Send button and their text
+   * gone from the textarea. Without scripting the redirect's status fragment
+   * handles it; with scripting there is no navigation to carry one.
+   *
+   * Focus rather than a bare scroll, so a keyboard reader lands on the message
+   * and can carry on from there. Only an outcome moves focus, never the
+   * `submitting` step, and never a redirect's initial render: there the
+   * browser has already scrolled, and stealing focus on load is its own defect.
+   */
+  const settle = (next: SubmissionStatus, message = '') => {
+    setStatus(next)
+    setDetail(message)
+    statusRef.current?.focus()
+  }
 
   const form = useForm({
     defaultValues: {
@@ -250,33 +315,52 @@ function FeedbackFormFields({
         if (response.status === 429) {
           const retryAfter = Number(response.headers.get('retry-after') ?? '0')
           const minutes = Math.max(1, Math.ceil(retryAfter / 60))
-          setStatus('rate-limited')
-          setDetail(
+          settle(
+            'rate-limited',
             `Please try again in about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}. Nothing was lost: your text is still in the form.`,
           )
           return
         }
 
         if (response.status === 400) {
-          setStatus('invalid')
-          setDetail('The server could not accept those values. Check the fields marked below.')
+          // The server names each rejected field. Surfacing its report is the
+          // only honest option here: a 400 from a scripted submit means the
+          // client-side validators disagreed with the server, so "check the
+          // fields marked below" would point at fields nothing has marked.
+          let report = ''
+          try {
+            const data = (await response.json()) as {
+              fieldErrors?: readonly FeedbackFieldError[]
+            }
+            if (Array.isArray(data.fieldErrors) && data.fieldErrors.length > 0) {
+              report = data.fieldErrors
+                .map(entry => `${fieldLabel(entry.field)}: ${entry.message}`)
+                .join(' ')
+            }
+          } catch {
+            // A 400 without a readable body still gets the generic sentence.
+          }
+          settle(
+            'invalid',
+            report ||
+              'The server could not accept those values. Check that the message is at least twenty characters and that any web address is complete, then send it again.',
+          )
           return
         }
 
         if (!response.ok) {
-          setStatus('error')
-          setDetail(
+          settle(
+            'error',
             'The server did not record it. Your text is still in the form, so you can try again.',
           )
           return
         }
 
-        setStatus('success')
-        setDetail('')
+        settle('success')
         form.reset()
       } catch {
-        setStatus('error')
-        setDetail(
+        settle(
+          'error',
           'The submission could not be sent, which usually means the connection dropped. Your text is still in the form.',
         )
       }
@@ -291,7 +375,7 @@ function FeedbackFormFields({
           where motion is welcome. Enough to draw the eye to a form result the
           reader is waiting for, not far enough to be read on the way. The live
           region announces regardless: the animation is for the eye only. */}
-      <div aria-live="polite" id={ids.status}>
+      <div aria-live="polite" id={ids.status} ref={statusRef} tabIndex={-1}>
         {status === 'success' ? (
           <p className="status-message m-0 mb-5 rounded-md border border-affirm/30 bg-affirm-soft p-4 font-sans text-[0.95rem] text-ink">
             <strong className="font-semibold text-affirm">Received.</strong> Your submission has
@@ -324,7 +408,25 @@ function FeedbackFormFields({
           // browser performs the native POST above.
           event.preventDefault()
           event.stopPropagation()
-          void form.handleSubmit()
+          const formElement = event.currentTarget
+          // Clear the previous outcome first. A submit stopped by the client
+          // validators never reaches `onSubmit`, so a reader who had just sent
+          // one correction, typed a second and pressed Send saw the inline
+          // error appear beneath "Received. Your submission has been
+          // recorded." — over text that had not been sent.
+          setStatus('idle')
+          setDetail('')
+          void form.handleSubmit().then(() => {
+            // If validation stopped the submit, move focus to the first
+            // rejected control. Its label, description and error are all in
+            // its accessible description, so landing there is what announces
+            // the failure; without this, pressing Send with an invalid form
+            // does nothing a screen reader can hear.
+            requestAnimationFrame(() => {
+              const invalid = formElement.querySelector<HTMLElement>('[aria-invalid="true"]')
+              invalid?.focus()
+            })
+          })
         }}
         className="space-y-6"
       >
@@ -361,7 +463,7 @@ function FeedbackFormFields({
                 htmlFor={ids.type}
                 className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
               >
-                What kind of feedback is this?
+                {FIELD_LABELS.type}
               </label>
               <select
                 id={ids.type}
@@ -398,7 +500,7 @@ function FeedbackFormFields({
                   htmlFor={ids.message}
                   className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
                 >
-                  Your correction, counterargument or report
+                  {FIELD_LABELS.message}
                 </label>
                 <p
                   id={ids.messageHint}
@@ -453,7 +555,7 @@ function FeedbackFormFields({
                   htmlFor={ids.sourceUrl}
                   className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
                 >
-                  Source web address <span className="text-ink-subtle">(optional)</span>
+                  {FIELD_LABELS.sourceUrl} <span className="text-ink-subtle">(optional)</span>
                 </label>
                 <p
                   id={ids.sourceUrlHint}
@@ -466,7 +568,9 @@ function FeedbackFormFields({
                   name={field.name}
                   type="url"
                   inputMode="url"
-                  autoComplete="url"
+                  // Not `autoComplete="url"`: that token means the person's
+                  // own home page, and this field is a citation.
+                  autoComplete="off"
                   value={field.state.value}
                   onChange={event => field.handleChange(event.target.value)}
                   onBlur={field.handleBlur}
@@ -507,7 +611,7 @@ function FeedbackFormFields({
                     htmlFor={ids.name}
                     className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
                   >
-                    Your name <span className="text-ink-subtle">(optional)</span>
+                    {FIELD_LABELS.name} <span className="text-ink-subtle">(optional)</span>
                   </label>
                   <p
                     id={ids.nameHint}
@@ -558,7 +662,7 @@ function FeedbackFormFields({
                     htmlFor={ids.email}
                     className="mb-1.5 block font-sans text-[0.95rem] font-medium text-ink"
                   >
-                    Your email <span className="text-ink-subtle">(optional)</span>
+                    {FIELD_LABELS.email} <span className="text-ink-subtle">(optional)</span>
                   </label>
                   <p
                     id={ids.emailHint}
@@ -596,7 +700,7 @@ function FeedbackFormFields({
           {field => (
             <fieldset className="m-0 rounded-md border border-border p-4">
               <legend className="px-1 font-sans text-[0.95rem] font-medium text-ink">
-                If this leads to a change, what may be published?
+                {FIELD_LABELS.publicationConsent}
               </legend>
               <div className="mt-2 space-y-3">
                 {CONSENT_OPTIONS.map(option => {

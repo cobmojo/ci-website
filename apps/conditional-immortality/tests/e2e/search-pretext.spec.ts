@@ -249,20 +249,20 @@ test.describe('quick search', () => {
   test('closes on Escape and returns focus to the trigger', async ({ page }) => {
     await page.goto('/')
     const dialog = await search(page, 'fire')
-    const field = dialog.getByRole('searchbox', { name: 'Search terms' })
 
     /*
-     * Two presses, and the first one is the platform's, not ours.
+     * One press, and it closes.
      *
-     * Escape inside a non-empty `<input type="search">` clears the field and
-     * consumes the event — a browser affordance the dialog neither adds nor
-     * should fight. Once the field is empty, Escape reaches the dialog and the
-     * platform closes it.
+     * This reverses a decision recorded here: that Escape inside a non-empty
+     * `<input type="search">` clears the field, that this is the platform's
+     * affordance, and that the dialog should not fight it. Driven as a reader
+     * uses it, that costs two things at once — the query is destroyed and the
+     * panel stays open — and it only happens when there is something to lose,
+     * because an empty field closes on the first press. Escape dismissing a
+     * modal is what the ARIA authoring practices describe and what every
+     * comparable search panel does; the clear affordance is worth less than
+     * the dismissal.
      */
-    await page.keyboard.press('Escape')
-    await expect(field).toHaveValue('')
-    await expect(dialog).toBeVisible()
-
     await page.keyboard.press('Escape')
     await expect(dialog).not.toBeVisible()
     await expect(page.getByRole('link', { name: 'Search', exact: true })).toBeFocused()
@@ -291,9 +291,17 @@ test.describe('quick search', () => {
     // The query is percent-encoded, so the space arrives as %20.
     await expect(page).toHaveURL(/\/search\/\?q=unquenchable(%20|\+)fire/)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Search')
-    await expect(page.getByRole('searchbox', { name: 'Search terms' })).toHaveValue(
-      'unquenchable fire',
-    )
+
+    // Following the link closes the dialog. Asserted rather than assumed,
+    // because the panel stays painted through its exit transition, and until
+    // it goes the header still carries a search field of its own.
+    await expect(dialog).toBeHidden()
+
+    // The field on the page itself, not whichever one happens to match first:
+    // this test is about what the full search page received.
+    await expect(
+      page.getByRole('main').getByRole('searchbox', { name: 'Search terms' }),
+    ).toHaveValue('unquenchable fire')
   })
 })
 

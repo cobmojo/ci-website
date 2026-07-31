@@ -1,14 +1,20 @@
+import type { ExtractedHeading } from '@ci/content'
 import {
   EVIDENCE_ROLE_DEFINITIONS,
   EVIDENCE_ROLE_LABELS,
   evidenceRoles,
   REVIEW_STATUS_DEFINITIONS,
-  REVIEW_STATUS_LABELS,
   reviewStatuses,
 } from '@ci/content-schema'
 import { Badge } from '@ci/ui'
 import Link from 'next/link'
-import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import {
+  Breadcrumbs,
+  type Crumb,
+  OnThisPage,
+  ReviewStatusBadge,
+} from '@/components/article/article-chrome'
+import { RelatedPages } from '@/components/navigation/related-pages'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 const CRUMBS: readonly Crumb[] = [
@@ -23,21 +29,22 @@ export const metadata = pageMetadata({
   route: '/method/',
 })
 
-const CONTENTS: readonly { id: string; label: string }[] = [
-  { id: 'authority', label: 'The authority given to Scripture' },
-  { id: 'cumulative', label: 'Why the case is cumulative' },
-  { id: 'evidence-and-inference', label: 'Direct evidence and inference' },
-  { id: 'opposing-views', label: 'How the opposing view is presented' },
-  { id: 'translations', label: 'How Bible translations are handled' },
-  { id: 'original-languages', label: 'How original languages are handled' },
-  { id: 'history', label: 'How historical claims are reviewed' },
-  { id: 'evidence-roles', label: 'The evidence-role labels' },
-  { id: 'review-status', label: 'The review-status labels' },
-  { id: 'sources', label: 'The source hierarchy' },
-  { id: 'corrections', label: 'Corrections and revisions' },
-  { id: 'unresolved', label: 'How unresolved issues are shown' },
-  { id: 'philosophy', label: 'Why philosophy is not treated as proof' },
-  { id: 'openness', label: 'Why this stays open to correction' },
+/** Shaped as extracted headings so the shared OnThisPage can render them. */
+const CONTENTS: readonly ExtractedHeading[] = [
+  { depth: 2, id: 'authority', text: 'The authority given to Scripture' },
+  { depth: 2, id: 'cumulative', text: 'Why the case is cumulative' },
+  { depth: 2, id: 'evidence-and-inference', text: 'Direct evidence and inference' },
+  { depth: 2, id: 'opposing-views', text: 'How the opposing view is presented' },
+  { depth: 2, id: 'translations', text: 'How Bible translations are handled' },
+  { depth: 2, id: 'original-languages', text: 'How original languages are handled' },
+  { depth: 2, id: 'history', text: 'How historical claims are reviewed' },
+  { depth: 2, id: 'evidence-roles', text: 'The evidence-role labels' },
+  { depth: 2, id: 'review-status', text: 'The review-status labels' },
+  { depth: 2, id: 'sources', text: 'The source hierarchy' },
+  { depth: 2, id: 'corrections', text: 'Corrections and revisions' },
+  { depth: 2, id: 'unresolved', text: 'How unresolved issues are shown' },
+  { depth: 2, id: 'philosophy', text: 'Why philosophy is not treated as proof' },
+  { depth: 2, id: 'openness', text: 'Why this stays open to correction' },
 ]
 
 export default function MethodPage() {
@@ -60,29 +67,11 @@ export default function MethodPage() {
             </p>
           </header>
 
-          <nav
-            aria-labelledby="method-contents"
+          <OnThisPage
+            headings={CONTENTS}
+            titleId="method-contents"
             className="mb-10 rounded-md border border-border bg-paper-raised p-4 print:hidden"
-          >
-            <h2
-              id="method-contents"
-              className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
-            >
-              On this page
-            </h2>
-            <ol className="m-0 list-none space-y-1 p-0">
-              {CONTENTS.map(item => (
-                <li key={item.id}>
-                  <a
-                    href={`#${item.id}`}
-                    className="block py-0.5 font-sans text-[0.9rem] leading-snug text-ink-muted no-underline hover:text-navy hover:underline"
-                  >
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </nav>
+          />
 
           <div className="space-y-10 text-[1.06rem] leading-[1.68]">
             <section aria-labelledby="authority">
@@ -271,10 +260,9 @@ export default function MethodPage() {
                 </li>
               </ol>
               <p className="m-0">
-                Two claims in the source document were narrowed under this rule and one was
-                withdrawn entirely. Those decisions are in the{' '}
-                <Link href="/changelog/">changelog</Link>, each with the original claim, the
-                problem, and what replaced it.
+                One claim in the source document was narrowed under this rule and two were withdrawn
+                entirely. Those decisions are in the <Link href="/changelog/">changelog</Link>, each
+                with the original claim, the problem, and what replaced it.
               </p>
             </section>
 
@@ -315,28 +303,16 @@ export default function MethodPage() {
                 a known problem with it is outstanding.
               </p>
               <dl className="m-0 space-y-5">
-                {reviewStatuses.map(status => {
-                  const needsAttention =
-                    status === 'revision-needed' || status === 'specialist-review-pending'
-                  return (
-                    <div
-                      key={status}
-                      className="rounded-md border border-border bg-paper-raised p-4"
-                    >
-                      <dt className="m-0">
-                        <Badge
-                          tone={needsAttention ? 'ochre' : 'neutral'}
-                          glyph={needsAttention ? '!' : '✓'}
-                        >
-                          {REVIEW_STATUS_LABELS[status]}
-                        </Badge>
-                      </dt>
-                      <dd className="m-0 mt-2.5 text-[1.02rem] text-ink-muted">
-                        {REVIEW_STATUS_DEFINITIONS[status]}
-                      </dd>
-                    </div>
-                  )
-                })}
+                {reviewStatuses.map(status => (
+                  <div key={status} className="rounded-md border border-border bg-paper-raised p-4">
+                    <dt className="m-0">
+                      <ReviewStatusBadge status={status} />
+                    </dt>
+                    <dd className="m-0 mt-2.5 text-[1.02rem] text-ink-muted">
+                      {REVIEW_STATUS_DEFINITIONS[status]}
+                    </dd>
+                  </div>
+                ))}
               </dl>
               <p className="m-0 mt-4">
                 Nothing here is conveyed by colour alone. Each badge carries its own words and a
@@ -511,27 +487,20 @@ export default function MethodPage() {
             </section>
           </div>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/about/">About this project and its author</Link>
-              </li>
-              <li>
-                <Link href="/original-document/">
-                  The original document and how it was migrated
-                </Link>
-              </li>
-              <li>
-                <Link href="/changelog/">Every change made since publication</Link>
-              </li>
-              <li>
-                <Link href="/sources/">The full source library</Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/about/">About this project and its author</Link>
+            </li>
+            <li>
+              <Link href="/original-document/">The original document and how it was migrated</Link>
+            </li>
+            <li>
+              <Link href="/changelog/">Every change made since publication</Link>
+            </li>
+            <li>
+              <Link href="/sources/">The full source library</Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

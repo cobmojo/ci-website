@@ -11,6 +11,27 @@ export interface NavLink {
   readonly description?: string
 }
 
+/**
+ * Whether `pathname` sits inside the section `href` names. Shared by the
+ * desktop nav items and the mobile sheet so the two surfaces can never
+ * disagree about where the reader is.
+ */
+export function isActiveRoute(pathname: string, href: string): boolean {
+  const normalised = pathname.endsWith('/') ? pathname : `${pathname}/`
+  return href === '/' ? normalised === '/' : normalised.startsWith(href)
+}
+
+/**
+ * The promoted Watch call to action. It appears in the header and again in
+ * the mobile sheet; both read from here so the label and the description
+ * cannot drift between the two.
+ */
+export const WATCH_CTA: NavLink = {
+  href: '/watch/',
+  label: 'Watch the Overview',
+  description: '28 minutes, with chapters and a full transcript',
+}
+
 /** Deliberately short. Seven items is the ceiling for the desktop header. */
 export const PRIMARY_NAV: readonly NavLink[] = [
   { href: '/start/', label: 'Start Here', description: 'Orientation and the three-minute summary' },

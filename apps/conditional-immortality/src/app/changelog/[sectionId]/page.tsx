@@ -1,12 +1,12 @@
 import { getSection } from '@ci/content/case'
 import { revisedSectionIds, revisionsForSection } from '@ci/content/revisions'
-import { REVISION_TYPE_LABELS } from '@ci/content-schema'
-import { Badge } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
-import { formatLongDate, pluralise } from '@/lib/format'
+import { RevisionEntry } from '@/components/changelog/revision-entry'
+import { RelatedPages } from '@/components/navigation/related-pages'
+import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**
@@ -95,75 +95,25 @@ export default async function SectionChangelogPage({
 
           <ol className="m-0 list-none space-y-6 p-0">
             {entries.map(revision => (
-              <li
-                key={revision.id}
-                id={revision.id}
-                className="rounded-md border border-border bg-paper-raised p-5"
-              >
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-sans text-[0.86rem] text-ink-subtle">
-                  <time dateTime={revision.date}>{formatLongDate(revision.date)}</time>
-                  <Badge tone="neutral">{REVISION_TYPE_LABELS[revision.type]}</Badge>
-                </div>
-
-                <h2 className="mt-2.5 mb-3 text-[1.12rem]">{revision.summary}</h2>
-
-                <dl className="m-0 space-y-3 text-[1.01rem]">
-                  <div>
-                    <dt className="font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
-                      Issue raised
-                    </dt>
-                    <dd className="m-0 mt-1 text-ink-muted">{revision.issue}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
-                      Decision taken
-                    </dt>
-                    <dd className="m-0 mt-1 text-ink-muted">{revision.decision}</dd>
-                  </div>
-                  {revision.details ? (
-                    <div>
-                      <dt className="font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
-                        Further detail
-                      </dt>
-                      <dd className="m-0 mt-1 text-ink-muted">{revision.details}</dd>
-                    </div>
-                  ) : null}
-                  {/* Only ever rendered where an explicit credit was given. */}
-                  {revision.creditedTo ? (
-                    <div>
-                      <dt className="font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
-                        Credit
-                      </dt>
-                      <dd className="m-0 mt-1 text-ink-muted">
-                        Raised by {revision.creditedTo}, with permission to publish the name.
-                      </dd>
-                    </div>
-                  ) : null}
-                </dl>
-              </li>
+              <RevisionEntry key={revision.id} revision={revision} as="h2" showSection={false} />
             ))}
           </ol>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href={section.route}>
-                  {resolved}. {section.title}
-                </Link>
-              </li>
-              <li>
-                <Link href="/changelog/">The full changelog</Link>
-              </li>
-              <li>
-                <Link href={`/corrections/?section=${resolved}#form`}>
-                  Send a correction about this part
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href={section.route}>
+                {resolved}. {section.title}
+              </Link>
+            </li>
+            <li>
+              <Link href="/changelog/">The full changelog</Link>
+            </li>
+            <li>
+              <Link href={`/corrections/?section=${resolved}#form`}>
+                Send a correction about this part
+              </Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

@@ -1,13 +1,19 @@
 import { getSection } from '@ci/content/case'
 import { findPassageByReference, passageRoute } from '@ci/content/passages'
-import { formatCitation, getSource } from '@ci/content/sources'
+import { getSource } from '@ci/content/sources'
 import { getTopic, topicRoute, topics } from '@ci/content/topics'
 import type { CaseSection, SourceRecord, TopicRecord } from '@ci/content-schema'
 import { Callout } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Breadcrumbs, type Crumb, FeedbackCta } from '@/components/article/article-chrome'
+import {
+  Breadcrumbs,
+  type Crumb,
+  FeedbackCta,
+  SectionLinkList,
+  SourcesCited,
+} from '@/components/article/article-chrome'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**
@@ -47,21 +53,6 @@ export async function generateMetadata({
     route: topicRoute(topic),
     category: 'Topic',
   })
-}
-
-function SectionList({ sections }: { sections: readonly CaseSection[] }) {
-  return (
-    <ul className="m-0 list-none space-y-2 p-0 font-sans text-[0.95rem]">
-      {sections.map(section => (
-        <li key={section.id}>
-          <Link href={section.route}>
-            <span className="text-ink-subtle">{section.id}</span> {section.title}
-          </Link>
-          <span className="mt-0.5 block text-[0.9rem] text-ink-muted">{section.shortSummary}</span>
-        </li>
-      ))}
-    </ul>
-  )
 }
 
 export default async function TopicRoute({ params }: { params: Promise<{ slug: string }> }) {
@@ -165,7 +156,7 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
               <h2 id="where-it-is-argued" className="mt-0 mb-3 text-[1.25rem]">
                 Where this is argued in the case
               </h2>
-              <SectionList sections={relatedSections} />
+              <SectionLinkList sections={relatedSections} />
             </section>
           ) : null}
 
@@ -174,7 +165,7 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
               <h2 id="related-objections" className="mt-0 mb-3 text-[1.25rem]">
                 Objections that turn on this
               </h2>
-              <SectionList sections={relatedObjections} />
+              <SectionLinkList sections={relatedObjections} />
             </section>
           ) : null}
 
@@ -207,32 +198,11 @@ export default async function TopicRoute({ params }: { params: Promise<{ slug: s
             </Callout>
           ) : null}
 
-          {sources.length > 0 ? (
-            <section aria-labelledby="topic-sources" className="mt-10 border-t border-border pt-6">
-              <h2 id="topic-sources" className="mt-0 mb-3 text-[1.2rem]">
-                Sources for this topic
-              </h2>
-              <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">
-                {sources.map(source => (
-                  <li key={source.id}>
-                    {formatCitation(source)}
-                    {source.url ? (
-                      <>
-                        {' '}
-                        <a href={source.url} rel="noopener noreferrer" target="_blank">
-                          View original
-                          <span className="sr-only"> of {source.title}, opens in a new tab</span>
-                        </a>
-                      </>
-                    ) : null}{' '}
-                    <Link href={`/sources/#${source.id}`} className="text-ink-subtle">
-                      Details
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          ) : null}
+          <SourcesCited
+            sources={sources}
+            headingId="topic-sources"
+            title="Sources for this topic"
+          />
 
           <FeedbackCta />
         </article>

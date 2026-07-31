@@ -67,6 +67,30 @@ function captionText(table: TableLike): string | undefined {
   return text.length > 0 ? text : undefined
 }
 
+/** Is this the hast element for a heading? */
+function isHeading(node: unknown): node is Element {
+  const element = node as Element
+  return element?.type === 'element' && /^h[1-6]$/.test(element.tagName ?? '')
+}
+
+/**
+ * The nearest heading above the table, as a fallback name.
+ *
+ * A GFM pipe table cannot carry a `<caption>`, so a table written in markdown
+ * would otherwise announce itself as the bare word "Table". The heading it
+ * sits under is what a reader would call it, and it is already right there in
+ * the document order.
+ */
+function precedingHeadingText(siblings: readonly unknown[], index: number): string | undefined {
+  for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
+    const sibling = siblings[cursor]
+    if (!isHeading(sibling)) continue
+    const text = textOf(sibling)
+    return text.length > 0 ? text : undefined
+  }
+  return undefined
+}
+
 export function rehypeScrollableTables() {
   return (tree: Root) => {
     visit(tree, (node: unknown, index, parent) => {
@@ -89,8 +113,12 @@ export function rehypeScrollableTables() {
           dataTableScroll: '',
           className: ['table-scroll'],
           tabIndex: 0,
-          role: 'region',
-          'aria-label': captionText(node) ?? 'Table',
+          // `group`, not `region`: a labelled group conveys the same grouping
+          // without adding a landmark, and the Scripture index alone renders
+          // dozens of these. Matches `ScrollRegion` for hand-written wrappers.
+          role: 'group',
+          'aria-label':
+            captionText(node) ?? precedingHeadingText(parentNode.children, index) ?? 'Table',
         },
         // The table keeps whichever node shape it already had.
         children: [node as Element],

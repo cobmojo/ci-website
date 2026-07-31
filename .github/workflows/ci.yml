@@ -73,6 +73,13 @@ jobs:
       - name: Accessibility tests
         run: bun run test:a11y
 
+      # Print output, in every engine. The engines genuinely disagree here:
+      # Firefox declines `content-visibility` on `::details-content`, so a
+      # Chromium-only run reads green while a Firefox reader prints a
+      # collapsed disclosure as its summary and nothing else.
+      - name: Print tests
+        run: bun run test:print
+
       # The gate for this integration and for any future Pretext upgrade. The
       # build is already cached by `validate`, so this costs a server start.
       - name: Text geometry tests

@@ -82,13 +82,14 @@ unknown reference fails the build. Do not work around this by typing the verse.
 
 ## Scale
 
-129 static pages. 40 case sections with roughly 54,000 words of authored prose,
+129 routes, 121 of them prerendered as HTML. 40 case sections with roughly 54,000 words of authored prose,
 18 key passage pages, 27 topics, 20 glossary terms, 8 original-language notes,
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-1,154 tests: 765 unit, 288 end-to-end across desktop and mobile, 32
-accessibility, and 69 text-geometry across Chromium, Firefox and WebKit.
+1,328 tests: 835 unit, 342 end-to-end across desktop and mobile, 76
+accessibility across desktop and mobile viewports, 6 print and 69
+text-geometry, each across Chromium, Firefox and WebKit.
 They run on every push; see `.github/workflows/ci.yml`.
 
 ## Conventions
@@ -96,10 +97,13 @@ They run on every push; see `.github/workflows/ci.yml`.
 Bun, not npm or pnpm. Server components by default. No third-party-hosted
 script, font or stylesheet: everything is served from this origin, including the
 one runtime dependency the search dialog loads lazily after a reader shows
-search intent. YouTube is not contacted until a reader presses play. Search runs
-in the browser and no query is transmitted. The author's personal contact
-details from the source document are never published, and a build-time scanner
-enforces it.
+search intent. YouTube is not contacted until a reader presses play. The search index is a
+static file with no hosted service behind it: the quick panel scores it in the
+reader's browser and transmits nothing, while `/search/` scores the same index
+on this origin's own server, so that it works without scripting and a page of
+results can be linked — at the cost of the term travelling in the URL. The
+author's personal contact details from the source document are never published,
+and a build-time scanner enforces it.
 
 ## One more thing that is load-bearing
 

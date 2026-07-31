@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
 import { MdxContent } from '@/components/content/mdx-content'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { loadSection } from '@/lib/sections'
@@ -57,7 +58,7 @@ export default function FullCasePage() {
             <p className="m-0 text-[1.13rem] leading-[1.6] text-ink-muted">
               Every part of the case in canonical order on a single page, assembled from the same
               text as the individual pages. About {totalMinutes} {pluralise(totalMinutes, 'minute')}{' '}
-              of reading, or roughly two hours at a careful pace.
+              of reading, or roughly {Math.round(totalMinutes / 60)} hours at a careful pace.
             </p>
             <p className="mt-4 mb-0 font-sans text-[0.9rem] text-ink-subtle">
               {loaded.length} sections{'. '}
@@ -89,7 +90,7 @@ export default function FullCasePage() {
 
           <nav
             aria-labelledby="contents-title"
-            className="mb-12 rounded-md border border-border bg-panel/50 p-5"
+            className="mb-12 rounded-md border border-border bg-panel/50 p-5 print:hidden"
           >
             <h2 id="contents-title" className="mt-0 mb-3 text-[1.18rem]">
               Contents
@@ -146,7 +147,14 @@ export default function FullCasePage() {
                 className="prose-article article-body max-w-[var(--spacing-measure)]"
                 data-section-id={item.section.id}
               >
-                <MdxContent source={item.body} idPrefix={item.section.id.toLowerCase()} />
+                {/* Headings demoted one level: this page has already spent h2
+                    on the section titles, so the body's own "In brief" must
+                    sit beneath its section in the outline, not beside it. */}
+                <MdxContent
+                  source={item.body}
+                  idPrefix={item.section.id.toLowerCase()}
+                  demoteHeadings
+                />
               </article>
 
               <p className="mt-5 mb-0 font-sans text-[0.85rem] text-ink-subtle">
@@ -175,9 +183,9 @@ export default function FullCasePage() {
                   {source.url ? (
                     <>
                       <br />
-                      <a href={source.url} rel="noopener noreferrer" target="_blank">
+                      <NewTabLink href={source.url} showsUrl>
                         {source.url}
-                      </a>
+                      </NewTabLink>
                     </>
                   ) : null}
                 </li>

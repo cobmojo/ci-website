@@ -204,9 +204,10 @@ function pixels(value: string): number {
  *
  * Deliberately not "the styles we think we wrote": the cascade, a container
  * query, a user stylesheet or a browser default could all have had an opinion,
- * and Pretext has to be told what won. The width is the content box, computed
- * by removing padding and border from the border-box rectangle, so a stray
- * `padding-inline` could never be silently measured as space for text.
+ * and Pretext has to be told what won. The width is the content box, taken
+ * from the layout width and less its padding, so neither a stray
+ * `padding-inline` nor an ancestor transform can be measured as space for
+ * text. See the comment on the measurement itself.
  */
 export function readExcerptGeometry(element: HTMLElement, locale: string): ExcerptGeometry | null {
   if (typeof getComputedStyle !== 'function') return null
@@ -236,13 +237,19 @@ export function readExcerptGeometry(element: HTMLElement, locale: string): Excer
   )
   if (!contract) return null
 
-  const rect = element.getBoundingClientRect()
+  /*
+   * `clientWidth`, not `getBoundingClientRect().width`.
+   *
+   * The rect is the *transformed* box, and the search panel arrives on a
+   * `scale: 0.98 → 1` enter transition, so a measurement taken during that
+   * transition reads about two per cent narrow and is then cached as the
+   * layout width for the life of the result set. `clientWidth` is the layout
+   * width, unaffected by any ancestor transform, so the fitter no longer
+   * depends on when it happens to run. It already excludes the border, so
+   * only the padding is subtracted here.
+   */
   const width =
-    rect.width -
-    pixels(style.paddingInlineStart) -
-    pixels(style.paddingInlineEnd) -
-    pixels(style.borderInlineStartWidth) -
-    pixels(style.borderInlineEndWidth)
+    element.clientWidth - pixels(style.paddingInlineStart) - pixels(style.paddingInlineEnd)
 
   return Number.isFinite(width) && width > 0 ? { contract, width } : null
 }

@@ -100,6 +100,65 @@ test('a visitor can determine the site does not teach painless or instant annihi
  * 3, 7 and 8. Finding things
  * ------------------------------------------------------------------ */
 
+test('a search index that fails to load says so, in words and to assistive technology', async ({
+  page,
+}) => {
+  // The index is the one fetch the dialog cannot do without. When it fails the
+  // reader must be told, rather than left with an empty pane, and the telling
+  // has to reach a screen reader: the live region is the only channel that
+  // does not require moving focus.
+  await page.route('**/search-index.json', route => route.abort())
+
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Search', exact: true }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await expect(dialog).toBeVisible()
+
+  // One channel, both ways: the failure is written into a region already in
+  // the accessibility tree, so the same words are announced and readable.
+  const status = dialog.locator('[aria-live="polite"]', { hasText: /could not load/i })
+  await expect(status).toBeVisible()
+
+  // The recovery link inside that message is a real, reachable link: it must
+  // be in the accessibility tree, not hidden inside an aria-hidden twin, and
+  // Playwright's role engine ignores aria-hidden subtrees, so finding it here
+  // is the assertion.
+  const recovery = status.getByRole('link', { name: /full search page/i })
+  await expect(recovery).toHaveCount(1)
+
+  // It is also a genuine tab stop, in order, rather than a silent one.
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).focus()
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Tab')
+  await expect(recovery).toBeFocused()
+
+  await recovery.click()
+  await expect(page).toHaveURL(/\/search\//)
+})
+
+test('a modified click on a quick-search result leaves the dialog standing', async ({ page }) => {
+  // Cmd/Ctrl-clicking a result opens it in a background tab and leaves this
+  // one where it was, so the dialog, the query and the result list have to
+  // survive: tearing them down would lose the reader's place in exchange for
+  // a navigation they did not ask this tab to make.
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Search', exact: true }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('gehenna')
+
+  // Scoped to the result list. An unscoped query resolves to the footer link
+  // until the index arrives, and that link shares this handler, so the test
+  // would pass green while never touching the row wiring it is named for.
+  const firstResult = dialog.locator('.quick-search-results').getByRole('link').first()
+  await expect(firstResult).toBeVisible()
+  await firstResult.click({ modifiers: ['ControlOrMeta'] })
+
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('searchbox', { name: 'Search terms' })).toHaveValue('gehenna')
+})
+
 test('a visitor can find Revelation 14:11 through search', async ({ page }) => {
   await page.goto('/')
 
@@ -194,11 +253,20 @@ test('a visitor can find every section that uses Matthew 10:28', async ({ page }
 test('a visitor can locate the source behind an early church claim', async ({ page }) => {
   await page.goto('/case/roadblocks/tradition/')
 
-  const citation = page.getByRole('link', { name: /^Source: Irenaeus of Lyons/ }).first()
+  const citation = page
+    .getByRole('link', { name: /^Irenaeus, Book II, chapter 34, section 3\./ })
+    .first()
   await expect(citation).toBeVisible()
-  // The citation itself carries the locator, so a reader knows where to look
-  // before they follow it.
-  await expect(citation).toHaveAccessibleName(/Book II, chapter 34, section 3/)
+
+  // WCAG 2.5.3: the accessible name has to open with the text the link shows,
+  // or speech input cannot address the link by what the reader can see. Taken
+  // from the rendered text rather than repeated here, so the two cannot drift.
+  const visible = (await citation.innerText()).replace(/^\[|\]$/g, '')
+  const literal = visible.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  await expect(citation).toHaveAccessibleName(new RegExp(`^${literal}\\.`))
+  // The full citation follows it, so a reader knows the work and where to look
+  // before they follow the link.
+  await expect(citation).toHaveAccessibleName(/Source: Irenaeus of Lyons\. Against Heresies/)
 
   await citation.click()
   await expect(page).toHaveURL(/\/sources\/#irenaeus-against-heresies$/)
@@ -257,14 +325,24 @@ test('nothing is requested from YouTube until the reader presses play', async ({
   expect(contacted).toEqual([])
   await expect(page.locator('iframe')).toHaveCount(0)
 
-  const play = page.getByRole('button', { name: /play the .*overview video/i })
+  // A link throughout, not a button: without scripting it opens the video, and
+  // with scripting the same element loads the player in place. Swapping the
+  // element at hydration would drop the focus of anyone already on it.
+  const play = page.getByRole('link', { name: /press play to load it from youtube/i })
   await expect(play).toBeVisible()
+  // Label in name: the poster shows the video's title, so the accessible name
+  // must carry it too, or a speech-input user reading the title aloud cannot
+  // address the control.
+  await expect(play).toHaveAccessibleName(/video overview/i)
   await play.click()
 
   const frame = page.locator('iframe')
   await expect(frame).toHaveCount(1)
   await expect(frame).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//)
   await expect(frame).toHaveAttribute('title', /.+/)
+  // The control the reader pressed no longer exists; the player that replaced
+  // it takes its focus rather than dropping the reader at the document body.
+  await expect(frame).toBeFocused()
 })
 
 test('video chapters can be reached and activated from the keyboard', async ({ page }) => {
@@ -353,12 +431,37 @@ test('a visitor can submit a correction for S04', async ({ page }, testInfo) => 
 
   const receipt = page.getByText(/Received\./)
   await expect(receipt).toBeVisible()
+  // Being in the document is not the same as being seen. The status region sits
+  // above the form, and a scripted submit never navigates, so the receipt
+  // rendered 987px above the top of the viewport while the reader sat looking
+  // at the Send button with their text gone. `toBeVisible` passed throughout.
+  await expect(receipt).toBeInViewport()
+  await expect(page.locator('#submission-status')).toBeFocused()
   await expect(receipt.locator('xpath=..')).toContainText('Your submission has been recorded')
   await expect(receipt.locator('xpath=..').getByRole('link', { name: 'changelog' })).toBeVisible()
 
   // A recorded submission clears the field, so the same text cannot be sent twice
   // by accident.
   await expect(form.getByLabel('Your correction, counterargument or report')).toHaveValue('')
+})
+
+test('an invalid submission moves focus to the field that needs fixing', async ({ page }) => {
+  await page.goto('/corrections/#form')
+
+  const form = page.locator('form#form')
+  await expect(form).toBeVisible()
+
+  const message = form.getByLabel('Your correction, counterargument or report')
+  await message.fill('Too short.')
+  await form.getByRole('button', { name: 'Send submission' }).click()
+
+  // Focus lands on the first invalid control, whose accessible description
+  // carries the error, so the failure is announced without a live region.
+  await expect(message).toBeFocused()
+  await expect(message).toHaveAttribute('aria-invalid', 'true')
+  await expect(form.getByText(/at least a sentence or two/)).toBeVisible()
+  // The reader's text is never thrown away on failure.
+  await expect(message).toHaveValue('Too short.')
 })
 
 /* ------------------------------------------------------------------ *
@@ -419,6 +522,16 @@ test.describe('narrow viewport navigation', () => {
 
     await expect(dialog.getByRole('link', { name: /The Case/ }).first()).toBeVisible()
 
+    // The sheet marks where the reader is, exactly as the desktop nav does:
+    // this page lives under The Case, so that entry carries aria-current.
+    // Exactly one, counted rather than sampled: the secondary link list
+    // repeats routes the primary list owns, and marking both would announce
+    // two current pages in a single navigation region.
+    const current = dialog.locator('[aria-current="page"]')
+    await expect(current).toHaveCount(1)
+    await expect(current).toBeVisible()
+    await expect(current).toContainText('The Case')
+
     await page.keyboard.press('Escape')
 
     await expect(dialog).toBeHidden()
@@ -431,15 +544,18 @@ test('closing the search dialog returns focus to its trigger', async ({ page }) 
   await page.goto('/')
 
   const trigger = page.getByRole('link', { name: 'Search', exact: true })
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
   await trigger.click()
 
   const dialog = page.getByRole('dialog', { name: 'Search this site' })
   await expect(dialog).toBeVisible()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
   await expect(dialog.getByRole('searchbox', { name: 'Search terms' })).toBeFocused()
 
   await dialog.getByRole('button', { name: 'Close search' }).click()
   await expect(dialog).toBeHidden()
   await expect(trigger).toBeFocused()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
   // Escape has to do the same thing, since that is what a keyboard reader
   // reaches for first.
@@ -448,6 +564,26 @@ test('closing the search dialog returns focus to its trigger', async ({ page }) 
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
   await expect(trigger).toBeFocused()
+})
+
+test('the keyboard shortcut opens the search dialog and closes it again', async ({ page }) => {
+  await page.goto('/')
+
+  // The shortcut handler exists only after hydration, and `aria-expanded`
+  // appears on the trigger at the same moment, so waiting for it keeps the
+  // keypress from racing the handler's registration.
+  const trigger = page.getByRole('link', { name: 'Search', exact: true })
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+  const dialog = page.getByRole('dialog', { name: 'Search this site' })
+  await page.keyboard.press('Control+k')
+  await expect(dialog).toBeVisible()
+  // The dialog focuses its own text field on open, and the shortcut must
+  // still close it from there: a toggle that only works with focus somewhere
+  // else is not a toggle.
+  await expect(dialog.getByRole('searchbox', { name: 'Search terms' })).toBeFocused()
+  await page.keyboard.press('Control+k')
+  await expect(dialog).toBeHidden()
 })
 
 /* ------------------------------------------------------------------ *

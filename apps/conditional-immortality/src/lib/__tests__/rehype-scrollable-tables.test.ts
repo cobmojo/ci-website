@@ -56,7 +56,10 @@ describe('rehypeScrollableTables', () => {
     const wrapper = wrapperOf(run([markdownTable()]))
     // Without tabindex a keyboard cannot scroll the region at all.
     expect(wrapper.properties.tabIndex).toBe(0)
-    expect(wrapper.properties.role).toBe('region')
+    // `group`, not `region`: the Scripture index renders dozens of these, and
+    // a landmark for every table would make the landmark list useless. This is
+    // the same decision `ScrollRegion` documents for hand-written wrappers.
+    expect(wrapper.properties.role).toBe('group')
     expect(wrapper.properties['aria-label']).toBe('Table')
   })
 
@@ -66,6 +69,30 @@ describe('rehypeScrollableTables', () => {
 
     const fromJsx = wrapperOf(run([jsxTable([caption('Views compared', true)])]))
     expect(fromJsx.properties['aria-label']).toBe('Views compared')
+  })
+
+  it('falls back to the heading above a caption-less table', () => {
+    // A GFM pipe table cannot carry a caption, so the heading it sits under
+    // is the name a reader would give it.
+    const heading = {
+      type: 'element',
+      tagName: 'h2',
+      properties: {},
+      children: [{ type: 'text', value: 'The early evidence, set out' }],
+    }
+    const wrapper = wrapperOf(run([heading, markdownTable()]), 1)
+    expect(wrapper.properties['aria-label']).toBe('The early evidence, set out')
+  })
+
+  it('prefers a caption over the heading above it', () => {
+    const heading = {
+      type: 'element',
+      tagName: 'h2',
+      properties: {},
+      children: [{ type: 'text', value: 'A section heading' }],
+    }
+    const wrapper = wrapperOf(run([heading, markdownTable([caption('Views compared')])]), 1)
+    expect(wrapper.properties['aria-label']).toBe('Views compared')
   })
 
   it('collapses whitespace in a caption spread over several lines', () => {

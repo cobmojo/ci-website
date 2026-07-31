@@ -1,12 +1,12 @@
-import { getSection } from '@ci/content/case'
 import { revisions } from '@ci/content/revisions'
-import { REVISION_TYPE_LABELS } from '@ci/content-schema'
-import { Badge } from '@ci/ui'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { RevisionEntry } from '@/components/changelog/revision-entry'
 import { FeedbackForm } from '@/components/feedback/feedback-form'
-import { formatLongDate } from '@/lib/format'
+import { RelatedPages } from '@/components/navigation/related-pages'
+import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
+import { siteConfig } from '@/lib/site-config'
 
 const CRUMBS: readonly Crumb[] = [
   { href: '/', label: 'Home' },
@@ -23,7 +23,25 @@ export const metadata = pageMetadata({
 /** Newest first, matching the changelog. */
 const ACCEPTED = revisions
 
-export default function CorrectionsPage() {
+/**
+ * The query string is resolved here, on the server.
+ *
+ * That makes this route render per request rather than being prerendered, and
+ * it is the price of the promise the API route makes: that the form works
+ * without JavaScript. A static page cannot vary by query string, so a reader
+ * without scripting who submitted a correction was redirected back to a page
+ * that looked untouched — no confirmation, no error, and the section they were
+ * correcting dropped from the hidden field. `/search/` pays the same price for
+ * the same reason.
+ */
+export default async function CorrectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const one = (value: string | string[] | undefined): string | undefined =>
+    Array.isArray(value) ? value[0] : value
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(CRUMBS)} />
@@ -118,7 +136,19 @@ export default function CorrectionsPage() {
               </p>
             </div>
 
-            <FeedbackForm />
+            {/* The form itself is dropped from the printed copy, where it
+                would be a page of boxes nobody can fill in. A paper reader
+                still needs to know where to go. */}
+            <p className="m-0 hidden font-sans text-[0.95rem] text-ink-muted print:block">
+              To send a correction, visit {siteConfig.url}/corrections/ in a browser.
+            </p>
+
+            <FeedbackForm
+              sectionId={one(params.section) ?? one(params.sectionId) ?? ''}
+              headingId={one(params.heading) ?? one(params.headingId) ?? ''}
+              type={one(params.type)}
+              submitted={one(params.submitted)}
+            />
           </section>
 
           <section aria-labelledby="record">
@@ -127,111 +157,32 @@ export default function CorrectionsPage() {
             </h2>
             <p className="m-0 mb-6 text-[1.06rem] text-ink-muted">
               Every editorial change made to the case since the source document was migrated, newest
-              first. {ACCEPTED.length} changes are recorded. Each one names the problem and the
-              decision taken, so that a reader can judge whether the decision was the right one.
+              first. {ACCEPTED.length} recorded {pluralise(ACCEPTED.length, 'change')}. Each one
+              names the problem and the decision taken, so that a reader can judge whether the
+              decision was the right one.
             </p>
 
             <ol className="m-0 list-none space-y-6 p-0">
-              {ACCEPTED.map(revision => {
-                const section = revision.sectionId ? getSection(revision.sectionId) : undefined
-                return (
-                  <li
-                    key={revision.id}
-                    id={revision.id}
-                    className="rounded-md border border-border bg-paper-raised p-5"
-                  >
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-sans text-[0.86rem] text-ink-subtle">
-                      <time dateTime={revision.date}>{formatLongDate(revision.date)}</time>
-                      <Badge tone="neutral">{REVISION_TYPE_LABELS[revision.type]}</Badge>
-                      {section ? (
-                        <span>
-                          <span className="text-copper-deep">{section.id}</span>{' '}
-                          <Link href={section.route}>{section.title}</Link>
-                        </span>
-                      ) : (
-                        <span>Applies across the site</span>
-                      )}
-                    </div>
-
-                    <h3 className="mt-2.5 mb-3 text-[1.08rem]">{revision.summary}</h3>
-
-                    <dl className="m-0 space-y-3 text-[1.01rem]">
-                      <div>
-                        <dt className="font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
-                          Issue raised
-                        </dt>
-                        <dd className="m-0 mt-1 text-ink-muted">{revision.issue}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
-                          Decision taken
-                        </dt>
-                        <dd className="m-0 mt-1 text-ink-muted">{revision.decision}</dd>
-                      </div>
-                      {revision.details ? (
-                        <div>
-                          <dt className="font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
-                            Further detail
-                          </dt>
-                          <dd className="m-0 mt-1 text-ink-muted">{revision.details}</dd>
-                        </div>
-                      ) : null}
-                      {/* A submitter is named only where the record carries an
-                          explicit credit, which is only written when the person
-                          chose that option on the form. */}
-                      {revision.creditedTo ? (
-                        <div>
-                          <dt className="font-sans text-[0.8rem] font-semibold tracking-wider text-ink-subtle uppercase">
-                            Credit
-                          </dt>
-                          <dd className="m-0 mt-1 text-ink-muted">
-                            Raised by {revision.creditedTo}, with permission to publish the name.
-                          </dd>
-                        </div>
-                      ) : null}
-                    </dl>
-
-                    <p className="m-0 mt-4 font-sans text-[0.88rem]">
-                      {section ? (
-                        <>
-                          <Link href={section.route}>Read the revised page</Link>
-                          <span aria-hidden="true" className="text-ink-subtle">
-                            {' '}
-                            ·{' '}
-                          </span>
-                          <Link href={`/changelog/${section.id.toLowerCase()}/`}>
-                            Changelog for {section.id}
-                          </Link>
-                        </>
-                      ) : (
-                        <Link href="/changelog/">See it in the full changelog</Link>
-                      )}
-                    </p>
-                  </li>
-                )
-              })}
+              {ACCEPTED.map(revision => (
+                <RevisionEntry key={revision.id} revision={revision} linkSiteWideToChangelog />
+              ))}
             </ol>
           </section>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/changelog/">The full changelog, including per-part views</Link>
-              </li>
-              <li>
-                <Link href="/method/">How corrections are assessed</Link>
-              </li>
-              <li>
-                <Link href="/accessibility/">Report an accessibility problem</Link>
-              </li>
-              <li>
-                <Link href="/privacy/">What this site stores, and what it does not</Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/changelog/">The full changelog, including per-part views</Link>
+            </li>
+            <li>
+              <Link href="/method/">How corrections are assessed</Link>
+            </li>
+            <li>
+              <Link href="/accessibility/">Report an accessibility problem</Link>
+            </li>
+            <li>
+              <Link href="/privacy/">What this site stores, and what it does not</Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

@@ -1,4 +1,4 @@
-import { formatCitation, getSource } from '@ci/content/sources'
+import { citationLabel, citationShortName, getSource } from '@ci/content/sources'
 
 /**
  * An inline citation.
@@ -15,17 +15,20 @@ export function Cite({ id, locator }: { id: string; locator?: string }) {
     )
   }
 
-  const label = locator ? `${formatCitation(source)}. ${locator}` : formatCitation(source)
+  const visible = `${citationShortName(source)}${locator ? `, ${locator}` : ''}`
+  const label = citationLabel(source, locator)
+  // The visible text opens the accessible name, so speech input can address
+  // the link by what it shows (WCAG 2.5.3), and the full citation follows.
+  const accessibleName = `${visible}. Source: ${label}`
 
   return (
     <a
       href={`/sources/#${source.id}`}
       className="ml-0.5 font-sans text-[0.72em] align-super no-underline text-copper-deep hover:underline"
-      aria-label={`Source: ${label}`}
+      aria-label={accessibleName}
       title={label}
     >
-      [{source.author ? source.author.split(' ').pop() : source.title.split(' ')[0]}
-      {locator ? `, ${locator}` : ''}]
+      [{visible}]
     </a>
   )
 }

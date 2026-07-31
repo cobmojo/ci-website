@@ -35,6 +35,9 @@ const ROUTES: readonly string[] = [
   '/glossary/',
   '/topics/gehenna/',
   '/full-case/',
+  // The accessibility statement names this page as one the axe suite covers,
+  // so it is covered.
+  '/accessibility/',
   NOT_FOUND_ROUTE,
 ]
 
@@ -159,11 +162,54 @@ function headingSkips(headings: { level: number; text: string }[]): string[] {
   return skips
 }
 
+/**
+ * Let every arrival animation finish before measuring.
+ *
+ * Colour contrast is computed from what is composited on screen, so an element
+ * sampled part-way through a fade is measured at partial opacity and reports a
+ * ratio nothing will ever render at. `/sources/` failed intermittently this
+ * way: axe caught the filter panel at 83% through its Tier 3 `reveal-fade` and
+ * reported 4.14:1 for text that settles at 6.26:1. The implied alpha was
+ * identical to three decimals on all three channels, which is compositing, not
+ * a colour.
+ *
+ * Waiting is the honest measurement, not a softened one — the settled state is
+ * the only state a reader ever sees.
+ */
+async function settle(page: Page): Promise<void> {
+  await page.waitForLoadState('domcontentloaded')
+
+  // Draining `getAnimations()` is not enough on a first load. The controls that
+  // fade in are the ones that only exist after hydration, so on `/sources/` —
+  // the route this was written for — the list was empty every time and the wait
+  // returned before the filter panel had mounted at all. Wait for the page to
+  // stop loading and for every revealing element to reach full opacity first.
+  await page.waitForLoadState('networkidle').catch(() => undefined)
+  await page
+    .waitForFunction(
+      () =>
+        [...document.querySelectorAll('.mount-reveal, .status-message, .video-frame')].every(
+          element => getComputedStyle(element).opacity === '1',
+        ),
+      undefined,
+      { timeout: 5000 },
+    )
+    .catch(() => undefined)
+
+  await page
+    .evaluate(() =>
+      Promise.all(
+        document.getAnimations().map(animation => animation.finished.catch(() => undefined)),
+      ),
+    )
+    .catch(() => undefined)
+}
+
 test.describe('axe-core, WCAG 2.0 / 2.1 / 2.2 level AA', () => {
   for (const route of ROUTES) {
     test(`reports no violations on ${route}`, async ({ page }) => {
       await page.goto(route)
-      await page.waitForLoadState('domcontentloaded')
+      await settle(page)
       expect(await axeViolations(page)).toEqual([])
     })
   }
@@ -174,6 +220,9 @@ test.describe('axe-core, WCAG 2.0 / 2.1 / 2.2 level AA', () => {
     const trigger = page.getByRole('button', { name: 'Menu' })
     await trigger.click()
     await expect(page.getByRole('dialog', { name: 'Site navigation' })).toBeVisible()
+    // The overlays are the two places something is deliberately animated into
+    // view, so they are the two that most need the wait.
+    await settle(page)
     expect(await axeViolations(page)).toEqual([])
   })
 
@@ -184,6 +233,7 @@ test.describe('axe-core, WCAG 2.0 / 2.1 / 2.2 level AA', () => {
     await expect(dialog).toBeVisible()
     await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('gehenna')
     await expect(dialog.getByRole('link', { name: /gehenna/i }).first()).toBeVisible()
+    await settle(page)
     expect(await axeViolations(page)).toEqual([])
   })
 })
@@ -209,4 +259,123 @@ test.describe('document structure', () => {
       expect(languageProblems).toEqual([])
     })
   }
+})
+
+/* ------------------------------------------------------------------ *
+ * Keyboard operation, where axe cannot see
+ * ------------------------------------------------------------------ */
+
+/**
+ * These four are things a rule engine has no way to check: where focus is
+ * after a navigation, whether a tab stop has anything behind it, and whether
+ * a modal really is modal. Each was a measured defect before it was a test.
+ */
+
+test.describe('keyboard operation', () => {
+  test('a transcript timestamp moves focus to the player it scrolled to', async ({ page }) => {
+    await page.goto('/watch/')
+
+    // Scoped by href: the "On this page" contents carries a link of the same
+    // name, and only the transcript one is the timestamp under test.
+    const timestamp = page.locator('a[href^="?t="]').filter({ hasText: 'Closing and further' })
+    await expect(timestamp).toHaveCount(1)
+    await timestamp.click()
+    // The fragment is how the scroll happens: the router honours it, where it
+    // would otherwise reset to the top of the document.
+    await expect(page).toHaveURL(/\/watch\/\?t=\d+#video-player$/)
+
+    // A query-only navigation is a soft one: the router resets the scroll
+    // position but leaves focus behind, which stranded a keyboard reader
+    // twenty-one thousand pixels below the player they had just asked for.
+    await expect(page.locator('#video-player')).toBeFocused()
+    // Focus without pixels is not arrival. This one happens to land near the
+    // top; its sibling on /search/ did not, and the assertion could not tell.
+    await expect(page.locator('#video-player')).toBeInViewport()
+  })
+
+  test('paging the search results moves focus into them', async ({ page }) => {
+    await page.goto('/search/?q=fire')
+
+    const next = page.getByRole('link', { name: /Next/ })
+    await expect(next).toBeVisible()
+    await next.click()
+    await expect(page).toHaveURL(/page=2/)
+
+    await expect(page.locator('#search-results')).toBeFocused()
+    // At 375x812 the heading, form and filters fill the first 840px, so the
+    // results began below the fold with focus — and its ring — parked off
+    // screen. `toBeFocused` passed throughout.
+    await expect(page.locator('#search-results')).toBeInViewport()
+    // The next tab stop belongs to the results, not to the footer beyond them.
+    await page.keyboard.press('Tab')
+    const inResults = await page.evaluate(() =>
+      Boolean(document.activeElement?.closest('#search-results')),
+    )
+    expect(inResults, 'tabbing from the results landed outside them').toBe(true)
+  })
+
+  test('an open dialog stops the page behind it scrolling', async ({ page }) => {
+    await page.goto('/')
+
+    // The trigger is a plain link to `/search/` until the component mounts, so
+    // `aria-haspopup` is the honest readiness signal — a keyboard shortcut
+    // pressed before then has no listener to reach.
+    const trigger = page.getByRole('link', { name: 'Search', exact: true })
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+    await trigger.click()
+    await expect(page.getByRole('dialog', { name: 'Search this site' })).toBeVisible()
+
+    const rootOverflow = () =>
+      page.evaluate(() => getComputedStyle(document.documentElement).overflow)
+
+    // Asserted on the computed style as well as the gesture: at the mobile
+    // viewport the sheet covers most of the screen, so a wheel can land on the
+    // panel and prove nothing.
+    expect(await rootOverflow()).toBe('hidden')
+
+    // The gesture too, over the backdrop rather than the panel. `showModal`
+    // makes the page inert to activation but does nothing about the wheel.
+    const box = page.viewportSize()
+    await page.mouse.move(
+      Math.round((box?.width ?? 800) * 0.06),
+      Math.round((box?.height ?? 600) * 0.95),
+    )
+    await page.mouse.wheel(0, 800)
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+
+    // And it has to give the scrolling back, or the lock is the worse bug.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('dialog[open]')).toHaveCount(0)
+    expect(await rootOverflow()).not.toBe('hidden')
+  })
+
+  test('the Scripture index has no tab stop that cannot be scrolled', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/scripture/')
+
+    const dead = async () =>
+      page.evaluate(
+        () =>
+          [...document.querySelectorAll<HTMLElement>('[role="group"][tabindex="0"]')].filter(
+            node => node.scrollWidth - node.clientWidth < 1,
+          ).length,
+      )
+
+    // Forty-four of this page's tab stops used to do nothing at all.
+    await expect.poll(dead).toBe(0)
+
+    // The stop has to come back where the table really does overflow, or the
+    // fix has broken WCAG 2.1.1 to tidy the tab order.
+    await page.setViewportSize({ width: 320, height: 900 })
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          () =>
+            [...document.querySelectorAll<HTMLElement>('[role="group"][tabindex="0"]')].filter(
+              node => node.scrollWidth - node.clientWidth >= 1,
+            ).length,
+        ),
+      )
+      .toBeGreaterThan(0)
+  })
 })

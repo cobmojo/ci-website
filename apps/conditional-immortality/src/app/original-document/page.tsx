@@ -12,7 +12,8 @@ import {
 } from '@ci/content-schema'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
-import { scrollRegionProps } from '@/components/content/scroll-region'
+import { ScrollRegion } from '@/components/content/scroll-region'
+import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate, pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { siteConfig } from '@/lib/site-config'
@@ -129,13 +130,13 @@ export default function OriginalDocumentPage() {
                 migration ledger.
               </p>
               <p className="m-0 mb-3">
-                The material was then reorganised into thirty-nine pages, each covering one
-                argument, and each carrying the page numbers of the original it was drawn from.
-                Scripture references were normalised and checked against a verified public-domain
-                corpus. Sources that appeared as bare links in the document were given records with
-                an access date, a link status and a rights status. Historical and language claims
-                were checked against primary sources where those exist, and narrowed or withdrawn
-                where they could not be supported.
+                The material was then reorganised into thirty-seven pages, each covering one
+                argument, with a preface and two appendices alongside them, and each carrying the
+                page numbers of the original it was drawn from. Scripture references were normalised
+                and checked against a verified public-domain corpus. Sources that appeared as bare
+                links in the document were given records with an access date, a link status and a
+                rights status. Historical and language claims were checked against primary sources
+                where those exist, and narrowed or withdrawn where they could not be supported.
               </p>
               <p className="m-0">
                 The build refuses to complete if a substantive element from the source has no
@@ -160,7 +161,7 @@ export default function OriginalDocumentPage() {
                 </code>
               </p>
 
-              <div {...scrollRegionProps('Source document statistics')} className="overflow-x-auto">
+              <ScrollRegion label="Source document statistics">
                 <table className="w-full font-sans text-[0.92rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
                     What the source file contained, and what the migration ledger records. Counts
@@ -288,7 +289,7 @@ export default function OriginalDocumentPage() {
                     </tr>
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
               <p className="m-0 mt-3 font-sans text-[0.88rem] text-ink-subtle">
                 Ledger generated {formatLongDate(LEDGER_SUMMARY.generatedAt)}.
               </p>
@@ -324,10 +325,7 @@ export default function OriginalDocumentPage() {
                 no comment is reproduced. What is published is the disposition: what was done about
                 each thread, and why.
               </p>
-              <div
-                {...scrollRegionProps('Editorial comment dispositions')}
-                className="overflow-x-auto"
-              >
+              <ScrollRegion label="Editorial comment dispositions">
                 <table className="w-full font-sans text-[0.92rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
                     Comment threads by disposition. Names are held only in the private source
@@ -374,7 +372,7 @@ export default function OriginalDocumentPage() {
                     </tr>
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
               <p className="m-0 mt-3">
                 Where a comment led to a change in the argument, that change appears in the
                 changelog on its own terms, described by what was wrong and what was done rather
@@ -392,10 +390,7 @@ export default function OriginalDocumentPage() {
                 as text, as a semantic table or as an accessible graphic, because a screenshot
                 cannot be read by assistive technology, searched, translated or checked.
               </p>
-              <div
-                {...scrollRegionProps('Embedded media dispositions')}
-                className="overflow-x-auto"
-              >
+              <ScrollRegion label="Embedded media dispositions">
                 <table className="w-full font-sans text-[0.9rem]">
                   <caption className="mb-2 text-left text-[0.88rem] text-ink-subtle">
                     Every embedded image in the source file, what it showed, and what replaced it.
@@ -457,7 +452,7 @@ export default function OriginalDocumentPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
             </section>
 
             <section aria-labelledby="withheld">
@@ -529,25 +524,20 @@ export default function OriginalDocumentPage() {
             </section>
           </div>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/method/">The editorial method in full</Link>
-              </li>
-              <li>
-                <Link href="/about/">About the author</Link>
-              </li>
-              <li>
-                <Link href="/changelog/">Every change since publication</Link>
-              </li>
-              <li>
-                <Link href="/privacy/">What this site stores</Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/method/">The editorial method in full</Link>
+            </li>
+            <li>
+              <Link href="/about/">About the author</Link>
+            </li>
+            <li>
+              <Link href="/changelog/">Every change since publication</Link>
+            </li>
+            <li>
+              <Link href="/privacy/">What this site stores</Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

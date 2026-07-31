@@ -6,7 +6,7 @@ Binding rules for anyone adding a route to `apps/conditional-immortality`.
 
 - `src/lib/site-config.ts` — site identity, never hardcode the name or URL.
 - `src/lib/navigation.ts` — `PRIMARY_NAV`, `FOOTER_NAV`, `STATIC_ROUTES`, `NOINDEX_ROUTES`.
-- `src/lib/metadata.ts` — `pageMetadata`, `breadcrumbJsonLd`, `articleJsonLd`, `JsonLd`.
+- `src/lib/metadata.tsx` — `pageMetadata`, `breadcrumbJsonLd`, `articleJsonLd`, `JsonLd`.
 - `src/lib/format.ts` — `formatLongDate`, `formatTimestamp`, `isoDuration`, `readingTimeMinutes`.
 - `src/components/article/article-chrome.tsx` — `Breadcrumbs`, `EvidenceRoleBadge`,
   `ReviewStatusBadge`, `OnThisPage`, `PreviousNextNavigation`, `FeedbackCta`.
@@ -27,17 +27,30 @@ Binding rules for anyone adding a route to `apps/conditional-immortality`.
    text label.
 8. **Never print the author's email or phone.** Feedback goes through `/corrections/`.
 9. **Tables use real `<table>`** with `<caption>`, `<thead>` and `scope` on header cells.
-   Wrap wide tables in `<div className="overflow-x-auto">`.
+   Wrap a wide table in `<ScrollRegion label="...">`, which is the one owner of the
+   scrolling, the keyboard access and the accessible name. MDX tables get it
+   automatically from `rehypeScrollableTables`.
 10. **No horizontal page scrolling at 320 CSS pixels.** Test long words and URLs.
 11. **Do not add a client-side data library** to a page that only renders static content.
-12. Use `<Link>` from `next/link` for internal navigation, plain `<a>` with
-    `rel="noopener noreferrer" target="_blank"` for external.
+12. Use `<Link>` from `next/link` for internal navigation. For an external link
+    whose destination the code chooses, use `<NewTabLink>`, which is the one
+    owner of the `rel` hardening, the "opens in a new tab" note a screen reader
+    needs, and the marker that stops print repeating a URL the text already
+    shows. Links authored in MDX get the same from `InternalOrExternalLink`.
+    A hand-written `<a target="_blank">` silently has none of it.
 
 ## Route conventions
 
 - Every route ends with a trailing slash in links and in `pageMetadata({ route })`.
 - Dynamic routes set `export const dynamicParams = false` and implement
-  `generateStaticParams`, so the whole site is statically generated.
+  `generateStaticParams`, so every content route is statically generated.
+  Two pages are exceptions, and both read `searchParams` on the server for the
+  same reason: what they must answer is in the URL. `/search/` renders on
+  demand so a result page can be linked and shared, and so search works with
+  scripting off. `/corrections/` renders on demand so that a reader without
+  scripting is told whether their submission was received, and so the section
+  they came from survives the redirect. Prerendering it made every one of
+  those states invisible — the server sent identical bytes to everyone.
 - `/full-case/` and `/search/` are `noindex, follow`: pass `noindex: true`.
 - Content comes from `@ci/content`. Never re-declare a list of sections, passages or
   sources in a component; import the registry.

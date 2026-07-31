@@ -9,8 +9,9 @@ import {
 } from '@ci/search'
 import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/article/article-chrome'
+import { FocusOnArrivalLink } from '@/components/navigation/focus-on-arrival-link'
 import { SearchEmptyState, SearchResultsList } from '@/components/search/search-results'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { searchIndex } from '@/lib/search-index'
@@ -18,7 +19,7 @@ import { searchIndex } from '@/lib/search-index'
 export const metadata: Metadata = pageMetadata({
   title: 'Search',
   description:
-    'Search case sections, key passages, objections, topics, the glossary, the source library and the video transcript. Searching runs in your browser.',
+    'Search case sections, key passages, objections, topics, the glossary, the source library and the video transcript.',
   route: '/search/',
   noindex: true,
 })
@@ -78,6 +79,9 @@ export default async function SearchPage({
       })
     : { results: [], total: 0, usedTerms: [] }
 
+  /** Every parameter the form's uncontrolled defaults are built from. */
+  const formKey = [query, ...selectedTypes, '|', ...selectedGroups, '|', ...selectedBooks].join(',')
+
   const totalPages = Math.max(1, Math.ceil(outcome.total / PAGE_SIZE))
   const caseGroups = Object.keys(CASE_GROUP_LABELS) as CaseGroup[]
 
@@ -93,6 +97,14 @@ export default async function SearchPage({
     }
     return `/search/?${next.toString()}`
   }
+
+  /*
+   * A hand-typed or stale `?page=` past the end would otherwise render an
+   * empty list beneath a count promising results, with a Previous chain
+   * walking back from a page that does not exist. Sending the reader to the
+   * last real page keeps the URL shareable and the screen truthful.
+   */
+  if (query && page > totalPages) redirect(buildHref({ page: String(totalPages) }))
 
   return (
     <>
@@ -117,8 +129,22 @@ export default async function SearchPage({
           10:28, Matt 10 28 and Mt. 10:28.
         </p>
 
-        {/* A plain GET form: no JavaScript required, and the URL carries state. */}
-        <form action="/search/" method="get" className="mb-8">
+        {/* A plain GET form: no JavaScript required, and the URL carries state.
+            Hidden in print: a paper copy of a results page is the results, not
+            the controls that produced them. */}
+        {/*
+         * Keyed on the query the server rendered from.
+         *
+         * The controls below use `defaultChecked` and `defaultValue`, which
+         * React sets once and never reapplies. On a soft navigation to a URL
+         * with no filters, the query field updated and the checkboxes did not:
+         * the page showed 81 unfiltered results with "Objections" and "Key
+         * texts" still ticked and a book still selected, and pressing Search
+         * then applied three filters the reader never asked for. Remounting
+         * the form on each distinct set of parameters is what makes the
+         * uncontrolled defaults mean what they say.
+         */}
+        <form key={formKey} action="/search/" method="get" className="mb-8 print:hidden">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[16rem] flex-1">
               <label
@@ -164,8 +190,11 @@ export default async function SearchPage({
             </div>
           </fieldset>
 
-          <details className="mt-4">
-            <summary className="cursor-pointer font-sans text-[0.9rem] text-navy">
+          {/* Held open when a filter inside it is active. A GET submit
+              re-renders the page, and a disclosure that snaps shut would hide
+              the case-category or book filter still shaping the results. */}
+          <details className="mt-4" open={selectedGroups.length > 0 || selectedBooks.length > 0}>
+            <summary className="summary-hit-area font-sans text-[0.9rem] font-medium text-navy">
               More filters
             </summary>
             <div className="mt-3 grid gap-5 sm:grid-cols-2">
@@ -177,7 +206,7 @@ export default async function SearchPage({
                   {caseGroups.map(group => (
                     <label
                       key={group}
-                      className="inline-flex items-center gap-2 font-sans text-[0.88rem] text-ink-muted"
+                      className="inline-flex items-center gap-2 font-sans text-[0.9rem] text-ink-muted"
                     >
                       <input
                         type="checkbox"
@@ -203,7 +232,7 @@ export default async function SearchPage({
                   id="search-book"
                   name="book"
                   defaultValue={selectedBooks[0] ?? ''}
-                  className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[0.95rem]"
+                  className="min-h-11 w-full rounded-md border border-border-strong bg-paper-raised px-3 font-sans text-[1rem] text-ink"
                 >
                   <option value="">Any book</option>
                   {referencedBooks.map(book => (
@@ -230,7 +259,10 @@ export default async function SearchPage({
 
         {/* Each result is an h3, so the list needs an h2 above it or the
             document outline jumps straight from the page title to level three. */}
-        <section aria-labelledby="search-results-title">
+        {/* `tabIndex={-1}` so paging can move focus here. Without it a reader
+            who pressed "Next" stayed on the button and tabbed into the
+            footer, past every result the new page had just loaded. */}
+        <section aria-labelledby="search-results-title" id="search-results" tabIndex={-1}>
           <h2 id="search-results-title" className="sr-only">
             {query ? `Results for ${query}` : 'Results'}
           </h2>
@@ -242,34 +274,41 @@ export default async function SearchPage({
         </section>
 
         {totalPages > 1 ? (
-          <nav aria-label="Search result pages" className="mt-8 flex items-center gap-3">
+          <nav
+            aria-label="Search result pages"
+            className="mt-8 flex items-center gap-3 print:hidden"
+          >
             {page > 1 ? (
-              <Link
+              <FocusOnArrivalLink
                 href={buildHref({ page: String(page - 1) })}
+                focusId="search-results"
                 rel="prev"
                 className="pressable inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline hover:bg-panel"
               >
                 <span aria-hidden="true">←</span> Previous
-              </Link>
+              </FocusOnArrivalLink>
             ) : null}
             <span className="font-sans text-[0.9rem] text-ink-subtle">
               Page {page} of {totalPages}
             </span>
             {page < totalPages ? (
-              <Link
+              <FocusOnArrivalLink
                 href={buildHref({ page: String(page + 1) })}
+                focusId="search-results"
                 rel="next"
                 className="pressable inline-flex min-h-11 items-center rounded-md border border-border px-4 font-sans text-[0.92rem] no-underline hover:bg-panel"
               >
                 Next <span aria-hidden="true">→</span>
-              </Link>
+              </FocusOnArrivalLink>
             ) : null}
           </nav>
         ) : null}
 
         <p className="mt-10 font-sans text-[0.88rem] text-ink-subtle">
-          Search runs entirely in your browser against an index built when the site was published.
-          Nothing you type is sent to a server, and no search history is kept.
+          Results come from an index built when the site was published. This page is an ordinary
+          form, so the term above is in the address and reached this site as any page request does.
+          No search history is kept. The quick panel, on Ctrl or Cmd and K, matches the same index
+          inside your browser instead.
         </p>
       </div>
     </>

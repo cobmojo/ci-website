@@ -424,6 +424,35 @@
   }
 
   /*
+   * A modal must not leave the page behind it operable. `showModal()` makes
+   * the background inert to activation but does nothing about scrolling, so a
+   * wheel or trackpad gesture over the backdrop scrolled the document behind
+   * the panel: eight hundred pixels, at every width, on both overlays. Closing
+   * then returned the reader to a place they never chose, and at high zoom,
+   * where the sheet fills the viewport, there was no way to tell it had
+   * happened.
+   *
+   * Stated once, against any open dialog, so a third overlay cannot forget it.
+   * `scrollbar-gutter` is the other half: without it, taking the scrollbar
+   * away would shift the whole page sideways as the dialog opened, and this
+   * layout does not move.
+   */
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  /*
+   * Screen only. The print block hides dialogs with `display: none` but does
+   * not clear their `open` attribute, so `:has()` would still match and lock
+   * the printed document if a reader printed with an overlay open.
+   */
+  @media screen {
+    html:has(dialog[open]) {
+      overflow: hidden;
+    }
+  }
+
+  /*
    * Tier 3. Anything that appears in place: the correction form's status
    * messages, and the controls that cannot exist until scripting has run.
    *
@@ -447,7 +476,7 @@
   .status-message,
   .mount-reveal,
   .video-frame {
-    animation: reveal-fade var(--motion-reveal) ease;
+    animation: reveal-fade var(--motion-reveal) var(--ease-out-quad);
   }
 
   /*
@@ -473,10 +502,26 @@
       opacity: 0;
     }
 
-    :is(h2, h3):hover > .heading-anchor,
+    /* h4 appears only on the continuous edition, where demotion turns an
+       authored h3 into one; a demoted heading keeps its anchor. */
+    :is(h2, h3, h4):hover > .heading-anchor,
     .heading-anchor:focus-visible {
       opacity: 1;
     }
+  }
+
+  /*
+   * Disclosure summaries.
+   *
+   * The padding gives the summary itself a hit area at or above the 44px
+   * floor, and the negative margin hands the space back to the layout, so
+   * the rendered geometry is unchanged. One class, because the trick is easy
+   * to get subtly wrong and every disclosure on the site should share it.
+   */
+  .summary-hit-area {
+    cursor: pointer;
+    margin-block: -0.75rem;
+    padding-block: 0.75rem;
   }
 
   /* Long-form article typography. Applied to rendered MDX bodies. */
@@ -650,8 +695,9 @@
     --search-excerpt-lines: 2;
     --search-excerpt-line-height: 1.375;
 
-    /* `display` is set with the clamp below, which needs -webkit-box. */
-    font-family: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
+    /* `display` is set with the clamp below, which needs -webkit-box.
+       The token resolves to the exact stack Pretext measures. */
+    font-family: var(--font-serif);
     font-style: normal;
     font-weight: 400;
     font-size: 0.9rem;
@@ -722,7 +768,7 @@
    */
   .quick-search-excerpt mark {
     padding: 0;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     background: var(--color-ochre-soft);
     color: var(--color-ink);
     font-weight: inherit;
@@ -852,12 +898,23 @@
     }
 
     .video-play:active .video-play__glyph {
+      /* The press itself takes the press token and the press curve. Unlike
+         `.pressable`, which states them on its base rule and so shares them in
+         both directions, these sit on `:active`, so the release returns on the
+         hover clock the glyph rests with. Deliberate: the growth on hover is
+         Tier 1 feedback and keeps its own timing. */
+      transition-duration: var(--motion-press);
+      transition-timing-function: var(--ease-out-quad);
       scale: 0.97;
     }
 
-    /* The skip link's travel is its affordance. Under `reduce` it simply
-       appears where it belongs, instantly, which is the correct still variant
-       of an element whose entire animation is movement. */
+    /* Tier 3, at the quicker of its two durations. The skip link's travel is
+       its affordance: a reader watching it arrive understands it came from
+       above the page and will go back there. It takes the shorter token
+       deliberately, because it is the first control a keyboard reader meets
+       and an arrival they have to wait for is an arrival in the way. Under
+       `reduce` it simply appears where it belongs, instantly, which is the
+       correct still variant of an element whose entire animation is movement. */
     .skip-link {
       transition-property: translate;
       transition-duration: var(--motion-overlay-exit);
@@ -890,7 +947,6 @@
     line-height: 1.45;
   }
 
-  .print-hidden,
   .site-header,
   .site-footer nav,
   .chapter-navigation,
@@ -900,6 +956,15 @@
   .search-trigger,
   .video-embed,
   dialog,
+  /*
+   * A form on paper is a page and a half of empty boxes and a button that
+   * cannot be pressed. The correction form printed exactly that — a select, a
+   * textarea, three text fields, three radios and "Send submission" — under an
+   * accessibility statement promising that interactive controls are removed
+   * from the printed copy. The prose around it, which says what corrections
+   * are for and how they are published, stays.
+   */
+  form,
   [data-print="hide"] {
     display: none !important;
   }
@@ -914,9 +979,16 @@
     text-decoration: underline;
   }
 
-  /* Surface destinations for external links only; internal anchors would
-     produce noise on every cross-reference. */
-  .prose-article a[href^="http"]::after {
+  /*
+   * Surface destinations for external links only; internal anchors would
+   * produce noise on every cross-reference.
+   *
+   * Scoped to `main` rather than to `.prose-article`: the sources-cited list
+   * on every section, passage and topic page sits outside the article body,
+   * and its "View original" links printed as bare words with no destination,
+   * which is the one thing a printed citation cannot afford.
+   */
+  main a[href^="http"]:not([data-print-url="shown"])::after {
     content: " (" attr(href) ")";
     font-size: 0.82em;
     word-break: break-all;
@@ -925,7 +997,11 @@
   h1,
   h2,
   h3,
-  h4 {
+  h4,
+  /* A `dt` is a heading for the list beneath it. Two pages of the glossary
+     carried the tail of an occurrence list with its label left behind on the
+     page before. */
+  dt {
     color: #000 !important;
     break-after: avoid-page;
     page-break-after: avoid;
@@ -944,7 +1020,22 @@
     page-break-before: always;
   }
 
-  details {
+  /* A scrolling region cannot scroll on paper. Let the table find its own
+     width and wrap inside the printed column instead of being clipped at the
+     edge with nothing to show that anything was lost. */
+  .table-scroll {
+    overflow-x: visible !important;
+  }
+
+  .table-scroll :is(th, td) {
+    min-width: 0 !important;
+  }
+
+  /* Disclosures are forced open on paper so nothing hides inside a collapsed
+     one. The `:not` keeps that from resurrecting a disclosure the page asked
+     to leave out of print entirely, whose `print:hidden` would otherwise lose
+     to this `!important`. */
+  details:not([class~="print:hidden"]) {
     display: block !important;
   }
 
@@ -959,12 +1050,21 @@
   }
 
   /*
-   * Nothing collapses `::details-content`, so no pseudo-element override is
-   * needed here. If a disclosure animation is ever reinstated, it will need one:
-   * `display: revert` on the children above cannot reach a pseudo-element, so a
-   * collapsed `::details-content` would silently delete the content of every
-   * disclosure from the printed page.
+   * The pseudo-element the rule above cannot reach.
+   *
+   * This block used to assert that nothing collapses `::details-content`, and
+   * to describe precisely what would happen if something did. Something does:
+   * the browser's own stylesheet gives a closed disclosure
+   * `content-visibility: hidden` there, and `display: revert` on the children
+   * cannot touch a pseudo-element. So every collapsed disclosure printed as its
+   * summary and nothing else — measured, a `<details>` 49px tall on paper whose
+   * content is 3,902px and four tables — while `/accessibility/` told the
+   * reader that "disclosures are opened so that nothing is lost inside a
+   * collapsed section".
    */
+  details::details-content {
+    content-visibility: visible !important;
+  }
 
   .scripture-block {
     border-inline-start: 2pt solid #000;

@@ -1028,7 +1028,7 @@ export const CASE_SECTIONS: readonly CaseSection[] = [
     ],
     relatedSections: ['S16', 'S07', 'S18', 'S26', 'S02'],
     topicIds: ['death', 'punishment', 'second-death'],
-    sourceIds: ['dear-bible-teaches-annihilationism'],
+    sourceIds: ['dear-bible-teaches-annihilationism', 'welch-source-document'],
     ectPosition:
       'Defenders of eternal conscious torment reply that Christ, being of infinite worth, could bear in a finite time what would otherwise take his people for ever, and that his suffering as well as his death is redemptive.',
     conditionalistResponse:
@@ -1070,7 +1070,7 @@ export const CASE_SECTIONS: readonly CaseSection[] = [
     relatedPassages: ['Hebrews 1:3', 'Colossians 1:17', '1 Corinthians 8:6'],
     relatedSections: ['S07', 'S17', 'S10', 'S22'],
     topicIds: ['death', 'second-death', 'body-soul-and-spirit'],
-    sourceIds: ['dear-bible-teaches-annihilationism'],
+    sourceIds: ['dear-bible-teaches-annihilationism', 'welch-source-document'],
     ectPosition:
       'Defenders of eternal conscious torment hold that death in Scripture means separation rather than cessation, and that the second death is therefore permanent separation from God, consciously experienced.',
     conditionalistResponse:

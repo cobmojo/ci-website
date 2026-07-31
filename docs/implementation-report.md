@@ -41,9 +41,14 @@ change. Titles, slugs and routes may be revised freely; the changelog, reading
 progress and every cross-reference key off the id.
 
 **Server components by default.** An article page ships no client JavaScript for
-its prose. The only client components are the mobile navigation sheet, the
-search dialog, the click-to-load video, the feedback form, reading progress, the
-print button and two progressive-enhancement filters. Every one degrades to
+its prose. Fifteen components carry `'use client'`: the mobile navigation
+sheet, the search dialog and its two result surfaces with the text-layout hook
+behind them, the click-to-load video, the feedback form, reading progress, the
+print button, two progressive-enhancement filters, the scroll region, which
+measures whether it has anything to scroll before claiming a tab stop, the link
+that moves focus to the region a same-page navigation was for, and two leaves in
+the shell: the primary navigation item, which reads the path to mark the current
+page, and the smooth-anchor scroller, which renders nothing at all. Every one degrades to
 working markup with scripting disabled. The text-layout runtime the search
 dialog uses is in a chunk of its own that an article page never requests; an
 end-to-end test finds that chunk in the production output and proves it.
@@ -55,9 +60,13 @@ reference. An author cannot misquote a verse, and an unknown reference fails the
 build. It also keeps a reference work of this size clear of modern-translation
 licensing. See `docs/rights-audit.md`.
 
-**Search runs in the browser.** The index is built from the registries at build
-time and served as a static asset. No query leaves the reader's machine and
-there is no hosted search service to depend on. Ranking is a plain weighted
+**Search has no hosted service behind it.** The index is built from the
+registries at build time and served as a static asset, so no query reaches a
+third party. Two surfaces score against it: the quick panel fetches the file
+and scores in the reader's browser, so what they type there is never
+transmitted; `/search/` scores the same index on this site's own server, which
+is what makes it work without scripting and makes a page of results linkable,
+at the cost of the term travelling in the URL. Ranking is a plain weighted
 scorer over title, id, summary, headings, Scripture references, body,
 transcript and notes, with synonym expansion at reduced weight.
 
@@ -77,20 +86,20 @@ contract and the browser evidence are in `docs/pretext-text-geometry.md`.
 
 ## Routes
 
-129 pages generated. Landing and orientation: `/`, `/start/` and its three
+129 routes, 121 of them prerendered as HTML. Landing and orientation: `/`, `/start/` and its three
 children, `/case/`, `/objections/`, `/passages/`, `/scripture/`, `/topics/`,
 `/glossary/`, `/sources/`, `/watch/`, `/full-case/`, `/method/`, `/about/`,
 `/corrections/`, `/changelog/`, `/original-document/`, `/download/`,
 `/accessibility/`, `/privacy/`, `/search/`, 404.
 
 Generated: 40 section pages under `/case/`, `/objections/` and `/appendix/`;
-18 passage pages; 27 topic pages; 13 per-section changelog pages.
+18 passage pages; 27 topic pages; 12 per-section changelog pages.
 
 Handlers: `/search-index.json`, `/download/transcript.txt`,
 `/download/bibliography.txt`, `/download/handout.html`, `/sitemap.xml`,
 `/robots.txt`, `/og`, `POST /api/feedback`.
 
-20 redirects cover the paths readers guess (`/annihilationism`, `/ect-vs-ci`,
+21 redirects cover the paths readers guess (`/annihilationism`, `/ect-vs-ci`,
 `/conditional-immortality` and so on). No thin duplicate pages were created.
 
 ## Feedback
@@ -106,16 +115,17 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-1,154 tests, all passing.
+1,328 tests, all passing.
 
 | Suite | Count |
 |---|---|
-| Unit, `@ci/content-schema` | 46 |
-| Unit, `@ci/content` | 64 |
-| Unit, `@ci/search` | 329 |
-| Unit and component, `conditional-immortality` | 326 |
-| End-to-end, desktop and mobile | 288 |
-| Accessibility, axe plus structural | 32 |
+| Unit, `@ci/content-schema` | 51 |
+| Unit, `@ci/content` | 80 |
+| Unit, `@ci/search` | 336 |
+| Unit and component, `conditional-immortality` | 368 |
+| End-to-end, desktop and mobile | 342 |
+| Accessibility, axe plus structural, desktop and mobile viewports | 76 |
+| Print output, Chromium, Firefox and WebKit | 6 |
 | Text geometry, Chromium, Firefox and WebKit | 69 |
 
 Plus seven gates that fail the build: content validation, the content audit,
@@ -131,7 +141,7 @@ get a pass.
 
 ## Accessibility status
 
-Target WCAG 2.2 AA. axe-core reports **zero violations** across 15 routes plus
+Target WCAG 2.2 AA. axe-core reports **zero violations** across 16 routes plus
 the open states of both dialogs.
 
 Verified beyond axe: one `<h1>` per page and no heading level skips; four
@@ -205,8 +215,9 @@ replace `src/lib/rate-limit.ts` with a shared store.
 ## Known limitations
 
 1. Video visual descriptions, as above.
-2. Six pages carry `specialist-review-pending` because they rest on a Greek or
-   Hebrew claim. They are marked in the interface, not just in a document.
+2. Two case pages and eight original-language notes carry
+   `specialist-review-pending` because they rest on a Greek or Hebrew claim.
+   They are marked in the interface, not just in a document.
 3. S34 carries `revision-needed` until someone produces a heaven-versus-hell
    count with published methodology.
 4. External links are recorded with an access date but are not fetched by CI, so

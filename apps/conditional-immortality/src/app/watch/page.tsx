@@ -4,7 +4,9 @@ import { video, videoTimestampUrl } from '@ci/content/video'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb, FeedbackCta } from '@/components/article/article-chrome'
+import { NewTabLink } from '@/components/content/new-tab-link'
 import { ClickToLoadVideo } from '@/components/media/click-to-load-video'
+import { TranscriptTimestamp } from '@/components/media/transcript-timestamp'
 import { formatLongDate, formatTimestamp, isoDuration } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { absoluteUrl, siteConfig } from '@/lib/site-config'
@@ -89,7 +91,7 @@ export default function WatchPage() {
       <div className="mx-auto max-w-[80rem] px-4 py-8 sm:px-6 sm:py-10">
         <Breadcrumbs trail={CRUMBS} />
 
-        <div className="max-w-[54rem]">
+        <div className="max-w-[52rem]">
           <header className="mb-8">
             <p className="m-0 mb-2 font-sans text-[0.83rem] font-semibold tracking-wider text-copper-deep uppercase">
               Video overview
@@ -99,7 +101,11 @@ export default function WatchPage() {
           </header>
 
           <figure className="m-0 mb-10">
-            <ClickToLoadVideo title={video.siteTitle} durationSeconds={video.durationSeconds} />
+            <ClickToLoadVideo
+              id="video-player"
+              title={video.siteTitle}
+              durationSeconds={video.durationSeconds}
+            />
             <figcaption className="mt-3 font-sans text-[0.86rem] leading-snug text-ink-subtle">
               Published on YouTube as{' '}
               <span className="text-ink-muted">“{video.originalTitle}”</span>.{' '}
@@ -111,9 +117,13 @@ export default function WatchPage() {
 
           <nav
             aria-labelledby="chapters-title"
-            className="mb-10 rounded-md border border-border bg-paper-raised p-5"
+            // Not on paper: three of the eighteen printed pages were forty
+            // timestamps addressing a player the print stylesheet removes,
+            // against an accessibility statement that says navigation is
+            // dropped from the printed copy.
+            className="mb-10 rounded-md border border-border bg-paper-raised p-5 print:hidden"
           >
-            <h2 id="chapters-title" className="mt-0 mb-3 text-[1.18rem]">
+            <h2 id="chapters-title" className="mt-0 mb-3 text-[1.12rem]">
               Chapters
             </h2>
             <ol className="m-0 list-none space-y-3 p-0">
@@ -164,14 +174,27 @@ export default function WatchPage() {
               <time dateTime={video.transcriptRetrievedAt}>
                 {formatLongDate(video.transcriptRetrievedAt)}
               </time>
-              . Timestamps link back to the player at the top of this page, and each one also opens
-              the video at that moment on YouTube.
+              .{' '}
+              <span className="print:hidden">
+                Timestamps link back to the player at the top of this page, and each one also opens
+                the video at that moment on YouTube.
+              </span>
+              {/* On paper there is no player and no link to follow, so the
+                  sentence above would promise two things the printed copy does
+                  not carry. The address does the same work. */}
+              <span className="hidden print:inline">
+                The video is at {siteConfig.video.watchUrl}, and each timestamp below is its
+                position in that recording.
+              </span>
             </p>
 
             {segments.map(segment => (
               <section key={segment.id} id={segment.id} className="mt-8">
                 <h3 className="mt-0 mb-2 text-[1.08rem]">
-                  <Link href={`?t=${segment.start}`} className="no-underline hover:underline">
+                  <TranscriptTimestamp
+                    seconds={segment.start}
+                    className="no-underline hover:underline"
+                  >
                     <time
                       dateTime={isoDuration(segment.start)}
                       className="mr-2 font-sans text-[0.86rem] tabular-nums text-ink-subtle"
@@ -179,7 +202,7 @@ export default function WatchPage() {
                       {formatTimestamp(segment.start)}
                     </time>
                     {segment.title}
-                  </Link>
+                  </TranscriptTimestamp>
                 </h3>
 
                 {segment.chapter?.visualDescription ? (
@@ -199,13 +222,9 @@ export default function WatchPage() {
                 ))}
 
                 <p className="mt-2 mb-0 font-sans text-[0.84rem] text-ink-subtle print:hidden">
-                  <a
-                    href={videoTimestampUrl(segment.start)}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
+                  <NewTabLink href={videoTimestampUrl(segment.start)}>
                     Open this moment on YouTube
-                  </a>
+                  </NewTabLink>
                 </p>
               </section>
             ))}
@@ -215,13 +234,12 @@ export default function WatchPage() {
             aria-labelledby="video-sources-title"
             className="mb-10 border-t border-border pt-6"
           >
-            <h2 id="video-sources-title" className="mt-0 mb-3 text-[1.18rem]">
+            <h2 id="video-sources-title" className="mt-0 mb-3 text-[1.12rem]">
               Sources mentioned in the video
             </h2>
             <p className="m-0 mb-3 font-sans text-[0.92rem] text-ink-muted">
-              The closing seconds point viewers to two places for further reading. Both are
-              conditionalist or multi-view sources, and both are listed in full in the source
-              library.
+              The video itself, and the places its closing seconds point viewers for further
+              reading. Each one is listed in full in the source library.
             </p>
             <ol className="m-0 space-y-2 pl-5 font-sans text-[0.9rem] text-ink-muted">
               {sources.map(source => (
@@ -230,9 +248,7 @@ export default function WatchPage() {
                   {source.url ? (
                     <>
                       {' '}
-                      <a href={source.url} rel="noopener noreferrer" target="_blank">
-                        Open {hostLabel(source.url)}
-                      </a>
+                      <NewTabLink href={source.url}>Open {hostLabel(source.url)}</NewTabLink>
                     </>
                   ) : null}{' '}
                   <Link href={`/sources/#${source.id}`} className="text-ink-subtle">

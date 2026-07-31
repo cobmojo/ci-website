@@ -80,7 +80,29 @@ export interface ExtractedHeading {
   readonly id: string
 }
 
-const HEADING_PATTERN = /^(#{2,3})\s+(.+?)\s*$/gm
+/**
+ * A markdown heading, or a callout that renders one at level 2.
+ *
+ * Both are matched by a single alternation so `matchAll` yields them in
+ * document order. A `<Callout as="h2">` is a real `<h2>` on the page, and
+ * because it is literal JSX rather than markdown, neither this function nor
+ * `rehype-slug` used to see it: both appendices opened on a level-2 heading —
+ * "A psychological illustration, not evidence", the caveat that says the page
+ * proves nothing about what Scripture teaches — that carried no id, could not
+ * be linked, and left "On this page" starting at the *second* heading.
+ *
+ * Level-3 callouts are left out deliberately. There are thirty of them across
+ * twenty-four pages, and listing every aside would change what the contents
+ * are for. None of them carries an id today, so none is separately linkable;
+ * `Callout` will place one on the heading if a level-3 callout is ever given
+ * one, and that is the point at which it would also belong here.
+ */
+const HEADING_PATTERN = /^(#{2,3})\s+(.+?)\s*$|<Callout\b([^>]*\bas="h2"[^>]*)>/gm
+
+/** Read one attribute out of a JSX opening tag's attribute text. */
+function attribute(attributes: string, name: string): string | undefined {
+  return new RegExp(`\\b${name}="([^"]*)"`).exec(attributes)?.[1]
+}
 /** Strip inline MDX/markdown syntax so heading text reads as plain prose. */
 function plainText(value: string): string {
   return value
@@ -121,8 +143,24 @@ export function extractHeadings(mdx: string): readonly ExtractedHeading[] {
   const seen = new Map<string, number>()
 
   for (const match of withoutFences.matchAll(HEADING_PATTERN)) {
-    const hashes = match[1]
-    const raw = match[2]
+    const [, hashes, raw, calloutAttributes] = match
+
+    // A callout brings its own id, because the component renders the heading
+    // and nothing downstream can slug it.
+    if (calloutAttributes !== undefined) {
+      const text = plainText(attribute(calloutAttributes, 'title') ?? '')
+      const id = attribute(calloutAttributes, 'id')
+      if (!text || !id) continue
+      // Deliberately not seeded into `seen`: `rehype-slug` never sees a
+      // callout, so seeding it here would make a later markdown heading of the
+      // same slug come out `open-questions-1` while the rendered page says
+      // `open-questions`, and this function's whole contract is to agree with
+      // it character for character. A genuine collision is caught by the
+      // duplicate-id check instead.
+      headings.push({ depth: 2, text, id })
+      continue
+    }
+
     if (!hashes || !raw) continue
     const text = plainText(raw)
     if (!text) continue

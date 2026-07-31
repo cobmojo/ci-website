@@ -10,9 +10,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile",
-    "test:a11y": "playwright test --project=accessibility",
+    "test:a11y": "playwright test --project=accessibility --project=accessibility-mobile",
+    "test:print": "playwright test --project=print-chromium --project=print-firefox --project=print-webkit",
     "test:text-geometry": "playwright test --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit",
-    "test:browser": "playwright test --project=chromium-desktop --project=chromium-mobile --project=accessibility --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit"
+    "test:browser": "playwright test --project=chromium-desktop --project=chromium-mobile --project=accessibility --project=accessibility-mobile --project=print-chromium --project=print-firefox --project=print-webkit --project=geometry-chromium --project=geometry-firefox --project=geometry-webkit"
   },
   "dependencies": {
     "@chenglou/pretext": "0.0.8",

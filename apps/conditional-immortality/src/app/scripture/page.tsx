@@ -7,7 +7,7 @@ import {
 } from '@ci/content/passages'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
-import { scrollRegionProps } from '@/components/content/scroll-region'
+import { ScrollRegion } from '@/components/content/scroll-region'
 import { ScriptureFilter } from '@/components/scripture/scripture-filter'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
@@ -29,7 +29,7 @@ const CRUMBS: readonly Crumb[] = [
 export const metadata = pageMetadata({
   title: 'Scripture Index',
   description:
-    'Every Scripture reference used anywhere in the case, in canonical order, with the parts that cite it, whether the use is primary, and a link to the passage page where one exists.',
+    'Every Scripture reference the case is built on, in canonical order, with the parts that cite it, whether the use is primary, and a link to the passage page where one exists.',
   route: '/scripture/',
 })
 
@@ -94,13 +94,15 @@ export default function ScriptureIndexPage() {
 
         <header className="max-w-[var(--spacing-measure)]">
           <p className="m-0 mb-2 font-sans text-[0.83rem] font-semibold tracking-wider text-copper-deep uppercase">
-            Every reference in the case
+            The references the case is built on
           </p>
           <h1 className="mt-0 mb-4">Scripture Index</h1>
           <p className="m-0 text-[1.13rem] leading-[1.6] text-ink-muted">
             {scriptureIndex.length} distinct references across {referencedBooks.length} books, in
             canonical order. A reference is marked primary where the part it appears in is built on
-            that text rather than citing it in passing.
+            that text rather than citing it in passing. The index is drawn from the references each
+            part records as its own; a verse quoted only in passing inside a part's prose may not
+            have a row here.
           </p>
           <p className="m-0 mt-4 text-[1rem] text-ink-muted">
             References the case works through at length also have their own{' '}
@@ -109,10 +111,14 @@ export default function ScriptureIndexPage() {
         </header>
 
         <nav
-          aria-label="Jump to a book"
+          aria-labelledby="jump-to-book"
+          data-book-jump
           className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
         >
-          <h2 className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
+          <h2
+            id="jump-to-book"
+            className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
+          >
             Jump to a book
           </h2>
           {TESTAMENTS.map(testament => (
@@ -141,12 +147,16 @@ export default function ScriptureIndexPage() {
           <section
             key={testament.key}
             id={testament.key}
+            data-testament
             aria-labelledby={`${testament.key}-title`}
             className="mt-12"
           >
             <h2 id={`${testament.key}-title`} className="mt-0 mb-4 text-[1.3rem]">
               {testament.label}
-              <span className="ml-2 font-sans text-[0.85rem] font-normal text-ink-subtle">
+              <span
+                data-reference-count
+                className="ml-2 font-sans text-[0.85rem] font-normal text-ink-subtle"
+              >
                 {testament.entryCount} {pluralise(testament.entryCount, 'reference')}
               </span>
             </h2>
@@ -161,15 +171,15 @@ export default function ScriptureIndexPage() {
               >
                 <h3 id={`${group.anchor}-title`} className="mt-0 mb-2 text-[1.08rem]">
                   {group.book}
-                  <span className="ml-2 font-sans text-[0.82rem] font-normal text-ink-subtle">
+                  <span
+                    data-reference-count
+                    className="ml-2 font-sans text-[0.82rem] font-normal text-ink-subtle"
+                  >
                     {group.entries.length} {pluralise(group.entries.length, 'reference')}
                   </span>
                 </h3>
 
-                <div
-                  {...scrollRegionProps(`References in ${group.book}`)}
-                  className="overflow-x-auto"
-                >
+                <ScrollRegion label={`References in ${group.book}`}>
                   <table className="w-full border-collapse font-sans text-[0.92rem]">
                     <caption className="sr-only">
                       References in {group.book} and the parts of the case that use them
@@ -250,7 +260,7 @@ export default function ScriptureIndexPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </ScrollRegion>
               </section>
             ))}
           </section>

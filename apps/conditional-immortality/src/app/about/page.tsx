@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { siteConfig } from '@/lib/site-config'
@@ -104,10 +105,10 @@ export default function AboutPage() {
                 What this site is for
               </h2>
               <p className="m-0 mb-3">
-                The document was a fifty-two page file passed between people, with no way to check a
-                citation, no record of what had been changed, and no way for a reader to send back a
-                correction that anyone else would ever see. This site exists to fix those four
-                problems.
+                The document was a fifty-two page file passed between people, with no way to find a
+                single argument inside it, no way to check a citation, no record of what had been
+                changed, and no way for a reader to send back a correction that anyone else would
+                ever see. This site exists to fix those four problems.
               </p>
               <ul className="m-0 mb-3 list-disc space-y-2 pl-6">
                 <li>
@@ -193,22 +194,17 @@ export default function AboutPage() {
             </section>
           </div>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/start/">Start here, if you are new to the question</Link>
-              </li>
-              <li>
-                <Link href="/method/">The editorial method in full</Link>
-              </li>
-              <li>
-                <Link href="/corrections/">Send a correction or a counterargument</Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/start/">Start here, if you are new to the question</Link>
+            </li>
+            <li>
+              <Link href="/method/">The editorial method in full</Link>
+            </li>
+            <li>
+              <Link href="/corrections/">Send a correction or a counterargument</Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

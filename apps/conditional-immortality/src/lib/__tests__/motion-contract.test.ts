@@ -359,6 +359,25 @@ describe('animation craft', () => {
     // Starting a scale animation at 0 has no counterpart in the physical world.
     expect(withoutComments(css)).not.toMatch(/scale:\s*0(\s|;|\))/)
   })
+
+  it('runs every press confirmation on the press token and the press curve', () => {
+    // Tier 2 is one gesture with one clock and one curve. `.pressable`
+    // carries `--motion-press` with `--ease-out-quad` in its per-property
+    // lists; the video play glyph performs the identical 0.97 squash and must
+    // not drift onto the Tier 1 feedback timing on either axis.
+    const live = withoutComments(css)
+    const press = live.match(/\.video-play:active\s+\.video-play__glyph\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(press).toContain('var(--motion-press)')
+    expect(press).toContain('var(--ease-out-quad)')
+  })
+
+  it('gives Tier 3 arrivals the overlay curve, not the Tier 1 keyword', () => {
+    // The brief assigns `--ease-out-quad` to Tier 3. `status-in` uses it; the
+    // shared `reveal-fade` arrival must use the same curve rather than `ease`.
+    expect(withoutComments(css)).toMatch(
+      /animation:\s*reveal-fade\s+var\(--motion-reveal\)\s+var\(--ease-out-quad\)/,
+    )
+  })
 })
 
 /* ------------------------------------------------------------------ *
@@ -367,19 +386,35 @@ describe('animation craft', () => {
 
 describe('print', () => {
   it('leaves no animation able to hide content on paper', () => {
-    // Print forces every disclosure open by reverting `display` on its
-    // children, which cannot reach a pseudo-element. So no rule anywhere may
-    // collapse `::details-content`, or the content of every disclosure would be
-    // missing from the printed page.
+    // This guard forbade every `::details-content` rule, on the premise that
+    // nothing collapses the pseudo-element so nothing needs to un-collapse it.
+    // The premise was false, and the printed page proved it: the browser's own
+    // stylesheet puts `content-visibility: hidden` there on a closed
+    // disclosure, `display: revert` on the children cannot reach a
+    // pseudo-element, and every collapsed disclosure printed as its summary and
+    // nothing else. So the rule is now what the test's name always meant —
+    // nothing may collapse it, and print must actively un-collapse it.
     const live = withoutComments(css)
-    expect(live).not.toMatch(/::details-content\s*\{[^}]*(block-size|content-visibility|overflow)/)
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*block-size/)
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*content-visibility:\s*hidden/)
+    expect(live).not.toMatch(/::details-content\s*\{[^}]*overflow:\s*hidden/)
+
+    const print = live.slice(live.indexOf('@media print'))
+    expect(print).toMatch(
+      /details::details-content\s*\{\s*content-visibility:\s*visible\s*!important/,
+    )
   })
 
   it('keeps disclosures open on paper', () => {
     // Index into the stripped string, not the original: comments shift offsets.
     const live = withoutComments(css)
     const print = live.slice(live.indexOf('@media print'))
-    expect(print).toMatch(/details\s*\{\s*display:\s*block\s*!important/)
+    // Pinned to the exact selector. `details[^{]*` would also accept
+    // `details[open]`, which forces open only what is already open — the
+    // regression this line exists to catch.
+    expect(print).toMatch(
+      /details:not\(\[class~="print:hidden"\]\)\s*\{\s*display:\s*block\s*!important/,
+    )
     expect(print).toMatch(/display:\s*revert\s*!important/)
   })
 })

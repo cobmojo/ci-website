@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import { PrintDisclosures } from '@/components/content/print-disclosures'
 import { SiteFooter } from '@/components/navigation/site-footer'
 import { SiteHeader } from '@/components/navigation/site-header'
 import { SmoothAnchorScroll } from '@/components/navigation/smooth-anchor-scroll'
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             navigation only, which cannot be expressed in CSS without also
             capturing the router's scroll-to-top. See the component. */}
         <SmoothAnchorScroll />
+        <PrintDisclosures />
         <a className="skip-link" href="#main-content">
           Skip to main content
         </a>

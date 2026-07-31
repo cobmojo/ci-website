@@ -25,7 +25,7 @@ const COLOURS = {
   paperRaised: '#fffdf8',
   ink: '#1c242b',
   inkMuted: '#4c5763',
-  inkSubtle: '#646d78',
+  inkSubtle: '#57606d',
   navy: '#233a4d',
   copper: '#9a6431',
   copperDeep: '#7d4f22',

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { RelatedPages } from '@/components/navigation/related-pages'
 import { formatLongDate } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 import { siteConfig } from '@/lib/site-config'
@@ -52,7 +53,8 @@ export default function PrivacyPage() {
                   play.
                 </li>
                 <li>
-                  Search runs inside your browser. Nothing you type into it leaves your device.
+                  The quick search panel matches inside your browser. The full results page is an
+                  ordinary form, so its term travels in the address, as with any link.
                 </li>
                 <li>
                   The correction form is the only place the site receives anything, and only what
@@ -120,17 +122,25 @@ export default function PrivacyPage() {
 
             <section aria-labelledby="search">
               <h2 id="search" className="mt-0 mb-3">
-                Search runs in your browser
+                Where a search term goes
               </h2>
               <p className="m-0 mb-3">
                 The search index is a single file downloaded from this site the first time you open
-                search. Matching happens inside your browser. No query is transmitted anywhere, not
-                to this site and not to anyone else, and no search is logged, stored or counted.
+                search. The quick panel matches inside that file, in your browser: what you type
+                there is not transmitted, and it keeps working with no network connection once the
+                index has been fetched.
+              </p>
+              <p className="m-0 mb-3">
+                The full results page is different, and deliberately so. It is an ordinary form that
+                submits to this site, which is what lets it work with scripting disabled and lets a
+                page of results be linked or bookmarked. The consequence is that the term is in the
+                address, and reaches the server answering the request as any address does, where it
+                may appear in ordinary request logs.
               </p>
               <p className="m-0">
-                That is why search works with no network connection once the index has been fetched,
-                and why the same page also works with scripting disabled, where the search control
-                becomes an ordinary link.
+                This site keeps no search history: nothing you search for is stored, counted or tied
+                to you. If you would rather a term never left the machine at all, the quick panel
+                answers the same index without ever loading that page.
               </p>
             </section>
 
@@ -141,8 +151,8 @@ export default function PrivacyPage() {
               <p className="m-0 mb-3">
                 The case index offers an optional record of which parts you have opened from it. It
                 is stored in your browser’s local storage under a single key,{' '}
-                <code className="break-all font-sans text-[0.95em]">ci:case-reading-progress</code>,
-                and it holds nothing but a list of permanent part identifiers such as S04.
+                <code className="break-all text-[0.95em]">ci:case-reading-progress</code>, and it
+                holds nothing but a list of permanent part identifiers such as S04.
               </p>
               <p className="m-0 mb-3">
                 It never leaves your device. It is not sent to this site, it is not synchronised
@@ -258,24 +268,19 @@ export default function PrivacyPage() {
             </section>
           </div>
 
-          <nav
-            aria-label="Related pages"
-            className="mt-12 border-t border-border pt-6 font-sans text-[0.95rem] print:hidden"
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              <li>
-                <Link href="/corrections/">Send a correction</Link>
-              </li>
-              <li>
-                <Link href="/accessibility/">What has been tested for accessibility</Link>
-              </li>
-              <li>
-                <Link href="/original-document/">
-                  What is published from the source, and what is not
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          <RelatedPages>
+            <li>
+              <Link href="/corrections/">Send a correction</Link>
+            </li>
+            <li>
+              <Link href="/accessibility/">What has been tested for accessibility</Link>
+            </li>
+            <li>
+              <Link href="/original-document/">
+                What is published from the source, and what is not
+              </Link>
+            </li>
+          </RelatedPages>
         </div>
       </div>
     </>

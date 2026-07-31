@@ -102,7 +102,7 @@ export function SourceFilter({
             id={typeFieldId}
             value={type}
             onChange={event => setType(event.target.value)}
-            className="min-h-11 w-full max-w-[18rem] rounded-md border border-border bg-paper px-3 font-sans text-[0.95rem] text-ink"
+            className="min-h-11 w-full max-w-[18rem] rounded-md border border-border bg-paper px-3 font-sans text-[1rem] text-ink"
           >
             <option value="">Every kind</option>
             {types.map(option => (
@@ -124,7 +124,7 @@ export function SourceFilter({
             id={perspectiveFieldId}
             value={perspective}
             onChange={event => setPerspective(event.target.value)}
-            className="min-h-11 w-full max-w-[18rem] rounded-md border border-border bg-paper px-3 font-sans text-[0.95rem] text-ink"
+            className="min-h-11 w-full max-w-[18rem] rounded-md border border-border bg-paper px-3 font-sans text-[1rem] text-ink"
           >
             <option value="">Every perspective</option>
             {perspectives.map(option => (
@@ -147,7 +147,10 @@ export function SourceFilter({
         </button>
       </div>
 
-      <p aria-live="polite" className="m-0 mt-3 font-sans text-[0.88rem] text-ink-subtle">
+      <p
+        aria-live="polite"
+        className="m-0 mt-3 font-sans text-[0.88rem] text-ink-subtle tabular-nums"
+      >
         {active
           ? `Showing ${shown} of ${total} sources.`
           : `Showing all ${total} sources. Filtering only hides entries; nothing is removed from the page.`}

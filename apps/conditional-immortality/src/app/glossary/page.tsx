@@ -2,14 +2,8 @@ import { glossary, glossaryByLetter } from '@ci/content/glossary'
 import { languageNotes } from '@ci/content/language'
 import { findPassageByReference, passageRoute } from '@ci/content/passages'
 import { getTopic, topicRoute } from '@ci/content/topics'
-import {
-  REVIEW_STATUS_DEFINITIONS,
-  REVIEW_STATUS_LABELS,
-  type ReviewStatus,
-} from '@ci/content-schema'
-import { Badge } from '@ci/ui'
 import Link from 'next/link'
-import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
+import { Breadcrumbs, type Crumb, ReviewStatusBadge } from '@/components/article/article-chrome'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
 
 /**
@@ -26,10 +20,18 @@ const CRUMBS: readonly Crumb[] = [
   { href: '/glossary/', label: 'Glossary' },
 ]
 
+/**
+ * Read off the registry rather than written out, for the reason the same
+ * bookends on `/passages/` were: named by hand they rot. This description
+ * still said the glossary ran "from annihilationism to the second death" long
+ * after it ran from aionios to unquenchable fire.
+ */
+const FIRST_TERM = glossaryByLetter[0]?.terms[0]?.term ?? ''
+const LAST_TERM = glossaryByLetter.at(-1)?.terms.at(-1)?.term ?? ''
+
 export const metadata = pageMetadata({
   title: 'Glossary',
-  description:
-    'Short definitions of the terms used across the case, from annihilationism to the second death, with original-language notes on the Greek and Hebrew words the argument turns on.',
+  description: `Short definitions of the terms used across the case, from ${FIRST_TERM} to ${LAST_TERM}, with original-language notes on the Greek and Hebrew words the argument turns on.`,
   route: '/glossary/',
 })
 
@@ -45,19 +47,6 @@ function OriginalText({ text, lang }: { text: string; lang: 'grc' | 'he' }) {
     <span lang="grc" className="lang-grc">
       {text}
     </span>
-  )
-}
-
-function ReviewStatusMarker({ status }: { status: ReviewStatus }) {
-  const needsAttention = status === 'revision-needed' || status === 'specialist-review-pending'
-  return (
-    <Badge
-      tone={needsAttention ? 'ochre' : 'neutral'}
-      glyph={needsAttention ? '!' : '✓'}
-      title={REVIEW_STATUS_DEFINITIONS[status]}
-    >
-      {REVIEW_STATUS_LABELS[status]}
-    </Badge>
   )
 }
 
@@ -92,11 +81,14 @@ export default function GlossaryPage() {
         </header>
 
         <nav
-          aria-label="Jump to a letter"
+          aria-labelledby="jump-to-letter"
           className="mt-8 rounded-md border border-border bg-paper-raised p-4 print:hidden"
         >
-          <h2 className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase">
-            Jump to
+          <h2
+            id="jump-to-letter"
+            className="mt-0 mb-2 font-sans text-[0.78rem] font-semibold tracking-wider text-ink-subtle uppercase"
+          >
+            Jump to a letter
           </h2>
           {/* Single letters are the smallest targets on the site, so each one
               is given a real hit area rather than the width of its glyph. */}
@@ -220,7 +212,7 @@ export default function GlossaryPage() {
                 </h3>
 
                 <div className="mb-3">
-                  <ReviewStatusMarker status={note.reviewStatus} />
+                  <ReviewStatusBadge status={note.reviewStatus} />
                 </div>
 
                 <dl className="m-0 space-y-3 text-[1rem]">

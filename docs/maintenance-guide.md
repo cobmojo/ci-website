@@ -46,7 +46,7 @@ bun run content:docs       # every file path named in prose or a comment exists
 bun run test:e2e           # desktop and mobile end-to-end
 bun run test:a11y          # axe plus structural accessibility
 bun run test:text-geometry # Pretext against real browser layout, three engines
-bun run test:browser       # all four of the above
+bun run test:browser       # every browser suite above, in all seven projects
 ```
 
 `content:pii` and `content:links` read the build output, so run `bun run build`

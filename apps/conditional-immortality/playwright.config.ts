@@ -12,8 +12,8 @@ import { defineConfig, devices } from '@playwright/test'
  *
  * Project names are load bearing: `package.json` runs
  * `--project=chromium-desktop --project=chromium-mobile` for `test:e2e`,
- * `--project=accessibility` for `test:a11y`, and the three `geometry-*`
- * projects for `test:text-geometry`.
+ * `--project=accessibility --project=accessibility-mobile` for `test:a11y`,
+ * and the three `geometry-*` projects for `test:text-geometry`.
  *
  * `globalSetup` builds the Pretext geometry harness into a temporary directory
  * before anything runs, so the geometry suite works from a clean checkout with
@@ -30,10 +30,11 @@ const BASE_URL = `http://localhost:${PORT}`
  */
 const FEEDBACK_STORE_DIR = path.join(os.tmpdir(), 'ci-playwright-feedback-store')
 
-/** The accessibility spec belongs to exactly one project. */
+/** The accessibility spec belongs to the two accessibility projects. */
 const A11Y_SPEC = /a11y\.spec\.ts$/
 /** The geometry spec belongs to the three focused browser projects. */
 const GEOMETRY_SPEC = /text-geometry\.spec\.ts$/
+const PRINT_SPEC = /print\.spec\.ts$/
 
 const DESKTOP_VIEWPORT = { width: 1440, height: 900 }
 const MOBILE_VIEWPORT = { width: 375, height: 812 }
@@ -51,7 +52,7 @@ export default defineConfig({
   /*
    * Some tests here are navigation-heavy rather than slow: the horizontal
    * overflow check walks all thirty-one routes inside a single test, at each
-   * viewport. With six projects sharing a machine that comfortably exceeds a
+   * viewport. With seven projects sharing a machine that comfortably exceeds a
    * ninety-second budget, and a timeout is a resource limit, not a finding.
    * The assertions themselves are unchanged and still fail fast.
    */
@@ -68,18 +69,26 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-desktop',
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC],
+      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, PRINT_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'chromium-mobile',
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC],
+      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, PRINT_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
     {
       name: 'accessibility',
       testMatch: A11Y_SPEC,
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      // The same axe and structural sweep at the mobile viewport. Layout,
+      // target sizes and the sheet navigation all differ below the desktop
+      // breakpoints, so a desktop-only gate could pass a mobile regression.
+      name: 'accessibility-mobile',
+      testMatch: A11Y_SPEC,
+      use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
     /*
      * Text geometry, in each engine that lays text out differently.
@@ -92,6 +101,28 @@ export default defineConfig({
      * is not described as Safari anywhere. Real Safari is validated by hand;
      * the procedure is in `docs/pretext-text-geometry.md`.
      */
+    /*
+     * Print, in every engine. The one guarantee where the engines genuinely
+     * disagree: Firefox declines `content-visibility` on `::details-content`,
+     * so the rule that opens collapsed disclosures on paper does nothing
+     * there. A Chromium-only run reads green while a Firefox reader prints
+     * two pages of empty boxes.
+     */
+    {
+      name: 'print-chromium',
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'print-firefox',
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
+      name: 'print-webkit',
+      testMatch: PRINT_SPEC,
+      use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
+    },
     {
       name: 'geometry-chromium',
       testMatch: GEOMETRY_SPEC,

@@ -27,8 +27,10 @@ export interface CalloutProps {
   /**
    * Heading level for the callout title. Callouts inside an article body must
    * not break the document outline, so this is explicit rather than assumed.
+   * `h5` exists for the continuous edition, which demotes every authored
+   * heading by one level.
    */
-  as?: 'h2' | 'h3' | 'h4' | 'p'
+  as?: 'h2' | 'h3' | 'h4' | 'h5' | 'p'
   id?: string
 }
 
@@ -48,11 +50,24 @@ export function Callout({
 }: CalloutProps) {
   const spec = TONES[tone]
   return (
-    <aside id={id} className={cn('my-6 rounded-md border p-4 sm:p-5', spec.container, className)}>
+    <aside className={cn('my-6 rounded-md border p-4 sm:p-5', spec.container, className)}>
+      {/* The id belongs on the heading, not the box around it: it is what a
+          contents list links to and what a reader copies out of the address
+          bar, and an id on the `aside` scrolls to the same place while being
+          invisible to anything that walks headings. */}
       <Heading
+        id={id}
         className={cn(
           'mt-0 mb-2 flex items-baseline gap-2 font-sans text-[0.95rem] font-semibold',
           'tracking-wide uppercase',
+          // A callout label is not a section rule. `.prose-article h2` gives
+          // headings a bottom border, and the utilities here already override
+          // its margins but contested nothing else, so promoting the two
+          // appendix callouts to `h2` drew a full-width line inside the box —
+          // and made the same passage look different on `/full-case/`, where it
+          // demotes back to `h3`. Stated for every level, not just the one that
+          // showed it.
+          'border-0 pb-0',
           spec.label,
         )}
       >

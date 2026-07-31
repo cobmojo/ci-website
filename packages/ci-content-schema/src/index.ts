@@ -6,7 +6,14 @@
  * a missing thesis, an unknown source id or an unnormalisable Scripture reference.
  */
 import { z } from 'zod'
-import { feedbackStatuses, feedbackTypes, publicationConsents } from './feedback-vocabulary'
+import {
+  FEEDBACK_FIELD_MESSAGES,
+  feedbackStatuses,
+  feedbackTypes,
+  isAcceptableEmail,
+  isAcceptableSourceUrl,
+  publicationConsents,
+} from './feedback-vocabulary'
 
 export * from './bible'
 export * from './feedback-vocabulary'
@@ -356,11 +363,11 @@ export type RightsStatus = z.infer<typeof RightsStatusSchema>
 
 export const RIGHTS_STATUS_LABELS: Record<RightsStatus, string> = {
   'public-domain': 'Public domain',
-  cleared: 'Cleared',
-  'permission-needed': 'Permission needed',
-  'quoted-briefly': 'Quoted briefly',
-  paraphrased: 'Paraphrased',
-  'link-only': 'Linked, not quoted',
+  cleared: 'Cleared for use',
+  'permission-needed': 'Permission needed before quoting',
+  'quoted-briefly': 'Quoted briefly with attribution',
+  paraphrased: 'Paraphrased rather than quoted',
+  'link-only': 'Linked rather than quoted',
 }
 
 export const RIGHTS_STATUS_DEFINITIONS: Record<RightsStatus, string> = {
@@ -378,11 +385,11 @@ export const LinkStatusSchema = z.enum(linkStatuses)
 export type LinkStatus = z.infer<typeof LinkStatusSchema>
 
 export const LINK_STATUS_LABELS: Record<LinkStatus, string> = {
-  live: 'Live',
-  redirected: 'Redirects',
-  'archived-only': 'Archived copy only',
-  dead: 'Dead link',
-  'not-checked': 'Not checked',
+  live: 'Link checked and live',
+  redirected: 'Link redirects to a new location',
+  'archived-only': 'Available through an archive only',
+  dead: 'Link no longer resolves',
+  'not-checked': 'Link not checked',
 }
 
 /** Shown where a source record leaves `perspective` unset. */
@@ -395,6 +402,15 @@ export const SourceRecordSchema = z
 
     author: NonEmpty.optional(),
     title: Prose(3),
+    /**
+     * What an inline citation marker shows when there is no author to name.
+     *
+     * An authored source is cited by surname. Falling back to the title's
+     * first word gives markers like `[What]` and `[Weeping]`, and collides
+     * outright where two articles open the same way, so an authorless source
+     * names its own short form.
+     */
+    shortName: NonEmpty.optional(),
     publication: NonEmpty.optional(),
     publisher: NonEmpty.optional(),
     date: NonEmpty.optional(),
@@ -547,9 +563,27 @@ export const FeedbackSubmissionInputSchema = z
       .trim()
       .min(20, 'Please give us at least a sentence or two so we can act on it.')
       .max(8000, 'Please keep submissions under 8000 characters.'),
-    sourceUrl: z.union([z.string().url(), z.literal('')]).optional(),
+    // Both optional fields defer to the shared predicates in the feedback
+    // vocabulary, so the browser and the server accept exactly the same
+    // values. They used to disagree, and the disagreement discarded whole
+    // corrections over an address the reader did not have to give. The
+    // protocol check is still load-bearing: without it a no-JS submission
+    // could store a `javascript:` URL.
+    sourceUrl: z
+      .string()
+      .trim()
+      .refine(value => value === '' || isAcceptableSourceUrl(value), {
+        error: FEEDBACK_FIELD_MESSAGES.sourceUrl,
+      })
+      .optional(),
     name: z.string().trim().max(120).optional(),
-    email: z.union([z.email(), z.literal('')]).optional(),
+    email: z
+      .string()
+      .trim()
+      .refine(value => value === '' || isAcceptableEmail(value), {
+        error: FEEDBACK_FIELD_MESSAGES.email,
+      })
+      .optional(),
     publicationConsent: PublicationConsentSchema,
   })
   .strict()
