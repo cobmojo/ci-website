@@ -395,32 +395,40 @@ describe('print', () => {
     // nothing else. So the rule is now what the test's name always meant —
     // nothing may collapse it, and print must actively un-collapse it.
     //
-    // Pinned to the outcome rather than to three literal values. A first
-    // rewrite forbade `block-size`, `content-visibility: hidden` and
-    // `overflow: hidden` by name, which let `overflow: clip` and
-    // `content-visibility: auto` through — both collapse or clip the
-    // pseudo-element exactly as `hidden` does, and the brief states the rule
-    // as "if any rule collapses `::details-content`".
+    // An allow-list, because every deny-list of collapsing properties has been
+    // short. The first rewrite named `block-size`, `content-visibility: hidden`
+    // and `overflow: hidden`, which let `overflow: clip` and
+    // `content-visibility: auto` through. Naming those two as well would still
+    // have let `max-height: 0`, `display: none`, `visibility: hidden` and
+    // `contain: strict` past, and matching `::details-content\s*\{` would have
+    // missed `details::details-content, .x { … }` entirely. So: enumerate the
+    // rules that target the pseudo-element at all, and require the one that
+    // exists to be exactly the declaration that un-collapses it.
     const live = withoutComments(css)
     const printAt = live.indexOf('@media print')
     expect(printAt).toBeGreaterThan(-1)
+    // One print block, so `indexOf` is the boundary and not a false floor: a
+    // second block above this one would shrink the screen-side check to
+    // whatever preceded it.
+    expect(live.split('@media print').length - 1).toBe(1)
 
-    // On screen the premise still holds: no rule targets it at all, which is
-    // the only configuration Chromium 148 opens correctly.
-    expect(live.slice(0, printAt)).not.toMatch(/::details-content/)
-
-    // On paper exactly one rule does, and it un-collapses it.
-    const print = live.slice(printAt)
-    expect(print).toMatch(
-      /details::details-content\s*\{\s*content-visibility:\s*visible\s*!important/,
+    const targeting = [...live.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter(([, selector]) =>
+      (selector ?? '').includes('::details-content'),
     )
-    for (const [, body] of print.matchAll(/::details-content\s*\{([^}]*)\}/g)) {
-      // The lookahead sits directly after the colon and swallows the space
-      // itself. Written as `content-visibility:\s*(?!visible)`, the `\s*`
-      // matches empty and the assertion is made against " visible", which
-      // does not start with `visible`, so every rule failed.
-      expect(body).not.toMatch(/block-size|overflow|content-visibility:(?!\s*visible)/)
-    }
+    expect(targeting.length, 'no rule targets ::details-content at all').toBe(1)
+
+    const [rule] = targeting
+    const at = rule?.index ?? -1
+    // On screen the premise still holds: nothing targets it, which is the only
+    // configuration Chromium 148 opens correctly.
+    expect(at, 'a rule targets ::details-content outside @media print').toBeGreaterThan(printAt)
+
+    const declarations = (rule?.[2] ?? '')
+      .split(';')
+      .map(part => part.trim())
+      .filter(Boolean)
+    expect(declarations).toEqual(['content-visibility: visible !important'])
+    expect(rule?.[1]?.trim()).toBe('details::details-content')
   })
 
   it('keeps disclosures open on paper', () => {

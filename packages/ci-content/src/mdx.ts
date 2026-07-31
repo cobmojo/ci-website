@@ -73,6 +73,22 @@ export function sectionFileName(id: string, slug: string): string {
   return `${id.toLowerCase()}-${slug}`
 }
 
+/**
+ * Which collection holds a section's body.
+ *
+ * Every section has one. Two tests that read the bodies to check them against
+ * the registries looked only in `case`, on the stated premise that "the two
+ * appendices are built from structured data and have no body to read", and
+ * asserted `caseSections.length - 2` to hold that premise in place. Both
+ * appendices do have bodies — 189 and 202 lines, rendered through the same
+ * `SectionPage` — and both carry `<Cite>` and `<Scripture>` blocks. So the two
+ * checks written to catch a body and a registry drifting apart covered 38 of
+ * the 40 pages that can drift.
+ */
+export function sectionCollection(group: string): MdxCollection {
+  return group === 'appendix' ? 'appendices' : 'case'
+}
+
 /** Heading text and slug pairs, for building "On this page" without a parser. */
 export interface ExtractedHeading {
   readonly depth: 2 | 3

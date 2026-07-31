@@ -235,12 +235,13 @@ export default function AccessibilityPage() {
                 YouTube in a new tab, rather than a player that loads in place.
               </p>
               <p className="m-0">
-                Three panels are absent rather than degraded: the filters above the source library
-                and the Scripture index, and the reading-progress panel on the case map. Each one
-                only narrows or keeps a record of something the page already shows in full, so every
-                list they act on is rendered complete and unfiltered and nothing is hidden by their
-                absence. What is missing is the means to narrow a list, and the note of which parts
-                you have opened.
+                Four controls are absent rather than degraded: the filters above the source library
+                and the Scripture index, and the reading-progress panel and the print button on the
+                case map. Each one only narrows, records or reformats something the page already
+                shows in full, so every list they act on is rendered complete and unfiltered and
+                nothing is hidden by their absence. What is missing is the means to narrow a list,
+                the note of which parts you have opened, and a button that does what your browser’s
+                own print command does.
               </p>
             </section>
 

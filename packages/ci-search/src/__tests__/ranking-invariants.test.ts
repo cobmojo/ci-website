@@ -18,7 +18,8 @@ import baseline from './ranking-baseline.json'
  * One exception, and only one: the snapshot is taken against real content, so
  * correcting what is *indexed* legitimately moves it. A ranker change is still
  * wrong. Regenerate only when the content going in was wrong, and only with
- * the diff inspected and explained. `scripts/ranking-baseline.ts` prints that
+ * the diff inspected and explained.
+ * `packages/ci-search/scripts/ranking-baseline.ts` prints that
  * diff — what moved, per query, per row — because reading it out of a
  * thirty-query failure through a test reporter is how a real ranking change
  * gets waved through as content drift. That has happened four times.

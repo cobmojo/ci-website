@@ -48,6 +48,19 @@ function measure() {
   )
 }
 
+/**
+ * Wait for the component that owns the `open` attribute to attach.
+ *
+ * Only the print stylesheet works before hydration, and only in Chromium and
+ * WebKit. Dispatching `beforeprint` at a page that has not hydrated does
+ * nothing, and in WebKit that went unnoticed because switching the media query
+ * un-collapses the content by CSS alone — measured: after the dispatch, both
+ * disclosures were still `open: false` with 29 characters laid out.
+ */
+async function waitForPrintDisclosures(page: Page) {
+  await page.waitForSelector('html[data-print-disclosures="ready"]', { state: 'attached' })
+}
+
 /** A summary alone is about 30 characters and 50px tall. */
 async function expectContentsShown(page: Page) {
   const shown = await page.evaluate(measure)
@@ -70,6 +83,7 @@ async function expectContentsShown(page: Page) {
 for (const route of PAGES_WITH_DISCLOSURES) {
   test(`the print media query alone opens every disclosure on ${route}`, async ({ page }) => {
     await page.goto(route)
+    await waitForPrintDisclosures(page)
 
     // Captured on screen: switching to print media is itself the signal, so
     // reading after it would record the opened state as "before" and the
@@ -87,6 +101,7 @@ for (const route of PAGES_WITH_DISCLOSURES) {
 
   test(`the beforeprint event alone opens every disclosure on ${route}`, async ({ page }) => {
     await page.goto(route)
+    await waitForPrintDisclosures(page)
     const openBefore = await page.evaluate(openStates)
 
     // No media switch: this is the half that has to work on its own in an
@@ -100,11 +115,14 @@ for (const route of PAGES_WITH_DISCLOSURES) {
 
   test(`a real print fires both signals and still restores on ${route}`, async ({ page }) => {
     await page.goto(route)
+    await waitForPrintDisclosures(page)
     const openBefore = await page.evaluate(openStates)
 
-    // Both, in the order a browser sends them. The reader's page has to come
-    // back: it did not, because the second signal wiped the record of what the
-    // first had opened, so the restore put back an empty list.
+    // Both, in the order a browser sends them, which is what a real print does.
+    // This holds the outcome — the reader's page comes back — and not the
+    // mechanism: with the record kept in a Set that is never replaced, removing
+    // the re-entry guard changes nothing observable, so nothing here should be
+    // read as covering it.
     await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')))
     await page.emulateMedia({ media: 'print' })
     await expectContentsShown(page)

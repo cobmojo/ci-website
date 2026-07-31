@@ -836,7 +836,7 @@ export const CASE_SECTIONS: readonly CaseSection[] = [
     reviewStatus: 'reviewed',
     originalPages: [36, 37],
     sourceParagraphIds: ['p676', 'p677', 'p678', 'p684', 'p690', 'p691'],
-    primaryPassages: ['Matthew 13:24-43', 'Hebrews 12:29', 'Malachi 4:1-3'],
+    primaryPassages: ['Matthew 13:24-43', 'Hebrews 12:26-29', 'Malachi 4:1-3'],
     relatedPassages: [
       'Exodus 3:2',
       'Isaiah 43:2',

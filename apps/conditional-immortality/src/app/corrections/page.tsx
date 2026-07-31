@@ -1,3 +1,4 @@
+import { getSection } from '@ci/content/case'
 import { revisions } from '@ci/content/revisions'
 import Link from 'next/link'
 import { Breadcrumbs, type Crumb } from '@/components/article/article-chrome'
@@ -42,6 +43,8 @@ export default async function CorrectionsPage({
   const params = await searchParams
   const one = (value: string | string[] | undefined): string | undefined =>
     Array.isArray(value) ? value[0] : value
+  const knownSectionId = (value: string | undefined): string =>
+    value && getSection(value) ? value : ''
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(CRUMBS)} />
@@ -143,9 +146,27 @@ export default async function CorrectionsPage({
               To send a correction, visit {siteConfig.url}/corrections/ in a browser.
             </p>
 
+            {/*
+             * Both are checked here, where they enter, and not only where they
+             * are echoed back.
+             *
+             * The hidden `sectionId` field is filled straight from the address,
+             * and the schema bounds it at 16 characters. A longer value made
+             * every submission from that URL fail: with scripting, on a banner
+             * reading "Not recorded. Form: Too big" — naming no control on the
+             * page, because the rejected value is in the address bar and not in
+             * any field — and without it, on the message telling the reader to
+             * check wording that was never the problem, with their text gone.
+             * Retrying from the same URL failed identically every time.
+             *
+             * A section id is only ever put there by this site, and always a
+             * real one, so anything that does not resolve is not a correction
+             * about a page. Dropping it sends an unattached correction, which
+             * is what the form does with no `?section=` at all.
+             */}
             <FeedbackForm
-              sectionId={one(params.section) ?? one(params.sectionId) ?? ''}
-              headingId={one(params.heading) ?? one(params.headingId) ?? ''}
+              sectionId={knownSectionId(one(params.section) ?? one(params.sectionId))}
+              headingId={(one(params.heading) ?? one(params.headingId) ?? '').slice(0, 128)}
               type={one(params.type)}
               submitted={one(params.submitted)}
             />

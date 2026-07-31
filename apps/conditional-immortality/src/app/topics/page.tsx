@@ -16,10 +16,21 @@ const CRUMBS: readonly Crumb[] = [
   { href: '/topics/', label: 'Topics' },
 ]
 
+/**
+ * Read off the registry rather than written out, for the reason the same
+ * bookends on `/passages/` and `/glossary/` were: named by hand they rot. This
+ * description said the index ran "from Gehenna and Hades to the second death"
+ * while it ran from annihilationism to weeping and gnashing of teeth, with
+ * Gehenna tenth of twenty-seven and the second death twenty-fourth. Neither
+ * end was an end, and this is the `<meta name="description">`, so it is what a
+ * search result and a shared link carry.
+ */
+const FIRST_TOPIC = topics[0]?.title ?? ''
+const LAST_TOPIC = topics.at(-1)?.title ?? ''
+
 export const metadata = pageMetadata({
   title: 'Topics',
-  description:
-    'An alphabetical index of the concepts the argument turns on, from Gehenna and Hades to the second death, each defined in its own right and linked to the parts of the case that treat it.',
+  description: `An alphabetical index of the concepts the argument turns on, from ${FIRST_TOPIC} to ${LAST_TOPIC}, each defined in its own right and linked to the parts of the case that treat it.`,
   route: '/topics/',
 })
 

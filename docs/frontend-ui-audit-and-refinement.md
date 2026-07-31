@@ -1717,6 +1717,179 @@ against P00, whose text never mentions it" — the only such disagreement among 
 sources, invisible because nothing renders `CaseSection.sourceIds`, and checked
 in both directions now rather than one.
 
+### Gap sweep 18 (follow-up branch)
+
+Four finders again, one of them pointed at sweep 17's own commit. It found ten
+things there, and it was right about nine. This sweep is **not clean**, and the
+list of what remains open is at the end rather than absent.
+
+#### Sweep 17's own residue
+
+- **`covers()` tested intersection where it meant containment**, so a narrower
+  declaration covered a wider display. S13 declares Hebrews 12:29 and sets out
+  Hebrews 12:26-29 in full — its own summary line calls 12:26-29 a primary
+  passage — so `/scripture/` held a row for the single verse and none for the
+  three before it, and the check written the same hour to catch exactly that was
+  green against it. The same slip in the other direction let a declared single
+  verse stand for a whole chapter on the page. Containment now, and S13 declares
+  what it sets out. This is the sixth instance of the finding it was written for,
+  which means the count in that commit was five of six.
+- **The same check skipped both appendices.** It read bodies from the `case`
+  collection, and APP1 and APP2 live in `appendices/` — 189 and 202 lines,
+  rendered through the same `SectionPage`, carrying `<Cite>` and `<Scripture>`
+  blocks. `sources-cited.test.ts` skips them too, and states the premise:
+  "the two appendices are built from structured data and have no body to read".
+  It then asserts `caseSections.length - 2` to hold the premise in place. Both
+  checks covered 38 of the 40 pages that can drift. `sectionCollection()` now
+  answers where a body lives, and the size assertion is pinned to the registry:
+  `BODIES.size > 30` was true of 38 and true of 40, so it could not tell them
+  apart.
+- **The privacy fix left the third instance standing** — the one the commit
+  message itself names, three screens down: "the corrections form is the only
+  place this site receives information from you, and it receives only what you
+  type into it". Contradicted by the search term two sections above and by the
+  part identifier that arrives with the link, described in the very next bullet.
+  **And the rewritten summary bullet was still false**: "the only place the site
+  asks you for anything", one bullet below "the full results page is an ordinary
+  form, so its term travels in the address". A form with a field asking for a
+  search term is the site asking. All three now say the same thing — what the
+  site keeps on purpose — and a new end-to-end test counts the forms that submit
+  to this origin and fails if a third appears, which is the moment the page needs
+  rewriting. Nothing read privacy prose before, which is why three copies drifted
+  and two survived a commit aimed at them.
+- **`/accessibility/` still undercounted.** Sweep 17 corrected "three features
+  degrade" to four and named three panels that disappear; a fourth control does,
+  on the same page as one of them — the print button on the case map, behind the
+  same `if (!mounted) return null`. The new test asserted only the three the copy
+  named, so it could not fail against the identical undercount it was added to
+  prevent. Four now, and the test asserts the button too.
+- **Both reading-progress tests raced the panel.** `page.goto` resolves at
+  `load`; the panel's one effect both seeds the in-memory list and registers the
+  `storage` listener. Neither test waited for it, so a seed that landed first was
+  picked up by the seeding read — which makes the cross-tab test pass with the
+  listener deleted and the merge test pass against the memory-built write it
+  names. Both wait for "No pages opened yet" now. The sibling file had just been
+  given this exact fix; this one had not.
+- **The `::details-content` guard had two evasions left.** Its rule matched
+  `::details-content\s*\{`, so `details::details-content, .x { … }` was not
+  matched at all, and its deny-list of five values let `max-height: 0`,
+  `display: none`, `visibility: hidden` and `contain: strict` through. Every
+  deny-list here has been short, so it is an allow-list now: enumerate every rule
+  whose selector names the pseudo-element, require exactly one, require it to sit
+  inside `@media print`, and require its declarations to be exactly
+  `content-visibility: visible !important`. Confirmed failing against all four
+  values above and against `overflow: clip` appended to the good rule.
+- One finding was **wrong**: that the ranking-baseline reporter at
+  `packages/ci-search/scripts/ranking-baseline.ts` is behind no gate, because `packages/ci-search/tsconfig.json` does not include it. The app's
+  `tsc --noEmit` does compile it — it reported `TS2339` on `import.meta.dir` from
+  that path, which is why the file uses `import.meta.url`.
+- One is **recorded rather than fixed**: the both-signals print test cannot fail
+  against removing the re-entry guard, because `opened` is a `const` Set that is
+  never replaced and `openAll` skips anything already open, so the second call is
+  a no-op either way. The failure the guard's comment describes cannot reproduce
+  against the code as written. Both comments now say that, rather than leaving a
+  test to imply coverage it does not have.
+
+#### Elsewhere
+
+- **`/search/` applied two filters it never validated.** `type` was checked
+  against the allowed set; `group` and `book` were passed through, and an
+  unrecognised value excludes every document. `?q=hell&book=matthew` — the
+  canonical name is `Matthew` — returned "No results for hell" with advice about
+  the wording, above a filter panel forced open because a book was selected and a
+  select showing "Any book" because no option matched. Nothing on screen said a
+  filter was on, and pressing Search cleared it, so the failure looked
+  intermittent. Links go stale unaided too: `referencedBooks` is derived from the
+  passages actually cited, so the last reference to a book leaving the case turns
+  every shared URL naming it into a silent zero. Both are filtered against what
+  the controls can offer, with `Object.hasOwn` rather than `in`, so
+  `?group=constructor` is not a group.
+- **`/corrections/?section=` was unbounded on the way in and bounded only on the
+  way out.** The value fills a hidden field and the schema caps it at 16
+  characters, so a longer one made every submission from that URL fail: with
+  scripting, on a banner reading "Not recorded. Form: Too big", naming no control
+  on the page because the rejected value is in the address bar; without it, on
+  the message telling the reader to check wording that was never the problem,
+  with their text gone. A section id is only ever put there by this site and
+  always a real one, so it is checked against the registry now, and the heading is
+  bounded where the schema bounds it.
+- **`/topics/`'s bookends had rotted**, the third instance of a class this repo
+  has fixed twice. Its description said the index runs "from Gehenna and Hades to
+  the second death" while it runs from annihilationism to weeping and gnashing of
+  teeth, with Gehenna tenth of twenty-seven. `/passages/` and `/glossary/` read
+  theirs off the registry for exactly this reason; `/topics/` does now too. It is
+  the `<meta name="description">`, so it is what a search result carries.
+- **Two navigation surfaces promised what `/scripture/` disclaims.** The page
+  says the index is drawn from the references each part records as its own, and
+  that a verse quoted only in passing may not have a row — corrected in an
+  earlier sweep. The narrow-screen menu still said "Every reference in the case"
+  and `/start/` still said "Every reference used anywhere in the case". Both now
+  say what the page says.
+- `packages/ci-content/src/case/index.ts` described the essential path as sparing
+  a reader "reading all thirty-nine". The registry holds forty. This ledger
+  already records "thirty-nine" as a number that is neither of the two the site
+  uses.
+
+#### Found, evidenced, and left
+
+These are real and are not fixed. Each needs an editorial or architectural
+decision that belongs to the author, not to a refinement pass.
+
+- **Every section page prints "Related sections and passages" twice**, once from
+  the MDX body — which `docs/authoring-brief.md` mandates — and once from
+  `section.relatedSections`. All 40 carry both. On 17 pages the first copy is
+  plain text with no links while the registry copy below renders the same
+  entries as working links; on 9 the two lists disagree about membership (S10's
+  prose ends with a link to S01, which the registry list omits while adding S07).
+  Resolving it means deciding which of the two is authoritative, and either
+  removing a mandated heading from 40 bodies or reconciling 9 disagreements by
+  hand.
+- **Three passage records take their identity from the first range they quote**,
+  so 16 links whose label names a later range land on a page headed as a
+  different passage: `/objections/revelation-after-20-15/` offers "Revelation
+  22:14-15" and "Revelation 22:1-5" and both arrive at "Revelation 21:1-8".
+  Nothing is missing from the destination. Fixing it means deciding what a
+  passage page is called when it treats several ranges.
+- **`findPassageByReference` matches `additionalReferences` by exact string
+  only**, and its range fallback tests the record's primary span, so
+  1 Corinthians 15:24-26 and 15:26 do not resolve to the page that quotes
+  15:20-28 in full. Two `/scripture/` rows therefore carry no passage link
+  against that page's promise that references worked through at length have one,
+  and two sections get no link back from prose that sets the passage out.
+- **`/passages/second-peter-3-7-13/` omits S11 and S29** from "Where this passage
+  appears in the case", though both declare 2 Peter 3:9 and S29 declares it as a
+  primary text. `usedInSections` is hand-maintained and only checked for
+  resolvable ids.
+- **33 topic principal passages are labelled "Listed in the Scripture index" and
+  have no row there.** The index walks section passage lists only;
+  `topic.principalPassages` is a second source of references it never reads. The
+  honest fix is either to index them — which changes what the "Where it is used"
+  column means, since a topic is not a section — or to stop making the claim.
+- **Five hyperlinks in the migration ledger route to `/sources/` with
+  `citationStatus: 'verified'` and have no source record**, against
+  `/original-document/`'s published statement that each hyperlink was given one.
+  Adding the records needs access dates and rights status that only the author
+  can supply, and the ledger is generated: its header says to edit the generator.
+- `/topics/image-of-god/` lists S31 under both "Where this is argued in the case"
+  and "Objections that turn on this"; S31 is an objection, so the second is its
+  place. The only such overlap in 27 topics.
+- `/corrections/` labels a link "Report an accessibility problem" and points it
+  at `/accessibility/`, where the identically worded link points back at the
+  form. Every other entry in that block describes its destination.
+- Four breadcrumb group labels are plural where the headings they lead to are
+  singular ("Key Texts" arrives at "Key Text"). `sections.test.ts` pins the crumb
+  as a literal, so it holds the mismatch in place rather than catching it.
+- `/sources/` tells a reader "No part of the case cites it directly" for four
+  sources they may have reached from a topic page that lists them. Strictly true
+  — a topic is not a part of the case — and it does not read that way.
+- `/start/case-map/` characterises a six-entry list as pages that "set up the
+  question, clear away obstacles, or work through an illustration"; S09 does none
+  of the three.
+- 44 of 150 `relatedSections` edges are one-way, along with 51 `relatedTerms` and
+  14 `relatedPassages`. This may be deliberate, but nothing states a policy either
+  way, and the reader-visible effect is that "Related" frequently offers no route
+  back.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

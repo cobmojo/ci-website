@@ -6,7 +6,7 @@
  * diff to be inspected and explained, and doing that by hand meant reading a
  * thirty-query failure through a test reporter, one score at a time.
  *
- *   bun run scripts/ranking-baseline.ts
+ *   bun run packages/ci-search/scripts/ranking-baseline.ts
  *
  * Reports only, by design. Rewriting the file wholesale reformats 4,000 lines
  * of JSON and buries the change that matters — the first attempt turned one

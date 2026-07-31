@@ -592,7 +592,9 @@ test('the poster link goes where a click on it would go', async ({ page }) => {
   // rebuilt from React state before the router has committed the URL — and the
   // Back below depends on the URL, not the state. Without this the history
   // still held one entry when `goBack` ran and the page went to `about:blank`.
-  await expect(page).toHaveURL(new RegExp(`[?&]t=${requested}$`))
+  // The link carries a focus fragment, so the address ends `?t=107#video-player`
+  // rather than at the parameter.
+  await expect(page).toHaveURL(new RegExp(`[?&]t=${requested}(?:#|$)`))
 
   const poster = page.locator('a.video-play')
   await expect(poster).toHaveAttribute('href', new RegExp(`[?&]t=${requested}$`))
@@ -668,6 +670,10 @@ test('a second tab is told what the first one recorded', async ({ context }) => 
 
   // A write in another document fires `storage` here, and without a listener
   // for it each tab showed its own stale count and neither corrected itself.
+  // The panel has to be there before the write: its one effect both seeds the
+  // in-memory list and registers the `storage` listener, so a write that lands
+  // first is picked up by the seeding read and proves nothing about either.
+  await expect(second.getByText('No pages opened yet')).toBeVisible()
   await first.evaluate(
     parts => localStorage.setItem('ci:case-reading-progress', JSON.stringify(parts)),
     FOUR_PARTS,
@@ -687,6 +693,7 @@ test('a click writes what storage holds, not what this tab remembers', async ({ 
   // fires the cross-document event, resyncs the list, and makes a write built
   // purely from memory produce the same five ids. The test passed against the
   // implementation it was added to catch.
+  await expect(page.getByText('No pages opened yet')).toBeVisible()
   await page.evaluate(
     parts => localStorage.setItem('ci:case-reading-progress', JSON.stringify(parts)),
     FOUR_PARTS,
@@ -896,6 +903,7 @@ test.describe('the panels that need scripting', () => {
   test('are absent, over lists that are rendered complete', async ({ page }) => {
     await page.goto('/case/')
     await expect(page.getByRole('heading', { name: 'Your reading progress' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Print this map' })).toHaveCount(0)
     const listed = await page.locator('[data-section-entry]').evaluateAll(nodes => {
       return new Set(nodes.map(node => node.getAttribute('data-section-entry'))).size
     })
@@ -907,6 +915,42 @@ test.describe('the panels that need scripting', () => {
 
     await page.goto('/scripture/')
     await expect(page.locator('#scripture-filter-title')).toHaveCount(0)
-    expect(await page.locator('[data-testament]').count()).toBeGreaterThan(100)
+    // The rows, not the two testament sections that hold them.
+    expect(await page.locator('[data-scripture-row]').count()).toBeGreaterThan(100)
   })
+})
+
+/**
+ * Every form that sends something to this site is named on `/privacy/`.
+ *
+ * The privacy page said in three places that the correction form is the only
+ * thing the site ever receives, two bullets below the one saying a search term
+ * travels in the address and three screens above its own section saying the
+ * same. Two of the three survived a commit that set out to fix exactly that,
+ * because nothing reads privacy prose and nothing counts the forms.
+ *
+ * This counts them. A third form that posts to this origin fails here, which is
+ * the moment the privacy page needs rewriting.
+ */
+test('the privacy page accounts for every form that submits to this site', async ({ request }) => {
+  const routes = [...(await loadSitemapRoutes(request)), ...EXTRA_ROUTES]
+  const actions = new Set<string>()
+
+  for (const route of routes) {
+    const html = await (await request.get(route)).text()
+    for (const form of html.matchAll(/<form\b[^>]*>/g)) {
+      const action = /\baction="([^"]*)"/.exec(form[0])?.[1]
+      // No action means the form submits to the page it is on.
+      actions.add(action && action !== '' ? action : route)
+    }
+  }
+
+  expect([...actions].sort(), 'a form the privacy page does not know about').toEqual([
+    '/api/feedback/',
+    '/search/',
+  ])
+
+  const privacy = bodyText(await (await request.get('/privacy/')).text())
+  expect(privacy, 'privacy does not mention the search form').toMatch(/search/i)
+  expect(privacy, 'privacy does not mention the correction form').toMatch(/correction/i)
 })

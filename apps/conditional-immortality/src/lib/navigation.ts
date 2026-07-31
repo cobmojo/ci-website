@@ -38,7 +38,16 @@ export const PRIMARY_NAV: readonly NavLink[] = [
   { href: '/case/', label: 'The Case', description: 'All 37 parts in a guided order' },
   { href: '/passages/', label: 'Key Passages', description: 'Passage-by-passage treatments' },
   { href: '/objections/', label: 'Objections', description: 'Direct responses to common concerns' },
-  { href: '/scripture/', label: 'Scripture Index', description: 'Every reference in the case' },
+  // Not "every reference in the case": `/scripture/` says itself that the
+  // index is drawn from the references each part records as its own, and that
+  // a verse quoted only in passing inside a part's prose may not have a row.
+  // The page's wording was corrected in an earlier sweep; this was not, and it
+  // is what every narrow-screen reader is shown.
+  {
+    href: '/scripture/',
+    label: 'Scripture Index',
+    description: 'Every reference the parts record',
+  },
   { href: '/sources/', label: 'Sources', description: 'The full source library' },
 ]
 

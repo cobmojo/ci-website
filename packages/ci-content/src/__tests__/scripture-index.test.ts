@@ -1,7 +1,7 @@
 import { type ParsedReference, parseReference } from '@ci/content-schema'
 import { describe, expect, it } from 'vitest'
 import { caseSections } from '../case/index'
-import { listMdx, mdxExists, readMdx, sectionFileName } from '../mdx'
+import { listMdx, mdxExists, readMdx, sectionCollection, sectionFileName } from '../mdx'
 
 /**
  * The Scripture index has to hold what the pages actually display.
@@ -26,9 +26,16 @@ import { listMdx, mdxExists, readMdx, sectionFileName } from '../mdx'
 
 const BODIES = new Map<string, string>(
   caseSections
-    .map(section => [section.id, sectionFileName(section.id, section.slug)] as const)
-    .filter(([, file]) => mdxExists('case', file))
-    .map(([id, file]) => [id, readMdx('case', file)]),
+    .map(
+      section =>
+        [
+          section.id,
+          sectionCollection(section.group),
+          sectionFileName(section.id, section.slug),
+        ] as const,
+    )
+    .filter(([, collection, file]) => mdxExists(collection, file))
+    .map(([id, collection, file]) => [id, readMdx(collection, file)]),
 )
 
 /** Every reference set out as a full `<Scripture>` block in a body. */
@@ -39,24 +46,35 @@ function displayedIn(body: string): string[] {
   return [...new Set(found)]
 }
 
-/** Does one parsed reference reach the verses of another? */
+/**
+ * Does a declared reference reach every verse of a displayed one?
+ *
+ * Containment, not overlap. Written as an intersection, a *narrower*
+ * declaration covered a *wider* display: S13 declares Hebrews 12:29 and sets
+ * out Hebrews 12:26-29 in full, so the index held a row for the single verse
+ * and none for the three before it, and the check that exists to catch exactly
+ * that was green against it. The same slip in the other direction let a
+ * declared single verse stand for a whole chapter on the page.
+ */
 function covers(declared: ParsedReference, shown: ParsedReference): boolean {
   if (declared.book !== shown.book) return false
 
   const declaredChapters = [declared.chapter, declared.chapterEnd ?? declared.chapter] as const
   const shownChapters = [shown.chapter, shown.chapterEnd ?? shown.chapter] as const
-  if (declaredChapters[0] > shownChapters[1] || shownChapters[0] > declaredChapters[1]) return false
+  // Every chapter the display touches must be inside the declaration.
+  if (shownChapters[0] < declaredChapters[0] || shownChapters[1] > declaredChapters[1]) return false
 
-  // A range spanning chapters, or a reference naming no verse, is the whole of
-  // every chapter it touches, so a chapter in common is enough.
-  const spansChapters = declared.chapterEnd !== undefined || shown.chapterEnd !== undefined
-  if (spansChapters || declared.verseStart === undefined || shown.verseStart === undefined) {
-    return true
-  }
+  // A declaration spanning chapters, or naming no verse, is the whole of every
+  // chapter it names — so the chapter test above has already settled it.
+  if (declared.chapterEnd !== undefined || declared.verseStart === undefined) return true
+
+  // A display naming no verse, or spanning chapters, is a whole chapter or
+  // more; a declaration naming verses cannot reach all of it.
+  if (shown.chapterEnd !== undefined || shown.verseStart === undefined) return false
 
   const declaredVerses = [declared.verseStart, declared.verseEnd ?? declared.verseStart] as const
   const shownVerses = [shown.verseStart, shown.verseEnd ?? shown.verseStart] as const
-  return declaredVerses[0] <= shownVerses[1] && shownVerses[0] <= declaredVerses[1]
+  return declaredVerses[0] <= shownVerses[0] && shownVerses[1] <= declaredVerses[1]
 }
 
 describe('the Scripture index against the pages it indexes', () => {
@@ -86,11 +104,14 @@ describe('the Scripture index against the pages it indexes', () => {
     expect(unreachable).toEqual([])
   })
 
-  it('reads a body for every section that has one', () => {
+  it('reads a body for every section, including both appendices', () => {
     // Without this, a rename of the MDX files would empty `BODIES` and the
-    // check above would pass by having nothing left to look at.
-    expect(BODIES.size).toBeGreaterThan(30)
-    expect(BODIES.size).toBeLessThanOrEqual(listMdx('case').length)
+    // check above would pass by having nothing left to look at. Pinned to the
+    // registry rather than to a floor: `BODIES.size > 30` was true of the 38
+    // this read before the appendices were included, and true of 40 after, so
+    // it could not tell that two of the forty pages were being skipped.
+    expect(BODIES.size).toBe(caseSections.length)
+    expect(listMdx('case').length + listMdx('appendices').length).toBe(caseSections.length)
   })
 
   it('finds the blocks it is looking for', () => {

@@ -36,7 +36,7 @@ export default function PrivacyPage() {
               Reading this site is anonymous. No analytics, no cookies, no account, and nothing you
               read or open is recorded. Two things you send on purpose do reach the server: a
               correction, and, if you use the full results page rather than the quick panel, the
-              term you searched for — which travels in the address, as with any link.
+              term you searched for, which travels in the address as with any link.
             </p>
           </header>
 
@@ -58,8 +58,8 @@ export default function PrivacyPage() {
                   ordinary form, so its term travels in the address, as with any link.
                 </li>
                 <li>
-                  The correction form is the only place the site asks you for anything, and it
-                  receives only what you type.
+                  The correction form is the only thing the site keeps on purpose, and it keeps only
+                  what you type and the part identifier you arrived with.
                 </li>
               </ul>
             </section>
@@ -173,8 +173,10 @@ export default function PrivacyPage() {
                 The correction form
               </h2>
               <p className="m-0 mb-3">
-                The <Link href="/corrections/">corrections form</Link> is the only place this site
-                receives information from you, and it receives only what you type into it.
+                The <Link href="/corrections/">corrections form</Link> is the only thing this site
+                keeps on purpose. It keeps what you type into it, and the part identifier you
+                arrived with, which is listed below. A search term from the full results page also
+                reaches the server, in the address, and is not kept.
               </p>
 
               <h3 className="mt-6 mb-2">What it collects</h3>
