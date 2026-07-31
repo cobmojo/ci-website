@@ -3,12 +3,32 @@
   "ui": "stream",
   "globalDependencies": ["tsconfig.base.json", "biome.json"],
   "globalEnv": ["NODE_ENV", "CI"],
-  "globalPassThroughEnv": ["NEXT_PUBLIC_SITE_URL", "FEEDBACK_NOTIFY_EMAIL", "FEEDBACK_STORE_DIR"],
+  "globalPassThroughEnv": [
+    "NEXT_PUBLIC_SITE_URL",
+    "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL",
+    "SITE_ENV",
+    "FEEDBACK_NOTIFY_EMAIL",
+    "FEEDBACK_STORE_DIR",
+    "FEEDBACK_STORE",
+    "FEEDBACK_STORE_URL",
+    "FEEDBACK_STORE_TOKEN",
+    "FEEDBACK_TRUSTED_PROXY_HOPS",
+    "PLAYWRIGHT_BASE_URL",
+    "PLAYWRIGHT_PORT"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["NEXT_PUBLIC_SITE_URL"]
+      "//": "Every variable that changes an emitted byte belongs in the cache key. SITE_ENV and VERCEL_ENV decide whether robots.txt says Disallow: / and whether X-Robots-Tag is sent; the origin variables are baked into every canonical URL. Left out, two builds of one commit that differ only in these hash the same, and a cached preview build can be restored as production with a total crawl block in it.",
+      "env": [
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL",
+        "SITE_ENV",
+        "VERCEL_ENV",
+        "VERCEL_URL",
+        "VERCEL_PROJECT_PRODUCTION_URL"
+      ]
     },
     "dev": {
       "cache": false,

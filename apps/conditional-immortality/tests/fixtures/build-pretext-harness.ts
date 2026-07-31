@@ -17,10 +17,16 @@ import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 
-/** Where the built harness lands. The geometry spec reads the same path. */
+/**
+ * Where the built harness lands. The geometry spec reads the same path.
+ *
+ * Keyed by the run's port for the same reason the port itself is overridable:
+ * the directory is wiped before it is written, so two concurrent runs sharing
+ * one path would have the second delete the first one's harness mid-flight.
+ */
 export const HARNESS_BUNDLE = path.join(
   os.tmpdir(),
-  'ci-pretext-geometry-harness',
+  `ci-pretext-geometry-harness-${process.env.PLAYWRIGHT_PORT ?? 3211}`,
   'pretext-browser-harness.js',
 )
 

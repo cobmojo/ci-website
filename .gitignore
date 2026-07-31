@@ -15,8 +15,19 @@ Thumbs.db
 
 # Private source material: the original DOCX and any derived private artefacts.
 # See docs/rights-audit.md and /original-document for the rationale.
+#
+# The rights audit withholds the source document because it opens with a
+# personal email address and phone number and carries thirty editorial comments
+# by named third parties who never consented to publication. That reasoning
+# applies to this repository too, which is public — so the three derived
+# artefacts that carry those comments are ignored as well. All four are outputs
+# of `bun run source:import`; nothing in the build, the validation chain or any
+# test reads them, and `pii-scan.ts` fails if one is ever tracked again.
 private/source/*.docx
 private/source/*.doc
+private/source/source-comments.json
+private/source/source-elements.json
+private/source/source-text-redacted.md
 .feedback-store/
 reports/
 

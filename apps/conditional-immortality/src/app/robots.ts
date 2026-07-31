@@ -12,7 +12,13 @@ import { absoluteUrl, siteConfig } from '@/lib/site-config'
 export default function robots(): MetadataRoute.Robots {
   const sitemap = absoluteUrl('/sitemap.xml')
 
-  if (process.env.VERCEL_ENV === 'preview') {
+  // `SITE_ENV` is the provider-neutral switch, because the deployment target is
+  // chosen by whoever deploys; `VERCEL_ENV` is still honoured. `next.config.ts`
+  // reads the same pair to add `X-Robots-Tag`, which is what actually removes a
+  // preview URL a crawler already knows about.
+  const environment = (process.env.SITE_ENV ?? process.env.VERCEL_ENV ?? '').toLowerCase()
+
+  if (environment === 'preview') {
     return {
       rules: [{ userAgent: '*', disallow: '/' }],
     }

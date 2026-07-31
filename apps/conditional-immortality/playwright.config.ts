@@ -20,20 +20,49 @@ import { defineConfig, devices } from '@playwright/test'
  * no undocumented build step in front of it.
  */
 
-/** Deliberately not the 3210 `next dev` uses, or a dev server gets adopted. */
-const PORT = 3211
-const BASE_URL = `http://localhost:${PORT}`
+/**
+ * Where the suite points.
+ *
+ * `PLAYWRIGHT_BASE_URL` switches the whole run to an already-deployed origin: a
+ * preview deployment, a staging host, or a production server started by hand.
+ * Nothing is built and no local server is started, because there is nothing
+ * local to serve — see `test:preview` in `package.json`. Without it the suite
+ * serves its own production build on `PORT`.
+ */
+const DEPLOYED_BASE_URL = process.env.PLAYWRIGHT_BASE_URL?.trim().replace(/\/+$/, '') || ''
+const isDeployedRun = DEPLOYED_BASE_URL.length > 0
+
+/**
+ * Deliberately not the 3210 `next dev` uses, or a dev server gets adopted.
+ *
+ * Overridable because the port is the one piece of global state a run owns: two
+ * checkouts of this repository testing at once would otherwise collide on it,
+ * and the loser either fails to start or — worse, if the other server is still
+ * coming down — measures the wrong build.
+ */
+const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3211)
+const BASE_URL = isDeployedRun ? DEPLOYED_BASE_URL : `http://localhost:${PORT}`
 
 /**
  * The correction endpoint appends every submission to disk. Tests write to a
  * throwaway directory so a test run never leaves records inside the repository.
+ * Keyed by port for the same reason the port is overridable: two concurrent
+ * runs must not share a store, or one run's rate-limit state is the other's.
  */
-const FEEDBACK_STORE_DIR = path.join(os.tmpdir(), 'ci-playwright-feedback-store')
+const FEEDBACK_STORE_DIR = path.join(os.tmpdir(), `ci-playwright-feedback-store-${PORT}`)
 
 /** The accessibility spec belongs to the two accessibility projects. */
 const A11Y_SPEC = /a11y\.spec\.ts$/
 /** The geometry spec belongs to the three focused browser projects. */
 const GEOMETRY_SPEC = /text-geometry\.spec\.ts$/
+/** The served-build guard belongs to its own project, which every other one waits for. */
+const SETUP_SPEC = /served-build\.setup\.ts$/
+
+/**
+ * Every project depends on this one, so no suite can report a result about a
+ * server that is not this build. See `tests/e2e/served-build.setup.ts`.
+ */
+const SERVED_BUILD_GUARD = ['served-build'] as const
 
 const DESKTOP_VIEWPORT = { width: 1440, height: 900 }
 const MOBILE_VIEWPORT = { width: 375, height: 812 }
@@ -67,17 +96,25 @@ export default defineConfig({
 
   projects: [
     {
+      name: 'served-build',
+      testMatch: SETUP_SPEC,
+      use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
+    },
+    {
       name: 'chromium-desktop',
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC],
+      dependencies: [...SERVED_BUILD_GUARD],
+      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'chromium-mobile',
-      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC],
+      dependencies: [...SERVED_BUILD_GUARD],
+      testIgnore: [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC],
       use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
     {
       name: 'accessibility',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: A11Y_SPEC,
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
@@ -86,6 +123,7 @@ export default defineConfig({
       // target sizes and the sheet navigation all differ below the desktop
       // breakpoints, so a desktop-only gate could pass a mobile regression.
       name: 'accessibility-mobile',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: A11Y_SPEC,
       use: { ...devices['Desktop Chrome'], viewport: MOBILE_VIEWPORT, hasTouch: true },
     },
@@ -102,32 +140,45 @@ export default defineConfig({
      */
     {
       name: 'geometry-chromium',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: GEOMETRY_SPEC,
       use: { ...devices['Desktop Chrome'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'geometry-firefox',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: GEOMETRY_SPEC,
       use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
     },
     {
       name: 'geometry-webkit',
+      dependencies: [...SERVED_BUILD_GUARD],
       testMatch: GEOMETRY_SPEC,
       use: { ...devices['Desktop Safari'], viewport: DESKTOP_VIEWPORT },
     },
   ],
 
-  webServer: {
-    // Serve only: both tasks declare `dependsOn: ["build"]`, so building here as
-    // well ran `next build` twice. Running playwright directly needs a build.
-    command: `bunx next start --port ${PORT}`,
-    url: BASE_URL,
-    // `next start` loads its manifest at boot, so a reused server would serve
-    // whatever was built when it started rather than the code under test.
-    reuseExistingServer: false,
-    timeout: 2 * 60 * 1000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env: { FEEDBACK_STORE_DIR },
-  },
+  /*
+   * A deployed run has nothing to serve. Starting `next start` anyway would
+   * build a second, local copy of the site and then not use it, and on a
+   * machine where the port is taken it would fail the run for a reason that
+   * has nothing to do with the deployment under test.
+   */
+  webServer: isDeployedRun
+    ? undefined
+    : {
+        // Serve only: both tasks declare `dependsOn: ["build"]`, so building
+        // here as well ran `next build` twice. Running playwright directly
+        // needs a build.
+        command: `bunx next start --port ${PORT}`,
+        url: BASE_URL,
+        // `next start` loads its manifest at boot, so a reused server would
+        // serve whatever was built when it started rather than the code under
+        // test.
+        reuseExistingServer: false,
+        timeout: 2 * 60 * 1000,
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: { FEEDBACK_STORE_DIR },
+      },
 })
