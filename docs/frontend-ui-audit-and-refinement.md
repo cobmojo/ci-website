@@ -2111,6 +2111,39 @@ Found, evidenced and left:
   left quoted in the comment explaining its removal keeps them green. Not
   currently exploited, but that is this file's documented authoring habit.
 
+### Review threads on PR #9
+
+Two automated review comments, both P2, both against `edebe4e`.
+
+**The trailing-fragment merge** was already fixed in `3bf3f16`, which landed
+after the reviewed commit, with exactly the change asked for: merge only when
+the final paragraph consists solely of the fragment. The reviewer's reading of
+the consequence was right and understated — 35 of the 39 chapters end without
+terminal punctuation, so it fired on nearly all of them rather than on the odd
+one. The thread carries the before-and-after measurements.
+
+**The search index emitted a validator nothing answered**, and this was live.
+The reviewer's claim was that `next start` would still transfer the whole body
+on revalidation, and that the test asserting the two headers exist could not
+detect it. Both are true, and measured: a second request carrying the exact tag
+from the first was answered `200` with all 628,636 bytes again.
+
+The cause is one the diff does not show. The route was `force-static`, so the
+handler ran at build time and never saw a request — nothing could compare
+`If-None-Match`, and the code comment said as much while implying the platform
+handled it. Nothing in this repository configures a CDN that would.
+
+Checked before changing it: the prerendered artefact is
+`.next/server/app/search-index.json.body`, and `.body` is not in the PII scan's
+extension list, so serving the route dynamically drops no gate coverage. The
+handler now answers the conditional itself, with the body and tag built once per
+process, so a revalidating request costs a string comparison and writes no body.
+Measured after: matching tag `304`, weak `W/` form `304`, comma-separated list
+`304`, `*` `304`, stale tag `200` with the full file. The end-to-end test
+asserts the `304` and its empty body, and that a stale tag still gets the file —
+the check that was missing, and the reason the reviewer could see the defect
+when the suite could not.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

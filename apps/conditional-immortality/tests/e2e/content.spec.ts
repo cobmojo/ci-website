@@ -841,7 +841,7 @@ test('the card route always answers with a card', async ({ request }) => {
   }
 })
 
-test('the search index can be revalidated rather than refetched', async ({ request }) => {
+test('the search index is revalidated rather than refetched', async ({ request }) => {
   // 610kB with `must-revalidate` and no validator meant every visit
   // re-downloaded it — three visits cost 1.8MB — while /privacy/ described it
   // as downloaded the first time search is opened.
@@ -851,6 +851,29 @@ test('the search index can be revalidated rather than refetched', async ({ reque
   const headers = response.headers()
   expect(headers.etag, 'no validator to revalidate against').toBeTruthy()
   expect(headers['cache-control']).toMatch(/max-age=[1-9]/)
+
+  /*
+   * And the validator is answered, which is the part that saves the bytes.
+   *
+   * Asserting that the two headers exist was true of the working version and
+   * of the broken one: the route was `force-static`, so the handler ran at
+   * build time and nothing compared `If-None-Match`. Measured against
+   * `next start`, a second request carrying the exact tag was answered 200
+   * with all 628,636 bytes again, and this test passed.
+   */
+  const revalidated = await request.get('/search-index.json', {
+    headers: { 'if-none-match': headers.etag as string },
+  })
+  expect(revalidated.status(), 'the tag was sent back and the body came with it').toBe(304)
+  expect((await revalidated.body()).length, 'a 304 carrying a body').toBe(0)
+
+  // A stale tag still gets the file, or a reader whose copy is out of date
+  // would be served nothing at all.
+  const stale = await request.get('/search-index.json', {
+    headers: { 'if-none-match': '"not-the-current-index"' },
+  })
+  expect(stale.status()).toBe(200)
+  expect((await stale.body()).length).toBeGreaterThan(1000)
 })
 
 /**
