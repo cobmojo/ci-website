@@ -18,7 +18,6 @@ import { Link } from '@/components/navigation/link'
 import { pluralise } from '@/lib/format'
 import { isModifiedClick } from '@/lib/modified-click'
 import { loadSearchEngine, type SearchFn } from '@/lib/search-engine-client'
-import { loadTextLayoutEngine } from '@/lib/text-layout/pretext-client'
 
 /**
  * The result list, and everything it reaches — the label tables, the excerpt
@@ -32,6 +31,25 @@ const importResults = () => import('@/components/search/quick-search-results')
 const QuickSearchResults = lazy(() =>
   importResults().then(module => ({ default: module.QuickSearchResults })),
 )
+
+/**
+ * The text-layout runtime's *loader*, deferred along with everything else.
+ *
+ * `loadTextLayoutEngine` already fetched the engine itself lazily, but the
+ * module holding it — the font contract, the prepared-text cache and the
+ * loader — was reached by a static import from here, which put 3,586 bytes of
+ * it in the chunk every route loads. Its only caller on that path is `prewarm`
+ * below; the excerpt fitter reaches it again from inside the result list, which
+ * is already lazy, so nothing waits on this that was not already waiting.
+ *
+ * Failures are swallowed here as well as inside `loadTextLayoutEngine`, because
+ * the chunk fetch is now part of what can fail, and this is called without
+ * being awaited.
+ */
+const startTextLayoutEngine = () =>
+  import('@/lib/text-layout/pretext-client')
+    .then(module => module.loadTextLayoutEngine())
+    .catch(() => null)
 
 /**
  * Site search, as a dialog.
@@ -98,6 +116,16 @@ export function SearchDialogTrigger() {
       const [response, loaded] = await Promise.all([
         fetch('/search-index.json'),
         loadSearchEngine(),
+        /*
+         * The result list is awaited here too, and for a sharper reason than
+         * tidiness: `lazy` throws to the nearest error boundary if its import
+         * rejects, and the nearest one here is the route's, so a dropped chunk
+         * would replace the page with the error document rather than the
+         * "search could not load" line three lines below. Awaiting it means a
+         * failure lands in the same `catch` as the other two, and by the time
+         * anything renders `QuickSearchResults` the module is already resolved.
+         */
+        importResults(),
       ])
       if (!response.ok) throw new Error(`search index ${response.status}`)
       if (!loaded) throw new Error('search engine')
@@ -123,14 +151,17 @@ export function SearchDialogTrigger() {
   /**
    * Search intent: hovering or focusing the trigger.
    *
-   * Both fetches are started and neither is awaited. `loadTextLayoutEngine`
-   * caches its own promise and swallows its own failures, so calling it on
-   * every pointer pass costs one request in total and can never reject.
+   * Everything search needs is started here and nothing is awaited.
+   * `loadIndex` owns the index, the engine and the result list, and reports
+   * their failure as one. `startTextLayoutEngine` is the one that is genuinely
+   * fire-and-forget: an excerpt appears unfitted and is refined in place, so
+   * nothing is ever waiting on it. Both cache their promise and swallow their
+   * own failures, so a reader sweeping the pointer across the trigger costs one
+   * set of requests in total and neither call can reject.
    */
   const prewarm = useCallback(() => {
     void loadIndex()
-    void loadTextLayoutEngine()
-    void importResults()
+    void startTextLayoutEngine()
   }, [loadIndex])
 
   const openDialog = useCallback(() => {
