@@ -26,18 +26,26 @@ bun run validate
 
 Formatting, lint, typecheck, content validation, the content audit, the
 documentation path check, unit tests, the production build, the PII scan, the
-internal link check, the canonical-origin check and the bundle budget.
+internal link check, the canonical-origin check, the bundle budget and the
+route-inventory reconciliation.
 
 ```bash
 bun run qa:production
 ```
 
-`validate`, then coverage with its thresholds, then every browser suite:
-end-to-end on desktop and mobile, accessibility at both viewports, cross-engine
-smoke in Firefox and WebKit, the text-geometry contract in three engines, and
-visual regression. `bun run ci` is the same thing. Each suite is also available
-on its own as `test:e2e`, `test:a11y`, `test:smoke`, `test:text-geometry` and
-`test:visual`.
+`validate`, then coverage with its thresholds, then the indexability matrix,
+then every browser suite: end-to-end on desktop and mobile, accessibility at
+both viewports, cross-engine smoke in Firefox and WebKit, the text-geometry
+contract in three engines, interaction latency, and visual regression.
+`bun run ci` is the same thing. Each suite is also available on its own as `test:e2e`, `test:a11y`, `test:smoke`, `test:text-geometry`,
+`test:interaction` and `test:visual`.
+
+Lighthouse is deliberately outside the gate: a category score taken on a shared
+runner is noise, and a flaky performance gate teaches people to re-run the
+build. What the gate holds instead is the deterministic *cause* of each thing
+it measures. See
+[Performance and technical SEO](docs/performance-and-technical-seo-report.md)
+for the numbers and `bun run perf:audit` to reproduce them.
 
 Two commands are deliberately outside that gate, because they depend on
 machines this repository does not control:
@@ -105,12 +113,13 @@ unknown reference fails the build. Do not work around this by typing the verse.
 33 sources, 208 Scripture index entries, a 279-cue video transcript, and a
 1,034-entry migration ledger with nothing unmapped.
 
-1,508 tests in the gate: 938 unit and component across 37 files, and 570
-browser tests across ten Playwright projects — end-to-end on desktop and
+1,566 tests in the gate: 957 unit and component across 39 files, and 609
+browser tests across eleven Playwright projects — end-to-end on desktop and
 mobile, accessibility at both viewports, cross-engine smoke in Firefox and
-Playwright WebKit, text geometry in three engines, and visual regression. An
-eleventh project, `preview`, runs 23 of them against a deployed origin. They
-run on every push; see `.github/workflows/ci.yml`.
+Playwright WebKit, text geometry in three engines, interaction latency, and
+visual regression. A twelfth project, `preview`, runs the origin-agnostic set
+against a deployed origin. They run on every push; see
+`.github/workflows/ci.yml`.
 
 Before a launch, read [Production-readiness QA](docs/production-readiness-qa.md)
 and [Launch runbook](docs/launch-runbook.md). The site does **not** build without

@@ -526,6 +526,37 @@ a real origin the moment one exists.
 None of that excuses the local mobile Performance shortfall, and it is not
 offered as an excuse for it.
 
+## Verification
+
+Every command run for this work, and what it returned.
+
+| Command | Result |
+|---|---|
+| `bun install --frozen-lockfile` | exit 0, no changes |
+| `CI=1 bun run validate` | **exit 0** — 957 unit and component tests across 39 files |
+| `CI=1 bun run test:coverage` | **exit 0**, thresholds met |
+| `bun run seo:matrix` | **exit 0** — 120 routes, no finding |
+| `bun run perf:routes` | **exit 0** — four sources reconciled |
+| `bun run test:browser`, in three project groups | **exit 0 ×3** — **609 tests, 0 failures, 0 flakes** |
+| `bun run perf:audit` (240 cold audits) | **exit 1** — mobile Performance, as recorded above |
+| GitHub Actions on the head commit | see the pull request |
+
+Browser counts by project: chromium-desktop 206, chromium-mobile 196,
+accessibility 32, accessibility-mobile 32, geometry-chromium / -firefox /
+-webkit 23 each, firefox-smoke 23, webkit-smoke 23, visual 14, interaction 13,
+served-build 1.
+
+The browser suite was run locally as three sequential invocations on three
+different ports rather than as one. On this Windows machine a single
+`next start` serving all eleven projects intermittently stops accepting
+connections part-way through, producing `ERR_CONNECTION_REFUSED` on whatever
+test happens to be running — which reads exactly like a product defect and is
+not one. It is the same class of failure as the shared-port collision recorded
+in `docs/production-readiness-qa.md`, and it is why every number here is quoted
+with the connection failures separated out rather than counted. The suite, the
+projects and the assertions are identical either way; CI runs all eleven in one
+invocation on Linux, and that run is the authoritative one.
+
 ## Regression protection
 
 `tests/e2e/prefetch-budget.spec.ts` (in `chromium-desktop`) and the
