@@ -32,8 +32,12 @@ Binding rules for anyone adding a route to `apps/conditional-immortality`.
    automatically from `rehypeScrollableTables`.
 10. **No horizontal page scrolling at 320 CSS pixels.** Test long words and URLs.
 11. **Do not add a client-side data library** to a page that only renders static content.
-12. Use `<Link>` from `next/link` for internal navigation, plain `<a>` with
-    `rel="noopener noreferrer" target="_blank"` for external.
+12. Use `<Link>` from `next/link` for internal navigation. For an external link
+    whose destination the code chooses, use `<NewTabLink>`, which is the one
+    owner of the `rel` hardening, the "opens in a new tab" note a screen reader
+    needs, and the marker that stops print repeating a URL the text already
+    shows. Links authored in MDX get the same from `InternalOrExternalLink`.
+    A hand-written `<a target="_blank">` silently has none of it.
 
 ## Route conventions
 

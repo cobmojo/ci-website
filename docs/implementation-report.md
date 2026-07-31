@@ -41,11 +41,14 @@ change. Titles, slugs and routes may be revised freely; the changelog, reading
 progress and every cross-reference key off the id.
 
 **Server components by default.** An article page ships no client JavaScript for
-its prose. The only client components are the mobile navigation sheet, the
-search dialog, the click-to-load video, the feedback form, reading progress, the
-print button, two progressive-enhancement filters, and two leaves in the shell:
-the primary navigation item, which reads the path to mark the current page, and
-the smooth-anchor scroller, which renders nothing at all. Every one degrades to
+its prose. Fifteen components carry `'use client'`: the mobile navigation
+sheet, the search dialog and its two result surfaces with the text-layout hook
+behind them, the click-to-load video, the feedback form, reading progress, the
+print button, two progressive-enhancement filters, the scroll region, which
+measures whether it has anything to scroll before claiming a tab stop, the link
+that moves focus to the region a same-page navigation was for, and two leaves in
+the shell: the primary navigation item, which reads the path to mark the current
+page, and the smooth-anchor scroller, which renders nothing at all. Every one degrades to
 working markup with scripting disabled. The text-layout runtime the search
 dialog uses is in a chunk of its own that an article page never requests; an
 end-to-end test finds that chunk in the production output and proves it.
@@ -112,16 +115,16 @@ notification is attempted and submissions are still recorded.
 
 ## Testing
 
-1,267 tests, all passing.
+1,293 tests, all passing.
 
 | Suite | Count |
 |---|---|
 | Unit, `@ci/content-schema` | 51 |
-| Unit, `@ci/content` | 64 |
+| Unit, `@ci/content` | 79 |
 | Unit, `@ci/search` | 336 |
-| Unit and component, `conditional-immortality` | 367 |
-| End-to-end, desktop and mobile | 312 |
-| Accessibility, axe plus structural, desktop and mobile viewports | 68 |
+| Unit and component, `conditional-immortality` | 368 |
+| End-to-end, desktop and mobile | 314 |
+| Accessibility, axe plus structural, desktop and mobile viewports | 76 |
 | Text geometry, Chromium, Firefox and WebKit | 69 |
 
 Plus seven gates that fail the build: content validation, the content audit,

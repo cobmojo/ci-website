@@ -22,7 +22,7 @@ already survived three audits: PR #2 closed a twelve-finding codebase audit and
 added four CI gates, PR #3 unified every hand-rolled button surface onto shared
 `buttonVariants`, and PR #4 built and tested the five-tier motion system. The
 token discipline is real (two radius tokens, five motion tokens, semantic colours
-throughout), the accessibility floor is high (axe-clean on 16 routes plus both
+throughout), the accessibility floor is high (axe-clean on 15 routes plus both
 open dialogs, one `h1` per page, named landmarks, focus restoration on both
 dialogs), and the reading experience is the point of the design rather than a
 casualty of it.
@@ -363,7 +363,7 @@ the work.
 | F31 | Implemented | method's contents list reshaped as `ExtractedHeading[]` |
 | F32 | Implemented | `ReviewStatusBadge` accepts `status`; glossary and method consume it |
 | F33 | Implemented | `SectionLinkList` in article-chrome |
-| F34 | Implemented | `SourcesCited` in article-chrome; passage page keeps its own divider via the className prop |
+| F34 | Implemented | `SourcesCited` in article-chrome; the passage page turns its own divider off with the `divider` flag |
 | F35 | Implemented | `components/navigation/related-pages.tsx`, eight consumers |
 | F36 | Implemented | sidebar TOC moved before the article with explicit `col-start`/`row-start`; template comment updated to match |
 | F37 | Implemented | negative-margin/padding trick keeps the rendered layout identical |
@@ -451,7 +451,7 @@ against a production build.
 | `bun run test:text-geometry` | **69 tests, 0 failures** across Chromium, Firefox and WebKit |
 
 **Rendered sweep** (production build, before and after): 360 loads over all
-120 sitemap routes at 1280/375/320 px — zero console errors, zero page
+120 built HTML routes at 1280/375/320 px — zero console errors, zero page
 errors, zero horizontal page overflow, exactly one `h1` and one `main`
 everywhere, no duplicate ids, no non-200 response. Print-media emulation
 confirms closed disclosures keep their content on paper.
@@ -472,8 +472,8 @@ text, migration-ledger entry or transcript cue changed; the PII scan is clean;
 no third-party request was introduced (the sweep recorded zero external
 requests before a play activation).
 
-Three content records did change, and each is a correction rather than an
-edit. `welch-source-document` gained `S17` and `S18`, which cite it inline and
+Three kinds of content correction were made, and each is a correction rather
+than an edit. `welch-source-document` gained `S17` and `S18`, which cite it inline and
 were missing from its `citedBy`, and both sections' `sourceIds` gained it to
 keep the existing registry invariant; `sprinkle-introduction` lost `P00`,
 whose text never mentions it. Eighteen authorless sources gained a
@@ -704,9 +704,12 @@ instance of a class rather than a fix of the class:
   document of each kind and fails if a claimed heading is not a heading on the
   route, so the class cannot return silently.
 - **That correction moved the ranking baseline PR #5 pins.** The diff was
-  inspected before regenerating: 25 of 30 queries move by score and 3 by
-  order, each explained by heading text that is now real. The pin's docstring
-  now records when regeneration is legitimate, because a ranker change is not.
+  inspected before regenerating. Measured against `main` at the end of the
+  branch, 25 of the 30 pinned queries are byte-identical; four moved their
+  total and one its scores, each explained by heading text that is now real.
+  The pin's docstring records when regeneration is legitimate, because a
+  ranker change is not. (An earlier draft of this section said 25 queries
+  *moved*, which inverted the measurement; sweep 8 caught it.)
 - **`print:hidden` disclosures printed anyway.** Sweep 4 made closed
   disclosures open on paper with `display: block !important`, which also
   overrode the utility that exists to keep a disclosure off paper entirely.
@@ -879,9 +882,10 @@ quietly become a regression in the other direction.
 
 Two angles over the tree at `6f3e387`: regressions in the two commits sweep 6
 produced, and what remained of the class sweep 6 kept finding — statements the
-site makes about itself. Eight findings confirmed. Nothing in the branch's own
-new code was found to be wrong; what the sweep found was one omission the new
-guard was structurally unable to see, and six older claims that are not true.
+site makes about itself. Eight findings confirmed: one omission the new guard
+was structurally unable to see, six older claims that are not true, and one
+defect in code this branch had just added — the scroll lock that was not
+scoped to the screen.
 
 - **The heading guard could only fail in one direction, and the other one was
   already broken.** It checked that every claimed heading is rendered, so a
@@ -972,7 +976,8 @@ validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
 `test:a11y` 64 tests (63 + 1 axe timing flake retried green), 0 failures;
 `test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
 (67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
-Total automated coverage on the merged tree: 1,267 tests.
+Total automated coverage at that merge commit: 1,267 tests. The finished
+branch carries 1,293; section 10 has the breakdown.
 
 **Review threads**: the automated review on the first commit raised two P2
 findings (permalink loss on demoted headings; component-rendered headings

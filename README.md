@@ -97,10 +97,13 @@ They run on every push; see `.github/workflows/ci.yml`.
 Bun, not npm or pnpm. Server components by default. No third-party-hosted
 script, font or stylesheet: everything is served from this origin, including the
 one runtime dependency the search dialog loads lazily after a reader shows
-search intent. YouTube is not contacted until a reader presses play. Search runs
-in the browser and no query is transmitted. The author's personal contact
-details from the source document are never published, and a build-time scanner
-enforces it.
+search intent. YouTube is not contacted until a reader presses play. The search index is a
+static file with no hosted service behind it: the quick panel scores it in the
+reader's browser and transmits nothing, while `/search/` scores the same index
+on this origin's own server, so that it works without scripting and a page of
+results can be linked — at the cost of the term travelling in the URL. The
+author's personal contact details from the source document are never published,
+and a build-time scanner enforces it.
 
 ## One more thing that is load-bearing
 

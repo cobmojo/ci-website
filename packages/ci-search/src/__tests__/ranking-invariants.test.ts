@@ -23,14 +23,18 @@ import baseline from './ranking-baseline.json'
  * The first was the hand-authored `headings` on the page, topic and passage
  * documents, which named sections their pages do not render — search was
  * reporting "matched in heading" against text that was not there, and quoting
- * it back as the excerpt. Fixing them moved 25 of the 30 queries by score and
- * 3 by order.
+ * it back as the excerpt.
  *
- * The second moved exactly one query. Transcript summaries read "from 1
- * minutes 26 seconds", and "seconds" stems to "second", so every chapter of
- * the video matched the query "second death" — a central term of the case —
- * on its timestamp. Writing the timestamp as `1:26` dropped 18 chapters that
- * never mention death from that query's 114 results, and moved nothing else.
+ * The second was the transcript summaries, which read "from 1 minutes 26
+ * seconds". "Seconds" stems to "second", so every chapter of the video matched
+ * the query "second death" — a central term of the case — on its timestamp.
+ * Writing the timestamp as `1:26` dropped 18 chapters that never mention death
+ * from that query's 114 results.
+ *
+ * Across both, 25 of the 30 pinned queries are byte-identical to what `main`
+ * recorded. Four moved their total — "second death" 114 to 96, and `ect`,
+ * `traditional view` and `the` by one apiece as headings became real — and one
+ * moved by score alone.
  */
 
 const index = buildSearchIndex()

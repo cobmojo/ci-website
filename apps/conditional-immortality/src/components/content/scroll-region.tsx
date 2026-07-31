@@ -15,8 +15,8 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
  *
  * `role="group"` rather than `role="region"`: a labelled group conveys the
  * same grouping to assistive technology without adding a landmark. The
- * Scripture index alone renders forty-eight of these, and forty-eight extra
- * landmarks would make the landmark list useless.
+ * Scripture index alone renders forty-four of these, one per book it cites,
+ * and forty-four extra landmarks would make the landmark list useless.
  *
  * This component is the only owner. An earlier `scrollRegionProps` helper let
  * callers spread the attributes onto their own wrapper and keep their own
