@@ -39,6 +39,19 @@ const FALLBACK_TITLE = 'Video overview'
 /** Dispatched by a transcript timestamp; carries the offset in seconds. */
 export const VIDEO_SEEK_EVENT = 'ci:video-seek'
 
+/**
+ * The offset the address bar is asking for, or zero.
+ *
+ * At module scope so the mount effect does not close over a function rebuilt
+ * on every render, which would either go stale or re-run the effect forever.
+ */
+function startFromLocation(): number {
+  if (typeof window === 'undefined') return 0
+  const raw = new URLSearchParams(window.location.search).get('t')
+  const parsed = raw === null ? Number.NaN : Number.parseInt(raw, 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
 export function ClickToLoadVideo({
   title,
   durationSeconds,
@@ -79,11 +92,10 @@ export function ClickToLoadVideo({
    */
   useEffect(() => {
     setScripted(true)
-    // The offset the address bar is asking for, which only exists once a
-    // transcript timestamp has put it there. Read after hydration, so the
-    // route stays prerendered and the markup the server sent still matches.
-    setOffset(resolveStart())
-  }, [])
+    // Read after hydration, so the route stays prerendered and the markup the
+    // server sent still matches what the browser first renders.
+    setOffset(startSeconds && startSeconds > 0 ? Math.floor(startSeconds) : startFromLocation())
+  }, [startSeconds])
 
   useEffect(() => {
     if (activated) iframeRef.current?.focus()
@@ -131,10 +143,7 @@ export function ClickToLoadVideo({
     if (typeof startSeconds === 'number' && startSeconds > 0) {
       return Math.floor(startSeconds)
     }
-    if (typeof window === 'undefined') return 0
-    const raw = new URLSearchParams(window.location.search).get('t')
-    const parsed = raw === null ? Number.NaN : Number.parseInt(raw, 10)
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+    return startFromLocation()
   }
 
   /**
