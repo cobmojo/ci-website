@@ -63,7 +63,7 @@ const VISUAL_SPEC = /visual\.spec\.ts$/
  * The cross-browser and deployed-preview set: origin-agnostic, reads nothing
  * from `.next`, and asserts the flows an engine can actually differ on.
  */
-const SMOKE_SPECS = [/smoke\.spec\.ts$/, /security-headers\.spec\.ts$/]
+const SMOKE_SPECS = [/smoke\.spec\.ts$/, /security-headers\.spec\.ts$/, /seo\.spec\.ts$/]
 /** Everything that is neither focused nor origin-agnostic. */
 const FOCUSED_SPECS = [A11Y_SPEC, GEOMETRY_SPEC, SETUP_SPEC, VISUAL_SPEC]
 
@@ -249,6 +249,17 @@ export default defineConfig({
         timeout: 2 * 60 * 1000,
         stdout: 'pipe',
         stderr: 'pipe',
-        env: { FEEDBACK_STORE_DIR },
+        /*
+         * `next start` runs with `NODE_ENV=production`, and the filesystem
+         * store refuses to accept a write in production unless somebody has
+         * declared that its directory survives a restart. For this run that is
+         * true and checkable: the directory is created above, outlives the
+         * server process, and is thrown away with the temp dir afterwards.
+         *
+         * Without the declaration the endpoint disables itself, and the
+         * correction flow the suite exercises answers with no receipt — a
+         * green build serving a form that silently does nothing.
+         */
+        env: { FEEDBACK_STORE_DIR, FEEDBACK_STORE_DURABLE: '1' },
       },
 })

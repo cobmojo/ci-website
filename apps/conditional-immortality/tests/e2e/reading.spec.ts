@@ -194,11 +194,18 @@ test('a visitor can find every section that uses Matthew 10:28', async ({ page }
 test('a visitor can locate the source behind an early church claim', async ({ page }) => {
   await page.goto('/case/roadblocks/tradition/')
 
-  const citation = page.getByRole('link', { name: /^Source: Irenaeus of Lyons/ }).first()
+  const citation = page
+    .getByRole('link', { name: /Source: Irenaeus of Lyons\. Against Heresies/ })
+    .first()
   await expect(citation).toBeVisible()
-  // The citation itself carries the locator, so a reader knows where to look
-  // before they follow it.
-  await expect(citation).toHaveAccessibleName(/Book II, chapter 34, section 3/)
+  /*
+   * The accessible name leads with the *visible* marker and only then gives the
+   * full citation. That order is WCAG 2.2 SC 2.5.3 Label in Name: someone
+   * saying "click Lyons, Book Two" must be saying something their speech
+   * software can match against the control's name. Asserting the leading
+   * anchor, not just containment, is what stops the order silently reverting.
+   */
+  await expect(citation).toHaveAccessibleName(/^Lyons, Book II, chapter 34, section 3\. Source: /)
 
   await citation.click()
   await expect(page).toHaveURL(/\/sources\/#irenaeus-against-heresies$/)
@@ -358,10 +365,18 @@ test('a visitor can submit a correction for S04', async ({ page }, testInfo) => 
 
   await form.getByRole('button', { name: 'Send submission' }).click()
 
-  const receipt = page.getByText(/Received\./)
-  await expect(receipt).toBeVisible()
-  await expect(receipt.locator('xpath=..')).toContainText('Your submission has been recorded')
-  await expect(receipt.locator('xpath=..').getByRole('link', { name: 'changelog' })).toBeVisible()
+  /*
+   * Scoped to the live region on purpose. The page carries a second, identical
+   * receipt in `#submission-received`: the no-JavaScript fallback, revealed by
+   * `:target` when the native form post redirects to it. Both are real and both
+   * say "Received.", so an unscoped match finds two elements and resolves to
+   * the hidden one. This asserts the scripted path, which is the one the click
+   * above took.
+   */
+  const status = page.locator('[aria-live="polite"]').filter({ hasText: 'Received.' })
+  await expect(status.getByText(/Received\./)).toBeVisible()
+  await expect(status).toContainText('Your submission has been recorded')
+  await expect(status.getByRole('link', { name: 'changelog' })).toBeVisible()
 
   // A recorded submission clears the field, so the same text cannot be sent twice
   // by accident.

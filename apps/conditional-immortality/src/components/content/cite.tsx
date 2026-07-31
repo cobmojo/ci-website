@@ -15,7 +15,16 @@ export function Cite({ id, locator }: { id: string; locator?: string }) {
     )
   }
 
-  const label = locator ? `${formatCitation(source)}. ${locator}` : formatCitation(source)
+  /*
+   * `formatCitation` already ends with the source's own locator when it has
+   * one. Appending an identical `locator` prop on top of that said the same
+   * words twice inside one citation, and a third time in the marker that leads
+   * the accessible name — so a screen reader read "Book II, chapter 34,
+   * section 3" three times for a single footnote. A locator that genuinely
+   * narrows the source (a page within a book cited whole) is still appended.
+   */
+  const citation = formatCitation(source)
+  const label = locator && locator !== source.locator ? `${citation}. ${locator}` : citation
 
   /**
    * The visible marker, built once and used twice.

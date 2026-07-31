@@ -55,7 +55,7 @@ export default function PrivacyPage() {
                 <li>
                   The search box in the header matches inside your browser, and nothing you type
                   into it leaves your device. The full search page is an ordinary page request, so
-                  its address — which contains your query — reaches this server like any other.
+                  its address, which contains your query, reaches this server like any other.
                 </li>
                 <li>
                   The correction form is the only place the site receives anything, and only what
@@ -136,9 +136,9 @@ export default function PrivacyPage() {
                 is fair to say so plainly. It is an ordinary page: your query is part of its web
                 address, so it reaches this server the way every address you visit does. That is
                 what lets a result page be linked, bookmarked and shared, and what lets search work
-                with scripting switched off. Nothing is done with it — no query is logged by this
-                application, counted, analysed or kept — but it does leave your browser, and a claim
-                that it does not would be untrue.
+                with scripting switched off. Nothing is done with it: no query is logged by this
+                application, counted, analysed or kept. It does leave your browser, though, and a
+                claim that it does not would be untrue.
               </p>
               <p className="m-0">
                 If you would rather a query never left your device, use the search box in the header
