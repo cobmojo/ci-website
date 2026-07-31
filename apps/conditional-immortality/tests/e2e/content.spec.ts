@@ -415,6 +415,10 @@ test.describe('the correction form without scripting', () => {
   test('carries the section and the type a reader arrived with', async ({ page }) => {
     await page.goto('/corrections/?section=S04&heading=the-text&type=broken-link#form')
 
+    // Every feedback link on the site ends in `#form`. The link checker cannot
+    // see this page any more — it renders on demand, so there is no file for it
+    // to read — so the anchor is asserted here instead.
+    await expect(page.locator('#form')).toHaveCount(1)
     await expect(page.locator('input[name="sectionId"]')).toHaveValue('S04')
     await expect(page.locator('input[name="headingId"]')).toHaveValue('the-text')
     await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')

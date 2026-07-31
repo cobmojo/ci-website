@@ -995,6 +995,25 @@ the same id treatment and stay out of "On this page". Listing every aside
 would change what a contents list is for, which is an editorial decision
 rather than a correction.
 
+Two consequences of that fix were caught by the chain rather than a sweep, and
+both were about measuring the right thing:
+
+- **The link check called every feedback link broken.** It walks built HTML
+  files, and `/corrections/` no longer produces one, so 290-odd links to it
+  failed. It already carries a list of routes that legitimately have no static
+  file — `/search/`, `/og`, the download handlers — and `/corrections/` has
+  joined it for the same reason. The `#form` anchor those links end in is no
+  longer covered by that check, so an end-to-end assertion covers it instead.
+- **An axe route was failing intermittently on a contrast ratio nothing
+  renders.** `/sources/` reported 4.14:1 on the filter panel at the mobile
+  viewport, against a 4.5:1 threshold. The settled colours give 6.26:1; axe was
+  sampling 83% of the way through the panel's Tier 3 `reveal-fade`, and the
+  implied alpha was identical to three decimal places on all three channels,
+  which is compositing rather than a colour. The suite now waits for arrival
+  animations to finish before measuring. That is the honest measurement, not a
+  softened one: the settled state is the only state a reader ever sees, and
+  the intermittency was hiding whether the route passed at all.
+
 The documentation findings are recorded in the commit that fixes them. The
 worst was that the README still carried the sentence sweep 6 disproved —
 "Search runs in the browser and no query is transmitted" — because that sweep

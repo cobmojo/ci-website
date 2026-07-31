@@ -162,11 +162,36 @@ function headingSkips(headings: { level: number; text: string }[]): string[] {
   return skips
 }
 
+/**
+ * Let every arrival animation finish before measuring.
+ *
+ * Colour contrast is computed from what is composited on screen, so an element
+ * sampled part-way through a fade is measured at partial opacity and reports a
+ * ratio nothing will ever render at. `/sources/` failed intermittently this
+ * way: axe caught the filter panel at 83% through its Tier 3 `reveal-fade` and
+ * reported 4.14:1 for text that settles at 6.26:1. The implied alpha was
+ * identical to three decimals on all three channels, which is compositing, not
+ * a colour.
+ *
+ * Waiting is the honest measurement, not a softened one — the settled state is
+ * the only state a reader ever sees.
+ */
+async function settle(page: Page): Promise<void> {
+  await page.waitForLoadState('domcontentloaded')
+  await page
+    .evaluate(() =>
+      Promise.all(
+        document.getAnimations().map(animation => animation.finished.catch(() => undefined)),
+      ),
+    )
+    .catch(() => undefined)
+}
+
 test.describe('axe-core, WCAG 2.0 / 2.1 / 2.2 level AA', () => {
   for (const route of ROUTES) {
     test(`reports no violations on ${route}`, async ({ page }) => {
       await page.goto(route)
-      await page.waitForLoadState('domcontentloaded')
+      await settle(page)
       expect(await axeViolations(page)).toEqual([])
     })
   }
