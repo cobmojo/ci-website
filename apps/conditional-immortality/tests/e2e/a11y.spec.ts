@@ -35,6 +35,9 @@ const ROUTES: readonly string[] = [
   '/glossary/',
   '/topics/gehenna/',
   '/full-case/',
+  // The accessibility statement names this page as one the axe suite covers,
+  // so it is covered.
+  '/accessibility/',
   NOT_FOUND_ROUTE,
 ]
 

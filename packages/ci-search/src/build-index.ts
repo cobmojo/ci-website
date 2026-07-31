@@ -242,7 +242,14 @@ const STATIC_PAGE_DOCS: SearchDoc[] = [
     breadcrumb: 'Start',
     summary:
       'A short orientation: what conditional immortality claims, how it differs from eternal conscious torment and from universal reconciliation, and where to begin reading.',
-    headings: ['The position in brief', 'The six main claims', 'An essential reading path'],
+    headings: [
+      'What conditional immortality is',
+      'How it differs from the two neighbouring views',
+      'A cumulative case, not one isolated proof text',
+      'The six principal claims',
+      'The essential reading path',
+      'Other ways in',
+    ],
     scriptureRefs: [],
     body: 'orientation summary three minutes what is conditional immortality compare the views case map essential reading path cumulative case',
     notes: '',

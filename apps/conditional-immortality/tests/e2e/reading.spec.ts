@@ -148,7 +148,10 @@ test('a modified click on a quick-search result leaves the dialog standing', asy
   const dialog = page.getByRole('dialog', { name: 'Search this site' })
   await dialog.getByRole('searchbox', { name: 'Search terms' }).fill('gehenna')
 
-  const firstResult = dialog.getByRole('link').first()
+  // Scoped to the result list. An unscoped query resolves to the footer link
+  // until the index arrives, and that link shares this handler, so the test
+  // would pass green while never touching the row wiring it is named for.
+  const firstResult = dialog.locator('.quick-search-results').getByRole('link').first()
   await expect(firstResult).toBeVisible()
   await firstResult.click({ modifiers: ['ControlOrMeta'] })
 

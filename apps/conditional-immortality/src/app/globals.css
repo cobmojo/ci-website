@@ -949,7 +949,7 @@
    * and its "View original" links printed as bare words with no destination,
    * which is the one thing a printed citation cannot afford.
    */
-  main a[href^="http"]::after {
+  main a[href^="http"]:not([data-print-url="shown"])::after {
     content: " (" attr(href) ")";
     font-size: 0.82em;
     word-break: break-all;
@@ -975,6 +975,17 @@
   .print-section-break {
     break-before: page;
     page-break-before: always;
+  }
+
+  /* A scrolling region cannot scroll on paper. Let the table find its own
+     width and wrap inside the printed column instead of being clipped at the
+     edge with nothing to show that anything was lost. */
+  .table-scroll {
+    overflow-x: visible !important;
+  }
+
+  .table-scroll :is(th, td) {
+    min-width: 0 !important;
   }
 
   details {

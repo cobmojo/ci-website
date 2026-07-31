@@ -183,7 +183,9 @@ export default function FullCasePage() {
                   {source.url ? (
                     <>
                       <br />
-                      <NewTabLink href={source.url}>{source.url}</NewTabLink>
+                      <NewTabLink href={source.url} showsUrl>
+                        {source.url}
+                      </NewTabLink>
                     </>
                   ) : null}
                 </li>

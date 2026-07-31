@@ -518,7 +518,9 @@ function FeedbackFormFields({
                   name={field.name}
                   type="url"
                   inputMode="url"
-                  autoComplete="url"
+                  // Not `autoComplete="url"`: that token means the person's
+                  // own home page, and this field is a citation.
+                  autoComplete="off"
                   value={field.state.value}
                   onChange={event => field.handleChange(event.target.value)}
                   onBlur={field.handleBlur}

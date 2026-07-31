@@ -13,13 +13,26 @@ export function NewTabLink({
   href,
   className,
   children,
+  showsUrl = false,
 }: {
   href: string
   className?: string
   children: ReactNode
+  /**
+   * True when the visible text is already the address. Print appends the
+   * destination after every external link so a paper copy stays checkable;
+   * a link that shows its own URL would otherwise print it twice.
+   */
+  showsUrl?: boolean
 }) {
   return (
-    <a href={href} rel="noopener noreferrer" target="_blank" className={className}>
+    <a
+      href={href}
+      rel="noopener noreferrer"
+      target="_blank"
+      className={className}
+      data-print-url={showsUrl ? 'shown' : undefined}
+    >
       {children}
       <span className="sr-only"> (opens in a new tab)</span>
     </a>

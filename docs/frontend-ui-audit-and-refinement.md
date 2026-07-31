@@ -441,7 +441,7 @@ against a production build.
 | `bun run content:validate` | Pass |
 | `bun run content:audit` | Pass, ledger exports unchanged |
 | `bun run content:docs` | Pass |
-| `bun run test` | **815 unit tests pass** on the merged tree (281 at the audit base; this branch added 28: button contract ×3, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×7, modified click ×7; the balance arrived with PR #5's merge) |
+| `bun run test` | **818 unit tests pass** on the merged tree (281 at the audit base; this branch added 31: button contract ×4, motion contract ×2, feedback schema ×5, heading demotion ×4, orientation copy ×7, modified click ×7, scroll-table naming ×2; the balance arrived with PR #5's merge) |
 | `bun run build` | Pass, 129 static pages |
 | `bun run content:pii` | Pass: no source contact details in 1,753 built or 295 committed files |
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
@@ -638,6 +638,44 @@ deterministic.
   now asserts that following the link closes the dialog, then checks the
   field on the page itself, which is what it was always claiming.
 
+### Gap sweep 4 (completed tree)
+
+Six angles over the tree at `29245d4`. Fourteen findings confirmed, three
+refuted. Two were regressions from sweep 3, and both were caught by verifiers
+that measured rather than reasoned:
+
+- **Printed addresses were doubling.** Sweep 3 widened the print rule that
+  appends a link's destination from `.prose-article` to `main`, which fixed
+  the sources-cited lists but caught the links whose visible text is already
+  the address, so the `/full-case/` bibliography, the `/sources/` index and
+  the video note printed every URL twice. `NewTabLink` now marks those five
+  links, and the rule skips them; the citation links that motivated the
+  widening keep their destinations.
+- **A test that could pass without testing anything.** The modified-click
+  test picked its target with an unscoped role query, and until the 610 kB
+  index arrives the only link in the dialog is the footer one, which shares
+  the same handler. A verifier proved it by delaying the index: past about
+  150 ms the test clicked the footer link, exercised none of the row wiring
+  it is named for, and still passed. It is now scoped to the result list.
+- **Search pagination past the end** rendered an empty list beneath a count
+  promising results, with a Previous chain walking back from a page that does
+  not exist. An out-of-range `?page=` now redirects to the last real page.
+- **Closed disclosures and wide tables on paper.** A scrolling region cannot
+  scroll on paper, so anything past the printed column was clipped with
+  nothing to show it had gone; print now lets those tables wrap.
+- **Search invented and missed matches on `/start/`.** Its hand-authored
+  search document listed three headings, two of which name text the page does
+  not contain. It now lists the six headings the page actually renders.
+- **A caption-less table announced itself as "Table".** A GFM pipe table
+  cannot carry a caption, so the wrapper now falls back to the heading it
+  sits under, which is what a reader would call it. Two unit tests cover the
+  fallback and its precedence.
+- **The accessibility statement said the axe suite covers that page**, and it
+  did not. The page is now in the suite rather than the claim being softened.
+- **The correction form asked browsers for the wrong thing.**
+  `autoComplete="url"` is the autofill token for the reader's own home page,
+  on a field that asks for a citation.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch
@@ -674,7 +712,7 @@ validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
 `test:a11y` 64 tests (63 + 1 axe timing flake retried green), 0 failures;
 `test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
 (67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
-Total automated coverage on the merged tree: 1,260 tests.
+Total automated coverage on the merged tree: 1,263 tests.
 
 **Review threads**: the automated review on the first commit raised two P2
 findings (permalink loss on demoted headings; component-rendered headings

@@ -71,6 +71,30 @@ describe('rehypeScrollableTables', () => {
     expect(fromJsx.properties['aria-label']).toBe('Views compared')
   })
 
+  it('falls back to the heading above a caption-less table', () => {
+    // A GFM pipe table cannot carry a caption, so the heading it sits under
+    // is the name a reader would give it.
+    const heading = {
+      type: 'element',
+      tagName: 'h2',
+      properties: {},
+      children: [{ type: 'text', value: 'The early evidence, set out' }],
+    }
+    const wrapper = wrapperOf(run([heading, markdownTable()]), 1)
+    expect(wrapper.properties['aria-label']).toBe('The early evidence, set out')
+  })
+
+  it('prefers a caption over the heading above it', () => {
+    const heading = {
+      type: 'element',
+      tagName: 'h2',
+      properties: {},
+      children: [{ type: 'text', value: 'A section heading' }],
+    }
+    const wrapper = wrapperOf(run([heading, markdownTable([caption('Views compared')])]), 1)
+    expect(wrapper.properties['aria-label']).toBe('Views compared')
+  })
+
   it('collapses whitespace in a caption spread over several lines', () => {
     const wrapper = wrapperOf(run([markdownTable([caption('  Views \n  compared  ')])]))
     expect(wrapper.properties['aria-label']).toBe('Views compared')

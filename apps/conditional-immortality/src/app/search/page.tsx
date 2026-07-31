@@ -10,6 +10,7 @@ import {
 import { buttonVariants } from '@ci/ui'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/article/article-chrome'
 import { SearchEmptyState, SearchResultsList } from '@/components/search/search-results'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
@@ -93,6 +94,14 @@ export default async function SearchPage({
     }
     return `/search/?${next.toString()}`
   }
+
+  /*
+   * A hand-typed or stale `?page=` past the end would otherwise render an
+   * empty list beneath a count promising results, with a Previous chain
+   * walking back from a page that does not exist. Sending the reader to the
+   * last real page keeps the URL shareable and the screen truthful.
+   */
+  if (query && page > totalPages) redirect(buildHref({ page: String(totalPages) }))
 
   return (
     <>
