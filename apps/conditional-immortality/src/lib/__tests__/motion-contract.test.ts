@@ -375,8 +375,12 @@ describe('animation craft', () => {
   })
 
   it('scales presses down, and only slightly', () => {
-    const press = css.slice(css.indexOf('.pressable'))
-    const match = press.match(/scale:\s*([0-9.]+)/)
+    // Read out of the rule, not out of the rest of the file. This sliced from
+    // the first `.pressable` to EOF and took the first `scale:` anywhere in it,
+    // so deleting the press affordance outright left it reading `scale: 0.98`
+    // off `.overlay-panel`, an unrelated Tier 3 arrival, and passing under the
+    // message "the press affordance has no scale".
+    const match = withoutComments(css).match(/\.pressable:active\s*\{[^}]*\bscale:\s*([0-9.]+)/)
     expect(match, 'the press affordance has no scale').not.toBeNull()
     const factor = Number.parseFloat(match?.[1] ?? 'NaN')
     expect(factor).toBeLessThan(1)
@@ -486,6 +490,13 @@ describe('print', () => {
     expect(print).toMatch(
       /details:not\(\[class~="print:hidden"\]\)\s*\{\s*display:\s*block\s*!important/,
     )
-    expect(print).toMatch(/display:\s*revert\s*!important/)
+    // Pinned to its selector too. Written as a bare `display: revert`, any rule
+    // in the print block satisfied it: moving the declaration onto
+    // `.site-footer > *` left this green while the children of a collapsed
+    // disclosure kept the browser's `display: none` on paper, which is the
+    // regression this test is named for.
+    expect(print).toMatch(
+      /details\[open\]\s*>\s*\*,\s*details\s*>\s*\*\s*\{\s*display:\s*revert\s*!important/,
+    )
   })
 })

@@ -134,7 +134,21 @@ describe('the Scripture index against the pages it indexes', () => {
     // repeats, which is what makes the comparison mean something.
     const blocksIn = (body: string) => body.split('<Scripture').length - 1
     const written = [...BODIES.values()].reduce((total, body) => total + blocksIn(body), 0)
-    expect(written, 'the corpus stopped setting Scripture out in blocks').toBeGreaterThan(150)
+    /*
+     * Pinned, not floored.
+     *
+     * `> 150` against 189 blocks is the same shape as the `> 20` this replaced
+     * and as the `BODIES.size > 30` two tests above: true of the corpus and
+     * true of a corpus missing 38 of them. The per-page equality below cannot
+     * compensate, because both of its sides are derived from the same
+     * `<Scripture` token — a page that stops writing them scores 0 === 0 and
+     * the coverage check simply iterates nothing for it. Deleting the blocks
+     * from RB2, RB3 and S06 leaves 154, which cleared the floor.
+     *
+     * So the count is recorded. Adding or removing a quotation is a content
+     * decision and updating this line is part of making it.
+     */
+    expect(written, 'the number of Scripture blocks in the corpus changed').toBe(189)
 
     const unparsed: string[] = []
     for (const [id, body] of BODIES) {

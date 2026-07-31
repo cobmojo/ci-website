@@ -2002,6 +2002,52 @@ exposed no `citedBy` disagreement in either direction, `extractHeadings` matches
 `github-slugger` on all 40 bodies with zero mismatches, and the `/passages/`
 sentence rewritten last sweep is accurate.
 
+### Gap sweep 21 (follow-up branch)
+
+One finder, pointed at sweep 20's commit. Four findings, all inside it. **Not
+clean.** The first is the worst kind: a false claim introduced by the sweep that
+was correcting false claims.
+
+- **"The arrival time is what the retention promise is measured against" is not
+  true.** The promise on both pages is deletion "within twenty-four months of
+  being **resolved**", and no resolution timestamp is stored: `status` is typed
+  `'new'`, written as the literal `'new'`, and nothing in the repository ever
+  rewrites the record. `reviewedAt` exists in the schema and no code path writes
+  it. So the clock the promise names does not start anywhere, and the sweep that
+  added `createdAt` to the published lists justified it with a sentence that is
+  false. Both pages now say what the three fields are for and claim nothing
+  about which one measures the promise. **That the promise cannot presently be
+  administered from the stored record at all is a real finding and is left**: it
+  needs either a resolution timestamp or a different promise, and both are the
+  author's call.
+- **`scales presses down, and only slightly` sliced to the end of the file.**
+  It took the first `scale:` after the first `.pressable`, so deleting the press
+  affordance outright left it reading `scale: 0.98` off `.overlay-panel`, an
+  unrelated Tier 3 arrival, and passing under the message "the press affordance
+  has no scale". Read out of the rule now, and confirmed failing when the rule
+  is deleted. This is the third end-of-file slice found in this one file, the
+  previous two having been fixed the sweep before under a comment explaining the
+  hazard.
+- **The second print assertion was pinned to nothing.** Its neighbour is pinned
+  to an exact selector, with a comment saying why; this one matched a bare
+  `display: revert !important` anywhere in the block, so moving the declaration
+  onto `.site-footer > *` left it green while the children of a collapsed
+  disclosure kept `display: none` on paper — the regression the test is named
+  for. Pinned to its selector, and confirmed failing against that move.
+- **The corpus floor was carried over verbatim** at `> 150` against 189 blocks:
+  the same shape as the `> 20` it replaced and the `BODIES.size > 30` two tests
+  above, both of which this file's own comments condemn. The per-page equality
+  cannot compensate, because both its sides derive from the same `<Scripture`
+  token, so a page that stops writing them scores 0 = 0 and the coverage check
+  iterates nothing for it. Deleting the blocks from RB2, RB3 and S06 — two of
+  them the pages this file's header names as its motivating failures — leaves
+  154 and clears the floor. The count is recorded now, and changing it is part
+  of making a content decision.
+
+The memo added last sweep is correct, with one caveat recorded: its docblock
+says the ids cannot change without a rebuild, which is false under `next dev`,
+where every other page picks up an MDX edit on the next request.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

@@ -160,7 +160,7 @@ export default async function CorrectionsPage({
                 </li>
                 <li>
                   The time it arrived, a reference for it, and its place in the queue, added by the
-                  server. The arrival time is what the deletion promise below is measured against.
+                  server, so that a submission can be found, answered and deleted.
                 </li>
                 <li>
                   Your network address is used only to limit how many submissions one connection can

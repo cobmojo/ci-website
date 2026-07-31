@@ -202,8 +202,8 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   <strong>Added by the server:</strong> the time the submission arrived, a reference
-                  for it, and its place in the queue. The arrival time is what the retention promise
-                  below is measured against, so it has to be kept for that promise to mean anything.
+                  for it, and its place in the queue. Nothing about you is derived from any of the
+                  three; they exist so that a submission can be found, answered and deleted.
                 </li>
               </ul>
               <p className="m-0 mb-3">
