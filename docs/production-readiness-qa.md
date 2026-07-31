@@ -507,6 +507,47 @@ Safari and neither is described as Safari; the manual Safari procedure is in
 | Search index | 624 kB, fetched once on search intent |
 | Third-party requests before video activation | 0 |
 
+## Verification
+
+Every command below was run on the final commit, from a tree with no
+uncommitted changes, and the tree was clean afterwards.
+
+| Command | Result |
+|---|---|
+| `bun install --frozen-lockfile` | exit 0, 594 packages |
+| `CI=1 bun run validate` | exit 0, **twice consecutively** |
+| `bun run test:coverage` | exit 0, all thresholds met |
+| `bun run test:browser` | exit 0, **570 passed, twice consecutively** |
+| `bun run content:links:external` | exit 0, every published citation answered |
+| GitHub Actions | green on the head commit: Validate and Visual regression |
+
+**Burn-in, retries disabled.** The interaction-heavy specs — search, motion,
+print and the cross-engine smoke set — at `--repeat-each=3` across both
+Chromium projects: **463 passed**. The motion suite at `--repeat-each=5` after
+its sampling race was fixed: **191 passed**. No flake was answered with a
+retry; each of the four found during this pass was root-caused instead:
+
+- a foreign server on a shared port (INFRA-1);
+- axe measuring a colour mid-fade;
+- a skip-link assertion sampling one instant of a transition, in two files;
+- two search boxes existing for a moment during a client-side navigation.
+
+One test remains sensitive to a heavily loaded machine: `geometry-webkit`
+timed out once at 180 seconds inside an artificial triple-repeat burn-in with
+four projects competing, and passed in every ordinary run including both
+consecutive full matrices and CI. It is recorded here rather than tuned away,
+because raising a timeout to make a burn-in green is how a real race gets
+hidden.
+
+**What CI runs, and passes:** formatting, lint, typecheck (including the eleven
+scripts and nine Playwright files that were outside every tsconfig until this
+pass), content validation, the content audit, the documentation path check,
+938 unit tests, the production build, the PII scan, the internal link check,
+the canonical-origin check, the bundle budget, coverage against its thresholds,
+the generated-file drift check, end-to-end on desktop and mobile, accessibility
+at both viewports, cross-engine smoke in Firefox and WebKit, text geometry in
+three engines, and visual regression inside the pinned Playwright container.
+
 ## External launch decisions
 
 These are not code, and none of them is marked done.
