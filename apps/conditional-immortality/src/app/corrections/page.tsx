@@ -157,9 +157,9 @@ export default function CorrectionsPage() {
               <p className="m-0">
                 <strong className="font-semibold text-deny">Not saved.</strong> Nothing was stored,
                 and because your browser reloaded this page the form below is empty again. Either a
-                field was not accepted — the message needs at least twenty characters, and a source
-                address needs to begin with http:// or https:// — or the site could not write the
-                submission down. We are sorry to ask you to type it again.
+                field was not accepted, or the site could not write the submission down. A message
+                needs at least twenty characters, and a source address has to begin with http:// or
+                https://. We are sorry to ask you to type it again.
               </p>
             </div>
 

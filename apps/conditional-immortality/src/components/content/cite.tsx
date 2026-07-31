@@ -46,7 +46,7 @@ export function Cite({ id, locator }: { id: string; locator?: string }) {
     <a
       href={`/sources/#${source.id}`}
       className="ml-0.5 font-sans text-[0.72em] align-super no-underline text-copper-deep hover:underline"
-      aria-label={`${marker}. Source: ${formatCitation(source)}`}
+      aria-label={`${marker}. Source: ${formatCitation(source, { includeLocator: false })}`}
       title={label}
     >
       [{marker}]
