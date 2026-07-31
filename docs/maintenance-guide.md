@@ -57,11 +57,43 @@ PLAYWRIGHT_BASE_URL=… bun run test:preview  # the smoke set against a deployme
 bun run test:e2e           # desktop and mobile end-to-end
 bun run test:a11y          # axe plus structural accessibility
 bun run test:text-geometry # Pretext against real browser layout, three engines
-bun run test:browser       # all four of the above
+bun run test:interaction   # interaction latency, measured as INP is defined
+bun run test:browser       # all five of the above
 ```
 
 `content:pii` and `content:links` read the build output, so run `bun run build`
 first. The browser suites build it themselves.
+
+## Measuring performance and technical SEO
+
+Deliberately outside the gate. A Lighthouse category score taken on a shared
+runner is noise, and a flaky performance gate teaches people to re-run the
+build; what the gate holds instead is the deterministic *cause* of each thing
+these measure — the prefetch budget, the bundle budget, the interaction
+latencies and the indexability matrix, all inside `test:browser` and
+`validate`.
+
+Each of these starts its own production server on a port of its own and proves
+it is serving the build in `.next` before it says anything about it. Run
+`bun run build` first, and run them one at a time: a benchmark sharing a
+machine with a test suite is measuring the test suite.
+
+```bash
+bun run perf:routes    # the route inventory, and the four sources reconciled
+bun run perf:smoke     # one cold audit of each family's worst route, both modes
+bun run perf:audit     # one cold audit of every HTML route, both modes, gated
+bun run perf:certify   # five cold audits of each family's worst route, gated
+bun run seo:matrix     # what all 120 routes say about themselves, on the wire
+
+# Against a real origin, when one exists:
+bun run perf:deployed -- --base-url https://example.org
+```
+
+Reports land in `reports/`, which is git-ignored. The tracked summary of what
+they found is
+[Performance and technical SEO](performance-and-technical-seo-report.md); read
+it before changing anything in the name of a score, because it records which
+hypotheses were tested and reverted and why.
 
 Playwright needs its browsers once per machine:
 

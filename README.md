@@ -84,6 +84,9 @@ Read these before changing anything substantive.
   withdrawn, narrowed, corrected, and awaiting specialist review.
 - [Rights audit](docs/rights-audit.md). Every category of third-party material
   and the basis on which it is used.
+- [Performance and technical SEO](docs/performance-and-technical-seo-report.md).
+  What Lighthouse measures here, what was optimised, what was tried and
+  reverted, and where the remaining mobile shortfall comes from.
 
 ## Two things that are load-bearing
 

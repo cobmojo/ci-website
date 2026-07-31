@@ -163,6 +163,14 @@ try {
         })
         results.push(result)
         const m = result.metrics
+        if (m.runtimeError) {
+          console.log(
+            `  [${String(index).padStart(String(total).length)}/${total}] ` +
+              `${mode.padEnd(7)} ${record.route.padEnd(46)} ` +
+              `LIGHTHOUSE COULD NOT MEASURE THIS PAGE — ${m.runtimeError}`,
+          )
+          continue
+        }
         const elapsed = ((Date.now() - started) / 1000).toFixed(0)
         console.log(
           `  [${String(index).padStart(String(total).length)}/${total} ${elapsed}s] ` +
@@ -204,6 +212,7 @@ interface RouteSummary {
   readonly lcpElement: string | null
   readonly failedAudits: readonly string[]
   readonly consoleErrors: readonly string[]
+  readonly runtimeErrors: readonly string[]
 }
 
 const METRIC_KEYS = [
@@ -263,6 +272,9 @@ for (const record of routes) {
       scores,
       metrics,
       lcpElement: group[0]?.metrics.lcpElement ?? null,
+      runtimeErrors: [
+        ...new Set(group.map(r => r.metrics.runtimeError).filter(Boolean)),
+      ] as string[],
       failedAudits: [...new Set(group.flatMap(r => r.metrics.failedAudits))].sort(),
       consoleErrors: [...new Set(group.flatMap(r => r.metrics.consoleErrors))],
     })
@@ -330,6 +342,18 @@ for (const summary of summaries) {
   const where = `${summary.route} (${summary.mode})`
   const s = summary.scores
   const indexable = summary.kind === 'indexable-html'
+
+  /*
+   * A run that could not measure the page is not a score of zero. Reported
+   * first and on its own, so it is never averaged into a median or read as a
+   * very slow page.
+   */
+  if (summary.runtimeErrors.length > 0) {
+    for (const error of summary.runtimeErrors) {
+      problems.push(`${where}: Lighthouse could not measure this page — ${error}`)
+    }
+    continue
+  }
 
   /*
    * Accessibility, best practices and SEO are deterministic: the audits behind

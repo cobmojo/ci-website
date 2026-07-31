@@ -296,6 +296,16 @@ export interface Metrics {
   readonly lcpPhases: Readonly<Record<string, number>> | null
   readonly failedAudits: readonly string[]
   readonly consoleErrors: readonly string[]
+  /**
+   * Lighthouse could not measure the page at all.
+   *
+   * Without this a run that failed to load reports a performance score of
+   * zero, which is indistinguishable in a summary table from a page that is
+   * catastrophically slow. Five audits in the first whole-site sweep came back
+   * as zeros and it took a second run to find out why, because the reports had
+   * not been kept. A run that measured nothing has to say so.
+   */
+  readonly runtimeError: string | null
 }
 
 export interface AuditResult {
@@ -326,6 +336,8 @@ type LhrAudit = {
 type Lhr = {
   lighthouseVersion: string
   fetchTime: string
+  runtimeError?: { code: string; message: string }
+  runWarnings?: string[]
   environment: { benchmarkIndex: number; hostUserAgent: string }
   categories: Record<string, { score: number | null }>
   audits: Record<string, LhrAudit>
@@ -432,6 +444,7 @@ function extract(lhr: Lhr): Metrics {
     lcpPhases: Object.keys(lcpPhases).length ? lcpPhases : null,
     failedAudits,
     consoleErrors,
+    runtimeError: lhr.runtimeError ? `${lhr.runtimeError.code}: ${lhr.runtimeError.message}` : null,
   }
 }
 
@@ -472,7 +485,10 @@ export async function auditRoute(options: {
 
   mkdirSync(outputDir, { recursive: true })
   const reportPath = join(outputDir, `${slug(route)}.${mode}.${run}.json`)
-  if (keepReport) writeFileSync(reportPath, JSON.stringify(lhr))
+  // A failed run's report is kept whatever the caller asked for: it is the only
+  // evidence of why it failed, and the caller who did not ask for reports is
+  // exactly the caller who will not have one.
+  if (keepReport || lhr.runtimeError) writeFileSync(reportPath, JSON.stringify(lhr))
 
   return {
     route,
