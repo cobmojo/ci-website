@@ -1215,6 +1215,60 @@ The same sweep confirmed 2,715 fragment links across 120 routes with none
 broken, the full 38-page previous and next chain, all three search paths, and
 no console error on any journey.
 
+### Gap sweep 12 (completed tree)
+
+Two angles over the tree at `e1d672f`: the newest work read for the recurring
+pattern, and the two readers the site makes explicit promises to and that code
+review cannot simulate — someone printing, and someone with scripting off.
+Eleven findings.
+
+The pattern recurred a seventh time, in the seek added one sweep earlier:
+
+- **The seek was modelled as a value, not a request.** React bails out when the
+  next state equals the current one, so the frame was never rebuilt whenever
+  the requested offset was the one already held. That is two of the commonest
+  requests there are: the 0:00 chapter, which matches the initial state, and
+  pressing any timestamp a second time to hear a passage again. Both did
+  nothing, silently, while the page scrolled the reader back to the player.
+  **The test written for the fix excluded the broken case by hand** — its
+  comment reads "the opening chapter starts at zero, which appends nothing".
+  A seek now carries a request count that keys the frame.
+- **And the test still could not see it.** Rewritten to count `load` events, it
+  passed against a deliberately reverted build; the only honest observable is
+  node identity, because a repeat seek produces a byte-identical `src`. It
+  marks the element and looks for the mark afterwards, and was confirmed to
+  fail against the reverted build before being accepted.
+
+Two more from the same angle: **the Scripture headings still counted the
+unfiltered index** for every filter that matches something — "New Testament,
+144 references" above two rows — where the previous fix had only handled the
+zero case; and the new empty-state prose sat outside every live region, so a
+screen-reader user heard the count and not the way out.
+
+The print and no-JS reader found five things ten code sweeps had not:
+
+- **The play button silently did nothing without scripting**, on the home page
+  and `/watch/`: an 830x466 control producing no request, no iframe and no
+  explanation. It is a link to the video until the script that can load it in
+  place has run.
+- **`/corrections/` printed a page and a half of dead form controls** —
+  a select, a textarea, three text fields, three radios and "Send submission" —
+  under a statement promising interactive controls are removed from the printed
+  copy. Forms are dropped from print now, and the page prints the address to
+  visit instead.
+- **`/watch/` printed three pages of chapter navigation** addressing a player
+  the same stylesheet removes, and `/changelog/` printed a "Changes by part"
+  nav. Both against the same claim. They were the only two navigation panels
+  that printed.
+- **A glossary term label was left on the page before its list.** Print kept
+  headings with what follows them but not `dt`.
+
+Considered and left: one external link on `/watch/` prints as
+"rethinkinghell.com (https://rethinkinghell.com/)", because the link text is
+the host and print appends the address. The claim that destinations are
+printed after the link text is true, the duplication is mild, and the sibling
+link where it matters — `youtu.be` — genuinely gains the video id from it.
+
 ## 11. PR #5 compatibility
 
 PR #5 (Pretext quick-search excerpts) merged into `main` after this branch

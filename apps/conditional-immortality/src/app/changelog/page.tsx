@@ -93,7 +93,7 @@ export default function ChangelogPage() {
           </section>
 
           {sectionIndex.length > 0 ? (
-            <nav aria-labelledby="by-part" className="mb-12">
+            <nav aria-labelledby="by-part" className="mb-12 print:hidden">
               <h2 id="by-part" className="mt-0 mb-3">
                 Changes by part
               </h2>

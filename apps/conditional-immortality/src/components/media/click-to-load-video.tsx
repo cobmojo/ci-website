@@ -46,7 +46,24 @@ export function ClickToLoadVideo({
   id,
 }: ClickToLoadVideoProps) {
   const [activated, setActivated] = useState(false)
-  const [start, setStart] = useState(0)
+  /**
+   * False on the server and on the first client render, so the markup a
+   * browser receives is a working link rather than a button that needs
+   * scripting. Without this the poster was an 830x466 control that did
+   * nothing at all with JavaScript off: no request, no iframe, no message.
+   */
+  const [scripted, setScripted] = useState(false)
+  /**
+   * A seek is a request, not a value.
+   *
+   * Holding only the offset meant React bailed out whenever the requested
+   * second equalled the one already held, so the `src` was never rewritten and
+   * the frame never reloaded — silently, for the two commonest requests there
+   * are: the 0:00 chapter, which matches the initial state, and pressing any
+   * timestamp a second time to hear a passage again. The counter gives each
+   * request its own identity, and keys the frame so it reloads on every one.
+   */
+  const [seek, setSeek] = useState({ seconds: 0, requests: 0 })
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const frameTitle = title ?? FALLBACK_TITLE
@@ -58,6 +75,8 @@ export function ClickToLoadVideo({
    * body and the reader's place on the page is lost, so focus moves to the
    * player that replaced the control.
    */
+  useEffect(() => setScripted(true), [])
+
   useEffect(() => {
     if (activated) iframeRef.current?.focus()
   }, [activated])
@@ -82,7 +101,7 @@ export function ClickToLoadVideo({
     const onSeek = (event: Event) => {
       const seconds = (event as CustomEvent<unknown>).detail
       if (typeof seconds === 'number' && Number.isFinite(seconds) && seconds >= 0) {
-        setStart(Math.floor(seconds))
+        setSeek(previous => ({ seconds: Math.floor(seconds), requests: previous.requests + 1 }))
       }
     }
     window.addEventListener(VIDEO_SEEK_EVENT, onSeek)
@@ -90,10 +109,11 @@ export function ClickToLoadVideo({
   }, [activated])
 
   /**
-   * Chapter links on the watch page are plain `?t=` links, so a reader who
-   * arrives through one and then presses play should start there. The query is
-   * read at the moment of activation rather than during render, which keeps
-   * the page statically rendered and avoids any hydration mismatch.
+   * Transcript timestamps are `?t=` links, so a reader who arrives through one
+   * and then presses play should start there. The query is read at the moment
+   * of activation rather than during render, which keeps the page statically
+   * rendered and avoids any hydration mismatch. (The chapters nav above the
+   * transcript uses plain `#` anchors and does not come through here.)
    */
   function resolveStart(): number {
     if (typeof startSeconds === 'number' && startSeconds > 0) {
@@ -107,7 +127,7 @@ export function ClickToLoadVideo({
 
   const source = [
     `${siteConfig.video.embedHost}/embed/${siteConfig.video.youtubeId}`,
-    `?autoplay=1&rel=0${start > 0 ? `&start=${start}` : ''}`,
+    `?autoplay=1&rel=0${seek.seconds > 0 ? `&start=${seek.seconds}` : ''}`,
   ].join('')
 
   return (
@@ -118,6 +138,9 @@ export function ClickToLoadVideo({
       <div className="video-embed relative aspect-video w-full overflow-hidden rounded-md border border-border bg-panel print:hidden">
         {activated ? (
           <iframe
+            // Keyed on the request count, so a seek to the offset already
+            // playing still reloads the frame rather than being dropped.
+            key={seek.requests}
             ref={iframeRef}
             src={source}
             title={frameTitle}
@@ -129,47 +152,16 @@ export function ClickToLoadVideo({
             className="video-frame absolute inset-0 h-full w-full border-0"
           />
         ) : (
-          <button
-            type="button"
-            // No aria-label: the visible poster text, including the video's
-            // title and "Press play to load it from YouTube", is the
-            // accessible name, so what a speech-input user reads aloud is
-            // what the control answers to (WCAG 2.5.3).
-            onClick={() => {
-              setStart(resolveStart())
+          <PosterControl
+            scripted={scripted}
+            watchUrl={watchUrl}
+            title={title}
+            durationSeconds={durationSeconds}
+            onPlay={() => {
+              setSeek({ seconds: resolveStart(), requests: 0 })
               setActivated(true)
             }}
-            // `video-play` moves the glyph rather than the poster on hover and
-            // press. Scaling a 16:9 panel would drag its border across the page
-            // and shift everything below it.
-            className="video-play absolute inset-0 flex min-h-11 w-full cursor-pointer flex-col items-center justify-center gap-3 p-5 text-center text-navy hover:bg-panel-strong sm:p-8"
-          >
-            <svg
-              viewBox="0 0 64 64"
-              className="video-play__glyph h-12 w-12 sm:h-16 sm:w-16"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" strokeWidth="1.75" />
-              <path d="M25 19 L47 32 L25 45 Z" fill="currentColor" />
-            </svg>
-            <span className="font-sans text-[0.78rem] font-semibold tracking-[0.14em] text-copper-deep uppercase">
-              Video overview
-            </span>
-            {title ? (
-              <span className="max-w-[36rem] font-sans text-[1.02rem] leading-snug font-medium text-navy-deep sm:text-[1.15rem]">
-                {title}
-              </span>
-            ) : null}
-            <span className="font-sans text-[0.88rem] text-ink-muted">
-              {durationSeconds ? (
-                <>
-                  {formatTimestamp(durationSeconds)} <span aria-hidden="true">·</span>{' '}
-                </>
-              ) : null}
-              Press play to load it from YouTube
-            </span>
-          </button>
+          />
         )}
       </div>
 
@@ -181,5 +173,81 @@ export function ClickToLoadVideo({
         </NewTabLink>
       </p>
     </div>
+  )
+}
+
+/**
+ * The poster, as a button where scripting can load the player in place and as
+ * a link to YouTube where it cannot.
+ *
+ * Same face either way. The difference is that the link works: a reader with
+ * scripting off was previously given a large, inviting control that produced
+ * no request, no iframe and no explanation when pressed.
+ */
+function PosterControl({
+  scripted,
+  watchUrl,
+  title,
+  durationSeconds,
+  onPlay,
+}: {
+  scripted: boolean
+  watchUrl: string
+  title?: string
+  durationSeconds?: number
+  onPlay: () => void
+}) {
+  // `video-play` moves the glyph rather than the poster on hover and press.
+  // Scaling a 16:9 panel would drag its border across the page and shift
+  // everything below it.
+  const className =
+    'video-play absolute inset-0 flex min-h-11 w-full cursor-pointer flex-col items-center justify-center gap-3 p-5 text-center text-navy no-underline hover:bg-panel-strong sm:p-8'
+
+  // No aria-label: the visible poster text, including the video's title and the
+  // line about where it loads from, is the accessible name, so what a speech
+  // input user reads aloud is what the control answers to (WCAG 2.5.3).
+  const face = (
+    <>
+      <svg
+        viewBox="0 0 64 64"
+        className="video-play__glyph h-12 w-12 sm:h-16 sm:w-16"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" strokeWidth="1.75" />
+        <path d="M25 19 L47 32 L25 45 Z" fill="currentColor" />
+      </svg>
+      <span className="font-sans text-[0.78rem] font-semibold tracking-[0.14em] text-copper-deep uppercase">
+        Video overview
+      </span>
+      {title ? (
+        <span className="max-w-[36rem] font-sans text-[1.02rem] leading-snug font-medium text-navy-deep sm:text-[1.15rem]">
+          {title}
+        </span>
+      ) : null}
+      <span className="font-sans text-[0.88rem] text-ink-muted">
+        {durationSeconds ? (
+          <>
+            {formatTimestamp(durationSeconds)} <span aria-hidden="true">·</span>{' '}
+          </>
+        ) : null}
+        {scripted ? 'Press play to load it from YouTube' : 'Watch it on YouTube'}
+      </span>
+    </>
+  )
+
+  if (!scripted) {
+    return (
+      <a href={watchUrl} rel="noopener noreferrer" target="_blank" className={className}>
+        {face}
+        <span className="sr-only"> (opens in a new tab)</span>
+      </a>
+    )
+  }
+
+  return (
+    <button type="button" onClick={onPlay} className={className}>
+      {face}
+    </button>
   )
 }

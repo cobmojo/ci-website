@@ -63,7 +63,20 @@ export function FocusOnArrivalLink({
       // A middle or modified click is opening this somewhere else, and moving
       // focus in the page they are leaving behind would be wrong.
       if (isModifiedClick(event)) return
-      const focus = () => document.getElementById(focusId)?.focus({ preventScroll: true })
+      const focus = () => {
+        const target = document.getElementById(focusId)
+        if (!target) return
+        // The fragment does the scrolling, except when the link points at the
+        // URL already showing — pressing the same timestamp twice — where the
+        // router does nothing at all. Then focus would land wherever the target
+        // happens to be, measured 3,323px above a 900px viewport. Scroll only
+        // when it is genuinely out of view, so this never fights the router.
+        const box = target.getBoundingClientRect()
+        if (box.bottom <= 0 || box.top >= window.innerHeight) {
+          target.scrollIntoView({ block: 'start' })
+        }
+        target.focus({ preventScroll: true })
+      }
       // The target is already in the document, so this lands immediately;
       // the second pass covers a subtree that re-rendered on the new params.
       focus()

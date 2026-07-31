@@ -956,6 +956,15 @@
   .search-trigger,
   .video-embed,
   dialog,
+  /*
+   * A form on paper is a page and a half of empty boxes and a button that
+   * cannot be pressed. The correction form printed exactly that — a select, a
+   * textarea, three text fields, three radios and "Send submission" — under an
+   * accessibility statement promising that interactive controls are removed
+   * from the printed copy. The prose around it, which says what corrections
+   * are for and how they are published, stays.
+   */
+  form,
   [data-print="hide"] {
     display: none !important;
   }
@@ -988,7 +997,11 @@
   h1,
   h2,
   h3,
-  h4 {
+  h4,
+  /* A `dt` is a heading for the list beneath it. Two pages of the glossary
+     carried the tail of an occurrence list with its label left behind on the
+     page before. */
+  dt {
     color: #000 !important;
     break-after: avoid-page;
     page-break-after: avoid;

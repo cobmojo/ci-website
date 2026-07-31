@@ -1,5 +1,5 @@
 import type { APIRequestContext } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 
 /**
  * Content guarantees, checked against what the server actually sends.
@@ -436,6 +436,17 @@ test.describe('the correction form without scripting', () => {
     await expect(page.locator('select[name="type"]')).toHaveValue('broken-link')
   })
 
+  test('offers a video control that works', async ({ page }) => {
+    // The poster was an 830x466 button that produced no request, no iframe and
+    // no explanation when pressed without scripting. It is a link to the video
+    // until the script that can load it in place has run.
+    await page.goto('/watch/')
+    const poster = page.locator('a.video-play')
+    await expect(poster).toBeVisible()
+    await expect(poster).toHaveAttribute('href', /youtu\.be|youtube/)
+    await expect(page.locator('button.video-play')).toHaveCount(0)
+  })
+
   test('carries the section and the type a reader arrived with', async ({ page }) => {
     await page.goto('/corrections/?section=S04&heading=the-text&type=broken-link#form')
 
@@ -481,6 +492,37 @@ test('a collapsed disclosure prints its contents', async ({ page }) => {
   }
 })
 
+test('paper carries no control and no navigation', async ({ page }) => {
+  // `/accessibility/` and `/full-case/` both promise that navigation and
+  // interactive controls are dropped from the printed copy. Three surfaces
+  // were not: the correction form printed a page and a half of empty boxes
+  // under a "Send submission" button, and two navigation panels printed
+  // several pages of links, one of them addressing a player the same
+  // stylesheet removes.
+  await page.emulateMedia({ media: 'print' })
+
+  const tallest = (selector: string) =>
+    page.evaluate(
+      css =>
+        [...document.querySelectorAll(css)].reduce(
+          (max, element) => Math.max(max, element.getBoundingClientRect().height),
+          0,
+        ),
+      selector,
+    )
+
+  await page.goto('/corrections/')
+  expect(await tallest('form, input, select, textarea, button')).toBe(0)
+  // And says where to go instead, since a paper reader cannot use the form.
+  await expect(page.getByText(/\/corrections\/ in a browser/)).toBeVisible()
+
+  await page.goto('/watch/')
+  expect(await tallest('nav[aria-labelledby="chapters-title"]')).toBe(0)
+
+  await page.goto('/changelog/')
+  expect(await tallest('nav[aria-labelledby="by-part"]')).toBe(0)
+})
+
 test('a transcript timestamp seeks a video that is already playing', async ({ page }) => {
   await page.goto('/watch/')
   await page.getByRole('button', { name: /Press play/ }).click()
@@ -491,16 +533,57 @@ test('a transcript timestamp seeks a video that is already playing', async ({ pa
   // for a timestamp yet.
   await expect(player).not.toHaveAttribute('src', /start=/)
 
-  // Not the first: the opening chapter starts at zero, which appends nothing
-  // and would let this pass against a player that never seeks. The href
-  // carries the focus fragment too, so the exclusion has to allow for it.
-  await page.locator('a[href^="?t="]:not([href^="?t=0#"])').first().click()
+  const timestamps = page.locator('a[href^="?t="]')
+  await timestamps.nth(1).click()
 
   // Without this the src came back byte-identical: the video carried on where
   // it was while the page pulled the reader up to the player, and nothing said
   // the seek had not happened.
   await expect(player).toHaveAttribute('src', /[?&]start=\d+/)
+
+  // Twice on the same timestamp, which is what a reader does to hear a passage
+  // again. Modelled as a value rather than a request, the second press set the
+  // state to what it already held, React declined to re-render, and the frame
+  // never reloaded. The count of load events is the only honest witness: the
+  // `src` is identical by design here.
+  const rebuiltOnRepeat = await playerWasRebuilt(page, async () => {
+    await timestamps.nth(1).click()
+  })
+  expect(rebuiltOnRepeat, 'pressing the same timestamp twice did not reload the player').toBe(true)
+
+  // And the opening chapter, whose offset is zero — the value the player
+  // starts life holding, so it was dropped for the same reason. The previous
+  // version of this test excluded it by hand.
+  const rebuiltOnZero = await playerWasRebuilt(page, async () => {
+    await timestamps.first().click()
+  })
+  expect(rebuiltOnZero, 'the 0:00 timestamp did not reload the player').toBe(true)
+  await expect(player).not.toHaveAttribute('src', /[?&]start=/)
 })
+
+/**
+ * Did the player get rebuilt while `act` ran?
+ *
+ * Node identity is the only honest signal here. A repeat seek produces a
+ * byte-identical `src`, so comparing the attribute cannot see it; counting
+ * `load` events cannot either, and a version of this helper that tried was
+ * measured passing against the very defect it was written for. Marking the
+ * element and looking for the mark afterwards asks the real question: did
+ * React tear this frame down and build a new one, which is what makes the
+ * video actually seek.
+ */
+async function playerWasRebuilt(page: Page, act: () => Promise<void>): Promise<boolean> {
+  await page.evaluate(() => {
+    const frame = document.querySelector<HTMLElement>('iframe.video-frame')
+    if (frame) frame.dataset.seekProbe = 'before'
+  })
+  await act()
+  await page.waitForTimeout(600)
+  return page.evaluate(() => {
+    const frame = document.querySelector<HTMLElement>('iframe.video-frame')
+    return Boolean(frame) && frame?.dataset.seekProbe !== 'before'
+  })
+}
 
 test('filtering the Scripture index leaves nothing pointing at hidden sections', async ({
   page,

@@ -153,7 +153,10 @@ export default function ScriptureIndexPage() {
           >
             <h2 id={`${testament.key}-title`} className="mt-0 mb-4 text-[1.3rem]">
               {testament.label}
-              <span className="ml-2 font-sans text-[0.85rem] font-normal text-ink-subtle">
+              <span
+                data-reference-count
+                className="ml-2 font-sans text-[0.85rem] font-normal text-ink-subtle"
+              >
                 {testament.entryCount} {pluralise(testament.entryCount, 'reference')}
               </span>
             </h2>
@@ -168,7 +171,10 @@ export default function ScriptureIndexPage() {
               >
                 <h3 id={`${group.anchor}-title`} className="mt-0 mb-2 text-[1.08rem]">
                   {group.book}
-                  <span className="ml-2 font-sans text-[0.82rem] font-normal text-ink-subtle">
+                  <span
+                    data-reference-count
+                    className="ml-2 font-sans text-[0.82rem] font-normal text-ink-subtle"
+                  >
                     {group.entries.length} {pluralise(group.entries.length, 'reference')}
                   </span>
                 </h3>

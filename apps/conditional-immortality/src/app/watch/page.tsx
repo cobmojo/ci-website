@@ -117,7 +117,11 @@ export default function WatchPage() {
 
           <nav
             aria-labelledby="chapters-title"
-            className="mb-10 rounded-md border border-border bg-paper-raised p-5"
+            // Not on paper: three of the eighteen printed pages were forty
+            // timestamps addressing a player the print stylesheet removes,
+            // against an accessibility statement that says navigation is
+            // dropped from the printed copy.
+            className="mb-10 rounded-md border border-border bg-paper-raised p-5 print:hidden"
           >
             <h2 id="chapters-title" className="mt-0 mb-3 text-[1.12rem]">
               Chapters

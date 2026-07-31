@@ -6,6 +6,7 @@ import { FeedbackForm } from '@/components/feedback/feedback-form'
 import { RelatedPages } from '@/components/navigation/related-pages'
 import { pluralise } from '@/lib/format'
 import { breadcrumbJsonLd, JsonLd, pageMetadata } from '@/lib/metadata'
+import { siteConfig } from '@/lib/site-config'
 
 const CRUMBS: readonly Crumb[] = [
   { href: '/', label: 'Home' },
@@ -134,6 +135,13 @@ export default async function CorrectionsPage({
                 The full statement is on the <Link href="/privacy/">privacy page</Link>.
               </p>
             </div>
+
+            {/* The form itself is dropped from the printed copy, where it
+                would be a page of boxes nobody can fill in. A paper reader
+                still needs to know where to go. */}
+            <p className="m-0 hidden font-sans text-[0.95rem] text-ink-muted print:block">
+              To send a correction, visit {siteConfig.url}/corrections/ in a browser.
+            </p>
 
             <FeedbackForm
               sectionId={one(params.section) ?? one(params.sectionId) ?? ''}
