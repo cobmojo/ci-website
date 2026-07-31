@@ -14,7 +14,7 @@
         "chrome-launcher": "1.2.1",
         "lighthouse": "13.4.1",
         "turbo": "2.10.7",
-        "typescript": "5.9.3",
+        "typescript": "6.0.3",
       },
     },
     "apps/conditional-immortality": {
@@ -49,7 +49,7 @@
         "rehype-slug": "6.0.0",
         "remark-gfm": "4.0.1",
         "tailwindcss": "4.3.3",
-        "typescript": "5.9.3",
+        "typescript": "6.0.3",
         "unist-util-visit": "^5.1.0",
         "vitest": "4.1.10",
       },
@@ -64,7 +64,7 @@
       "devDependencies": {
         "@types/node": "^26",
         "github-slugger": "^2.0.0",
-        "typescript": "5.9.3",
+        "typescript": "6.0.3",
         "vitest": "4.1.10",
       },
     },
@@ -76,7 +76,7 @@
       },
       "devDependencies": {
         "@types/node": "^26",
-        "typescript": "5.9.3",
+        "typescript": "6.0.3",
         "vitest": "4.1.10",
       },
     },
@@ -89,7 +89,7 @@
       },
       "devDependencies": {
         "@types/node": "^26",
-        "typescript": "5.9.3",
+        "typescript": "6.0.3",
         "vitest": "4.1.10",
       },
     },
@@ -104,7 +104,7 @@
       "devDependencies": {
         "@types/react": "^19.2.0",
         "@types/react-dom": "^19.2.0",
-        "typescript": "5.9.3",
+        "typescript": "6.0.3",
       },
       "peerDependencies": {
         "react": "^19.0.0",
@@ -1005,7 +1005,7 @@
 
     "typed-query-selector": ["typed-query-selector@2.12.2", "", {}, "sha512-EOPFbyIub4ngnEdqi2yOcNeDLaX/0jcE1JoAXQDDMIthap7FoN795lc/SHfIq2d416VufXpM8z/lD+WRm2gfOQ=="],
 
-    "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+    "typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "undici": ["undici@8.9.0", "", {}, "sha512-aWZpUj7XoGonMClx4gdDRfgBjqeA+F473aDmROQQbM9n6PRfK/u1q/a0X4wMTgcHfT8H6fpbt98PFuDUwFg2YA=="],
 
