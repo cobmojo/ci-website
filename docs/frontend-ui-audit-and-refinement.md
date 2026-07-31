@@ -447,7 +447,7 @@ against a production build.
 | `bun run content:links` | Pass: 9,421 internal links and fragments resolve, 0 duplicate ids |
 | `bun run content:bundle` | Pass on the merged tree: every route within budget; `/corrections` 663.7 kB against its 664.1 kB allowance |
 | `bun run test:e2e` | **312 tests, 0 failures** on the merged tree (224 at the audit base + 6 added here + PR #5's suites), Chromium desktop 1440×900 and mobile 375×812 |
-| `bun run test:a11y` | **64 tests, 0 failures** (32 at base, desktop only; now 32 × desktop + 32 × mobile via the new `accessibility-mobile` project) |
+| `bun run test:a11y` | **68 tests, 0 failures** (32 at base, desktop only; now 34 × desktop + 34 × mobile via the new `accessibility-mobile` project, `/accessibility/` having joined the axe routes) |
 
 **Rendered sweep** (production build, before and after): 360 loads over all
 120 sitemap routes at 1280/375/320 px — zero console errors, zero page
@@ -712,7 +712,7 @@ validate` exit 0 with a clean tree; `test:e2e` 308 tests, 0 failures;
 `test:a11y` 64 tests (63 + 1 axe timing flake retried green), 0 failures;
 `test:text-geometry` 69 tests across Chromium, Firefox and Playwright WebKit
 (67 + 2 WebKit flaky passes from that suite's own retry budget), 0 failures.
-Total automated coverage on the merged tree: 1,263 tests.
+Total automated coverage on the merged tree: 1,267 tests.
 
 **Review threads**: the automated review on the first commit raised two P2
 findings (permalink loss on demoted headings; component-rendered headings
