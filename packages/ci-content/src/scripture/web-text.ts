@@ -1676,10 +1676,10 @@ const PASSAGES: Record<string, ScripturePassage> = {
       },
       {
         verse: 5,
-        text: 'But I will warn you whom you should fear. Fear him, who after he has killed, has power to cast into Gehenna.Yes, I tell you, fear him.',
+        text: 'But I will warn you whom you should fear. Fear him, who after he has killed, has power to cast into Gehenna. Yes, I tell you, fear him.',
       },
     ],
-    text: '“I tell you, my friends, don’t be afraid of those who kill the body, and after that have no more that they can do. But I will warn you whom you should fear. Fear him, who after he has killed, has power to cast into Gehenna.Yes, I tell you, fear him.',
+    text: '“I tell you, my friends, don’t be afraid of those who kill the body, and after that have no more that they can do. But I will warn you whom you should fear. Fear him, who after he has killed, has power to cast into Gehenna. Yes, I tell you, fear him.',
   },
   'Luke 12:47-48': {
     reference: 'Luke 12:47-48',
@@ -2274,7 +2274,7 @@ const PASSAGES: Record<string, ScripturePassage> = {
       },
       {
         verse: 28,
-        text: '“But that servant went out, and found one of his fellow servants, who owed him one hundred denarii,and he grabbed him, and took him by the throat, saying, ‘Pay me what you owe!’',
+        text: '“But that servant went out, and found one of his fellow servants, who owed him one hundred denarii, and he grabbed him, and took him by the throat, saying, ‘Pay me what you owe!’',
       },
       {
         verse: 29,
@@ -2305,7 +2305,7 @@ const PASSAGES: Record<string, ScripturePassage> = {
         text: 'So my heavenly Father will also do to you, if you don’t each forgive your brother from your hearts for his misdeeds.”',
       },
     ],
-    text: 'Therefore the Kingdom of Heaven is like a certain king, who wanted to reconcile accounts with his servants. When he had begun to reconcile, one was brought to him who owed him ten thousand talents. But because he couldn’t pay, his lord commanded him to be sold, with his wife, his children, and all that he had, and payment to be made. The servant therefore fell down and kneeled before him, saying, ‘Lord, have patience with me, and I will repay you all!’ The lord of that servant, being moved with compassion, released him, and forgave him the debt. “But that servant went out, and found one of his fellow servants, who owed him one hundred denarii,and he grabbed him, and took him by the throat, saying, ‘Pay me what you owe!’ “So his fellow servant fell down at his feet and begged him, saying, ‘Have patience with me, and I will repay you!’ He would not, but went and cast him into prison, until he should pay back that which was due. So when his fellow servants saw what was done, they were exceedingly sorry, and came and told to their lord all that was done. Then his lord called him in, and said to him, ‘You wicked servant! I forgave you all that debt, because you begged me. Shouldn’t you also have had mercy on your fellow servant, even as I had mercy on you?’ His lord was angry, and delivered him to the tormentors, until he should pay all that was due to him. So my heavenly Father will also do to you, if you don’t each forgive your brother from your hearts for his misdeeds.”',
+    text: 'Therefore the Kingdom of Heaven is like a certain king, who wanted to reconcile accounts with his servants. When he had begun to reconcile, one was brought to him who owed him ten thousand talents. But because he couldn’t pay, his lord commanded him to be sold, with his wife, his children, and all that he had, and payment to be made. The servant therefore fell down and kneeled before him, saying, ‘Lord, have patience with me, and I will repay you all!’ The lord of that servant, being moved with compassion, released him, and forgave him the debt. “But that servant went out, and found one of his fellow servants, who owed him one hundred denarii, and he grabbed him, and took him by the throat, saying, ‘Pay me what you owe!’ “So his fellow servant fell down at his feet and begged him, saying, ‘Have patience with me, and I will repay you!’ He would not, but went and cast him into prison, until he should pay back that which was due. So when his fellow servants saw what was done, they were exceedingly sorry, and came and told to their lord all that was done. Then his lord called him in, and said to him, ‘You wicked servant! I forgave you all that debt, because you begged me. Shouldn’t you also have had mercy on your fellow servant, even as I had mercy on you?’ His lord was angry, and delivered him to the tormentors, until he should pay all that was due to him. So my heavenly Father will also do to you, if you don’t each forgive your brother from your hearts for his misdeeds.”',
   },
   'Matthew 22:1-14': {
     reference: 'Matthew 22:1-14',
@@ -3066,10 +3066,10 @@ const PASSAGES: Record<string, ScripturePassage> = {
       },
       {
         verse: 8,
-        text: 'But for the cowardly, unbelieving, sinners, abominable, murderers, sexually immoral, sorcerers,idolaters, and all liars, their part is in the lake that burns with fire and sulfur, which is the second death.”',
+        text: 'But for the cowardly, unbelieving, sinners, abominable, murderers, sexually immoral, sorcerers, idolaters, and all liars, their part is in the lake that burns with fire and sulfur, which is the second death.”',
       },
     ],
-    text: 'I saw a new heaven and a new earth: for the first heaven and the first earth have passed away, and the sea is no more. I saw the holy city, New Jerusalem, coming down out of heaven from God, prepared like a bride adorned for her husband. I heard a loud voice out of heaven saying, “Behold, God’s dwelling is with people, and he will dwell with them, and they will be his people, and God himself will be with them as their God. He will wipe away from them every tear from their eyes. Death will be no more; neither will there be mourning, nor crying, nor pain, any more. The first things have passed away.” He who sits on the throne said, “Behold, I am making all things new.” He said, “Write, for these words of God are faithful and true.” He said to me, “It is done! I am the Alpha and the Omega, the Beginning and the End. I will give freely to him who is thirsty from the spring of the water of life. He who overcomes, I will give him these things. I will be his God, and he will be my son. But for the cowardly, unbelieving, sinners, abominable, murderers, sexually immoral, sorcerers,idolaters, and all liars, their part is in the lake that burns with fire and sulfur, which is the second death.”',
+    text: 'I saw a new heaven and a new earth: for the first heaven and the first earth have passed away, and the sea is no more. I saw the holy city, New Jerusalem, coming down out of heaven from God, prepared like a bride adorned for her husband. I heard a loud voice out of heaven saying, “Behold, God’s dwelling is with people, and he will dwell with them, and they will be his people, and God himself will be with them as their God. He will wipe away from them every tear from their eyes. Death will be no more; neither will there be mourning, nor crying, nor pain, any more. The first things have passed away.” He who sits on the throne said, “Behold, I am making all things new.” He said, “Write, for these words of God are faithful and true.” He said to me, “It is done! I am the Alpha and the Omega, the Beginning and the End. I will give freely to him who is thirsty from the spring of the water of life. He who overcomes, I will give him these things. I will be his God, and he will be my son. But for the cowardly, unbelieving, sinners, abominable, murderers, sexually immoral, sorcerers, idolaters, and all liars, their part is in the lake that burns with fire and sulfur, which is the second death.”',
   },
   'Revelation 21:4': {
     reference: 'Revelation 21:4',
@@ -3090,10 +3090,10 @@ const PASSAGES: Record<string, ScripturePassage> = {
     verses: [
       {
         verse: 8,
-        text: 'But for the cowardly, unbelieving, sinners, abominable, murderers, sexually immoral, sorcerers,idolaters, and all liars, their part is in the lake that burns with fire and sulfur, which is the second death.”',
+        text: 'But for the cowardly, unbelieving, sinners, abominable, murderers, sexually immoral, sorcerers, idolaters, and all liars, their part is in the lake that burns with fire and sulfur, which is the second death.”',
       },
     ],
-    text: 'But for the cowardly, unbelieving, sinners, abominable, murderers, sexually immoral, sorcerers,idolaters, and all liars, their part is in the lake that burns with fire and sulfur, which is the second death.”',
+    text: 'But for the cowardly, unbelieving, sinners, abominable, murderers, sexually immoral, sorcerers, idolaters, and all liars, their part is in the lake that burns with fire and sulfur, which is the second death.”',
   },
   'Revelation 22:1-5': {
     reference: 'Revelation 22:1-5',
@@ -3127,14 +3127,14 @@ const PASSAGES: Record<string, ScripturePassage> = {
     verses: [
       {
         verse: 14,
-        text: 'Blessed are those who do his commandments,that they may have the right to the tree of life, and may enter in by the gates into the city.',
+        text: 'Blessed are those who do his commandments, that they may have the right to the tree of life, and may enter in by the gates into the city.',
       },
       {
         verse: 15,
         text: 'Outside are the dogs, the sorcerers, the sexually immoral, the murderers, the idolaters, and everyone who loves and practices falsehood.',
       },
     ],
-    text: 'Blessed are those who do his commandments,that they may have the right to the tree of life, and may enter in by the gates into the city. Outside are the dogs, the sorcerers, the sexually immoral, the murderers, the idolaters, and everyone who loves and practices falsehood.',
+    text: 'Blessed are those who do his commandments, that they may have the right to the tree of life, and may enter in by the gates into the city. Outside are the dogs, the sorcerers, the sexually immoral, the murderers, the idolaters, and everyone who loves and practices falsehood.',
   },
   'Revelation 22:2': {
     reference: 'Revelation 22:2',

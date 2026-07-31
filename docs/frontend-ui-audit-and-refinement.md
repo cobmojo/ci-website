@@ -1534,6 +1534,45 @@ before, and it is the clearest instance of the whole run.
   paragraph, and were confirmed to fail against both wrong implementations
   before being accepted.
 
+The same sweep widened past the branch's own diff to the two things every
+route inherits: the words the site counts itself in, and the Scripture it
+quotes.
+
+- **Four verses were misquoted, in the one file whose docstring says that
+  cannot happen.** `web-text.ts` opens by explaining that every full Scripture
+  display renders from this corpus because "no author ever types a verse by
+  hand, which removes any possibility of a misquoted or misremembered passage
+  reaching a page". Four of them had lost the space after a comma or a full
+  stop — `sorcerers,idolaters` (Revelation 21:8), `denarii,and he grabbed`
+  (Matthew 18:28), `commandments,that they may` (Revelation 22:14) and
+  `Gehenna.Yes, I tell you` (Luke 12:5) — reaching eight routes under an
+  attribution naming the World English Bible. The project's own migration
+  ledger carries the correct text for the one verse it covers; the other three
+  need no second copy of the Bible, because punctuation is never immediately
+  followed by a letter in running prose. That is the whole class, so the guard
+  is the class: no quotation in the corpus may run punctuation into the next
+  word, carry a doubled space, or put a space before punctuation. It was
+  confirmed failing against each defect before being accepted.
+- **The site gave readers two different totals under one noun.** The homepage,
+  the 404, `/start/` and the header nav all send a reader to "thirty-seven
+  parts". The hub's own first sentence defines them — three roadblocks and
+  thirty-four numbered arguments, "with a preface and two appendices alongside
+  them" — and then, three screens down, headed its list "All 40 parts", said
+  "Everything in the forty parts", and counted progress "of 40 parts". Both
+  numbers are true and the unit test pins both; what could not stand is the one
+  word carrying both, so a reader given 37 and shown 40 had no way to tell
+  which was wrong. "Parts" now always means the 37. The 40 entries are pages,
+  which is what the hub already called them in "Twelve pages, in this order"
+  and "each page is". Guarded end to end: no route may say "40 parts".
+- **And the progress panel's two numbers came from two sources.** "You have
+  opened X of Y pages from this list. Each one is marked as Opened below" took
+  Y from a registry prop and X from the DOM, so the sentence was true by
+  coincidence rather than by construction — the previous sweep had bounded and
+  deduplicated the numerator and left the denominator on the other source.
+  Both are now measured from the rendered list, which makes X ≤ Y hold
+  structurally. Distinct ids, not nodes: the hub lists an essential-path
+  section twice, so counting markers would have read "of 52 pages".
+
 Everything else the sweep measured on this branch came back clean: all 118 OG
 cards render in a mean 54ms with none hitting the fallback and the Arabic title
 now answering 200; the index ETag is deterministic across processes and the

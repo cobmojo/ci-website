@@ -675,7 +675,7 @@ test('the reading count never exceeds what the page can mark', async ({ page }) 
   )
   await page.reload()
 
-  await expect(page.getByText(/You have opened 1 of 40 parts/)).toBeVisible()
+  await expect(page.getByText(/You have opened 1 of 40 pages/)).toBeVisible()
 
   // By part, not by marker: the hub lists some sections twice, once in the
   // guided order and once on the essential path, so one opened part can carry
@@ -691,12 +691,12 @@ test('the reading count never exceeds what the page can mark', async ({ page }) 
   expect(markedParts).toEqual(['S04'])
 
   // And the count the test is named for: membership alone did not deduplicate,
-  // so one id stored forty-five times still read "45 of 40 parts".
+  // so one id stored forty-five times still read "45 of 40 pages".
   await page.evaluate(() =>
     localStorage.setItem('ci:case-reading-progress', JSON.stringify(Array(45).fill('S04'))),
   )
   await page.reload()
-  await expect(page.getByText(/You have opened 1 of 40 parts/)).toBeVisible()
+  await expect(page.getByText(/You have opened 1 of 40 pages/)).toBeVisible()
 })
 
 test('search filters do not survive a URL that does not carry them', async ({ page }) => {
@@ -806,4 +806,34 @@ test('the search index can be revalidated rather than refetched', async ({ reque
   const headers = response.headers()
   expect(headers.etag, 'no validator to revalidate against').toBeTruthy()
   expect(headers['cache-control']).toMatch(/max-age=[1-9]/)
+})
+
+/**
+ * One noun, one meaning.
+ *
+ * The case is 37 parts — three roadblocks and thirty-four numbered arguments —
+ * and the hub lists 40 pages, those parts plus a preface and two appendices.
+ * The homepage, the 404, /start/ and the header nav all send a reader to
+ * "thirty-seven parts"; the hub then headed its list "All 40 parts", said
+ * "Everything in the forty parts", and counted progress "of 40 parts", three
+ * screens below its own sentence defining the preface and appendices as
+ * alongside the parts rather than among them. A reader given one number and
+ * shown another has no way to tell which is wrong.
+ *
+ * Both counts are real and the unit test pins both. What could not stand is
+ * the one word carrying both, so "parts" now always means the 37.
+ */
+test('the case is never described as forty parts', async ({ page }) => {
+  for (const route of ['/', '/case/', '/start/', '/objections/', '/no-such-page/']) {
+    await page.goto(route)
+    const text = await page.locator('body').innerText()
+    expect(text, `${route} says "parts" of a count that is not 37`).not.toMatch(
+      /(?:40|forty)\s+parts/i,
+    )
+  }
+
+  // And the hub agrees with the number every other surface gives.
+  await page.goto('/case/')
+  await expect(page.getByText(/thirty-seven parts/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'All 40 pages' })).toBeVisible()
 })

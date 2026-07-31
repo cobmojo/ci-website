@@ -61,26 +61,35 @@ function addStoredId(id: string): string[] | null {
   }
 }
 
-export function ReadingProgress({ total }: { total: number }) {
+export function ReadingProgress() {
   const [mounted, setMounted] = useState(false)
   const [visited, setVisited] = useState<readonly string[]>([])
   /**
-   * The ids this list can actually mark.
+   * The distinct ids this list can actually mark, and the only source of both
+   * numbers in the sentence below.
    *
    * The count was taken from storage, so ids that are not on the page counted
    * anyway: a store holding four valid-looking ids of which one was here read
-   * "you have opened 4 of 40 parts… each one is marked below" above a single
+   * "you have opened 4 of 40 pages… each one is marked below" above a single
    * marker, and forty-five of them read "45 of 40".
+   *
+   * The total came from a prop while the markers came from the DOM, which made
+   * "X of Y … each one is marked below" true only by coincidence. Measuring
+   * both here makes X ≤ Y hold by construction. Distinct, because the hub
+   * lists a section on the essential path as well as in the guided order, and
+   * counting nodes made forty pages read as fifty-two.
    */
   const [onPage, setOnPage] = useState<readonly string[]>([])
 
   useEffect(() => {
     setVisited(readStoredIds())
-    setOnPage(
-      [...document.querySelectorAll('[data-section-entry]')]
-        .map(element => element.getAttribute('data-section-entry') ?? '')
-        .filter(Boolean),
-    )
+    setOnPage([
+      ...new Set(
+        [...document.querySelectorAll('[data-section-entry]')]
+          .map(element => element.getAttribute('data-section-entry') ?? '')
+          .filter(Boolean),
+      ),
+    ])
     setMounted(true)
 
     // Another tab is the same reader. Without this, two tabs each showed their
@@ -126,7 +135,7 @@ export function ReadingProgress({ total }: { total: number }) {
   if (!mounted) return null
 
   // Deduplicated as well as bounded: membership alone still let a store
-  // holding one id forty-five times read "45 of 40 parts" above one marker.
+  // holding one id forty-five times read "45 of 40 pages" above one marker.
   const marked = [...new Set(visited)].filter(id => onPage.includes(id))
   const markerCss = marked
     .map(id => `[data-section-entry="${id}"] [data-visited-marker]{display:inline-flex}`)
@@ -149,13 +158,13 @@ export function ReadingProgress({ total }: { total: number }) {
 
       <p aria-live="polite" className="m-0 text-[1rem] text-ink-muted">
         {marked.length === 0
-          ? `No parts opened yet. Parts you open from this list are marked here, out of ${total}.`
-          : `You have opened ${marked.length} of ${total} parts from this list. Each one is marked as Opened below.`}
+          ? `No pages opened yet. Pages you open from this list are marked here, out of ${onPage.length}.`
+          : `You have opened ${marked.length} of ${onPage.length} pages from this list. Each one is marked as Opened below.`}
       </p>
 
       <p className="m-0 mt-2 font-sans text-[0.88rem] text-ink-subtle">
         This is stored in this browser alone and is never sent anywhere. It records nothing beyond
-        the permanent id of each part, and clearing it changes nothing else about the site.
+        the permanent id of each page, and clearing it changes nothing else about the site.
       </p>
 
       <Button variant="secondary" size="sm" onClick={reset} className="mt-4">
