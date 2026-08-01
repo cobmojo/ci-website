@@ -10,8 +10,8 @@
     {
       "name": "conditional-immortality-prod",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["--cwd=apps/conditional-immortality", "run", "start"],
-      "port": 3210
+      "runtimeArgs": ["--cwd=apps/conditional-immortality", "run", "start", "--", "--port", "3212"],
+      "port": 3212
     }
   ]
 }
