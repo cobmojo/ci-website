@@ -21,10 +21,20 @@ vi.mock('next/link', () => ({
   // The component under test is about the click, not the routing, so the link
   // is a plain anchor here. Its `href` is still asserted: the fragment on it is
   // what does the scrolling.
+  //
+  // `prefetch` is swallowed rather than spread, because the real `next/link`
+  // consumes it and never reaches the DOM with it. This component now routes
+  // through the repository's own `Link`, which always passes it, and a
+  // stand-in that forwarded it would put `prefetch="false"` on an anchor and
+  // make React complain about a non-boolean attribute on every render.
   default: ({
     children,
+    prefetch: _prefetch,
     ...props
-  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children: React.ReactNode }) => (
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    children: React.ReactNode
+    prefetch?: boolean
+  }) => (
     // biome-ignore lint/a11y/useValidAnchor: a stand-in for next/link in a unit test
     <a {...props}>{children}</a>
   ),

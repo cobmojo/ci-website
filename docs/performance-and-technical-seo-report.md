@@ -6,9 +6,27 @@ desktop mode. Mobile Performance does not reach 100 on any route: it sits
 between 83 and 92, and at 59–64 on `/full-case/`. That shortfall is measured,
 diagnosed and attributed below, and Lighthouse's own insights report **zero
 available savings** for First Contentful Paint or Largest Contentful Paint on
-every route audited. What remains is the cost of hydrating a large
-server-rendered document under a four-times CPU throttle, and closing it means
-changing what the site is rather than how it is built.
+every route audited.
+
+The most consequential thing found in this round was not a score. The prefetch
+policy recorded below as site-wide was not site-wide: three files still reached
+`next/link` directly, and the transcript on `/watch/` was speculatively
+downloading **the page the reader was already on**, once per timestamp — 33
+requests and 142 kB, measured. `/corrections/` was starting another 74 kB. Both
+are now zero, and the guard that was supposed to prevent this has been extended
+to the two routes it never covered. Details in
+[Three links the policy never reached](#three-links-the-policy-never-reached).
+
+The reason a mobile 100 is out of reach is now stated in bytes rather than in
+adjectives. Under simulated
+throttling on a local origin the whole page finishes loading before the observed
+paint, so Lantern's LCP graph contains all of it and the simulated LCP is the
+simulated fully-loaded time. A mobile Performance score of 100 on this page
+requires the entire transfer to fit in about **306 kB**; the fonts and the
+framework alone are **342 kB**. With every byte of this repository's own
+JavaScript deleted, the score would still not be 100. The derivation, from the
+engine's own scoring function and its own graph code, is under
+[Why mobile 100 is out of reach, in bytes](#why-mobile-100-is-out-of-reach-in-bytes).
 
 Nothing here was obtained by weakening a test, a throttle, a viewport or a
 budget. The reduced-motion preference was `no-preference` for every
@@ -166,6 +184,47 @@ Two things stand out, and only one of them is what it looks like.
 every route, whatever the page weighs. That is not page weight; it is a fixed
 dependency in the simulation.
 
+#### The simulation, read off its own source
+
+The account below replaces an earlier, vaguer one. It was derived by reading
+the Lantern metric code in the pinned engine
+(`@paulirish/trace_engine/models/trace/lantern/metrics/`) rather than inferred
+from the numbers, and it predicts them.
+
+`LargestContentfulPaint.getOptimisticGraph` and `getPessimisticGraph` both call
+`FirstContentfulPaint.getFirstPaintBasedGraph` with `cutoffTimestamp` set to the
+**observed** LCP, and the optimistic filter is `isNotLowPriorityImageNode` —
+which excludes only low-priority *images*. Every other request that finished
+before the observed paint is in both graphs. The estimate is then
+`Math.max(...nodeTimings.endTime)`: not the time to paint, but the time for that
+whole set of requests to finish on the throttled link.
+
+On this site, on a local origin, the observed LCP is 498ms and **every request
+has finished by then** — nothing is left outside the cut. So the simulated LCP
+is the simulated fully-loaded time, and the model is arithmetic:
+
+> simulated LCP ≈ simulated TTFB + (bytes in the graph ÷ 204.8 kB/s) + CPU tail
+
+Measured on `/`, mobile: TTFB 474ms, 411.8 kB in the graph → 2,010ms of
+download, and a 476ms observed element-render delay against a 4× CPU
+multiplier. That predicts ≈3,650ms. Lighthouse reported **3,647ms**.
+
+The composition of those 411.8 kB is the finding:
+
+| | wire bytes | share |
+|---|---|---|
+| Fonts (two latin faces, `High`) | 197,051 | 47.9% |
+| Scripts (all twelve, `Low`) | 192,698 | 46.8% |
+| Document | 19,416 | 4.7% |
+| Stylesheet | 10,329 | 2.5% |
+| Icon | 2,215 | 0.5% |
+
+The LCP element is **text** — the lede paragraph, `section.border-b > … > p.m-0`
+— and its breakdown is TTFB 22ms plus 476ms of element render delay, with no
+resource load delay or duration at all. There is no image to discover sooner,
+no font blocking the paint, and no render-blocking chain to shorten: the
+longest network chain on the page is two links long, document → stylesheet.
+
 **Observed and simulated disagree by an order of magnitude.** On the home page
 the observed FCP and observed LCP are the *same paint*, at 245ms, and the
 observed main-thread total is 1.0s: Style & Layout 380ms, Script Evaluation
@@ -220,11 +279,17 @@ pressed anything. The home page started **1.82 MB**, of which 959 kB was
 `/full-case/`. `/scripture/` prefetched *itself*, from its own header.
 
 **Change.** `components/navigation/link.tsx` wraps `next/link` with prefetching
-off unless asked for; all 42 imports in the application point at it. One
-exception, asked for explicitly: Previous and Next on a case section, because
-sequential reading is the one navigation here that is genuinely predictable.
-They sit at the foot of a four-thousand-word section, so they prefetch when the
-reader reaches them rather than when the page loads.
+off unless asked for. One exception, asked for explicitly: Previous and Next on
+a case section, because sequential reading is the one navigation here that is
+genuinely predictable. They sit at the foot of a four-thousand-word section, so
+they prefetch when the reader reaches them rather than when the page loads.
+
+> This paragraph used to end "all 42 imports in the application point at it."
+> **That was false when it was written**, and it is corrected in
+> [Three links the policy never reached](#three-links-the-policy-never-reached)
+> below. Three files still imported `next/link` directly, and between them they
+> were starting about 217 kB of speculative payload that this section claimed
+> had been removed.
 
 **Guard.** `tests/e2e/prefetch-budget.spec.ts` — a budget per route family on
 the wire, plus an assertion that the one permitted prefetch really does happen
@@ -242,7 +307,182 @@ or experiential regression. It is **not** the LCP fix, and it is not reported as
 one. Lantern models request priority, and route prefetches are `Low`, so they
 never competed with the resources the paint waits on.
 
+### The search engine leaves the shared chunk — kept
+
+**Cause.** `SearchDialogTrigger` is rendered by the root layout, so whatever it
+imports is in the chunk all 119 routes load. It statically imported `search`
+from `@ci/search`, which reaches the query parser, the excerpt builder, the
+matcher, the synonym table and — through `parseReference` — the entire
+book-and-alias table and verse-count table of `@ci/content-schema/bible`. Its
+result list reached the label tables, the excerpt fitter and the text-layout
+contract on top of that. Measured in the built chunk: **42.7 kB of a 51.2 kB
+layout chunk**, on every page, for one control in the header.
+
+None of it can do anything until the 610 kB search index has arrived, and that
+index was *already* fetched lazily on search intent. The code was eager; the
+data it needs was not.
+
+**Change.** `lib/search-engine-client.ts` loads `search` through a cached
+dynamic import, and the result list is a `lazy` component whose import is also
+started from `prewarm`. Both ride the trigger that already existed —
+`pointerenter` and `focus` on the trigger, and `openDialog` itself. The engine
+is awaited *beside* the index inside `loadIndex` rather than after it, so
+`loading` and `failed` still describe the whole of "search is not usable yet"
+and every state the pane can show still turns on `index` alone. No new render
+state was introduced and no message changed.
+
+**Guard.** `ABSOLUTE_CEILING_BYTES` in `bundle-budget.ts` lowered 700,000 →
+666,000, keeping the 15.4 kB of headroom over the heaviest route that the
+ceiling was originally given. The win cannot now be handed back silently.
+
+**Measured effect.** First-load JavaScript, uncompressed, from the build's own
+`route-bundle-stats.json`: median **606,381 → 572,901 bytes**, a reduction of
+**33,480 bytes on every one of the 30 route groups** — the largest and smallest
+per-route deltas are both exactly −33,480, which is what a shared-chunk change
+should look like. On the wire, gzipped, the home page's JavaScript falls
+**180,850 → 168,470 bytes** and its total transfer **409,411 → 396,968**.
+
+**Kept on the third decision rule.** It deterministically removes 33.5 kB of
+parse-and-compile and 12.4 kB of transfer from every page view with no measured
+or experiential regression. Its predicted effect on simulated LCP is ~60ms
+against a 3,647ms number, which is inside the run-to-run spread, and it is
+**not** claimed as an LCP fix.
+
+**No behavioural change.** Search still opens instantly — the dialog shell, its
+focus handling, Escape, the backdrop and `Ctrl+K` were never part of the
+deferred code. The 14-test interaction suite re-measured every search
+interaction and all remain far under the 200ms target; the fallback for
+scripting-disabled readers is still the same real `<a href="/search/">`; nothing
+is fetched before a reader shows an interest in searching, so the privacy
+contract is untouched.
+
+### Three links the policy never reached — kept
+
+**Cause.** The prefetch policy above was enforced by a wrapper, and a wrapper
+only governs the files that import it. Three did not:
+
+| File | What it links to |
+|---|---|
+| `components/navigation/focus-on-arrival-link.tsx` | the transcript's 39 timestamps, and search paging |
+| `app/corrections/page.tsx` | `/changelog/`, `/method/`, `/accessibility/`, `/privacy/` |
+| `components/feedback/feedback-form.tsx` | the success state's one link |
+
+The transcript case is the sharper one. Every timestamp is a query-only link
+back to `/watch/`, and the App Router keys its prefetch cache on
+`{pathname, search}` — so each distinct `?t=` is a distinct target, and the page
+speculatively downloaded **itself**, once per timestamp. Measured on the wire,
+scrolling through the transcript: **33 requests, 142,487 bytes**, the first of
+them a full copy of a document the reader was already holding. `/corrections/`
+started **5 requests, 74,267 bytes** on load, the largest a 54,732-byte copy of
+`/changelog/`.
+
+None of it could ever be useful: on `/watch/` the destination is the current
+page, and on `/corrections/` it is four pages a reader of a correction form is
+unlikely to want.
+
+**Change.** All three now import the repository's own `Link`. Nothing else about
+them moved.
+
+**Why removing it costs the reader nothing, measured rather than argued.** The
+click path was A/B'd on `/watch/` by aborting only requests carrying
+`next-router-prefetch`, leaving real navigation fetches alive. As shipped, the
+router committed the URL at 46ms; with prefetching suppressed, 77ms; with
+prefetching suppressed *and* the navigation payload delayed a full two seconds,
+2,094ms. In all three the immediate state was identical — focus on
+`video-player`, the element in the viewport, and the player's `src` already
+carrying `&start=107`. Nothing a reader sees or hears waits on the router
+commit, because `focus-on-arrival-link.tsx` moves focus and the video facade
+seeks synchronously on the click. Prefetching was buying a faster commit of
+something invisible.
+
+**Guard.** `tests/e2e/prefetch-budget.spec.ts` gained `/watch/` and
+`/corrections/` — neither was in its route list, which is why a policy this
+file existed to enforce had been broken since it was written — plus a new test
+that scrolls the whole transcript past the viewport and holds it at zero.
+Scrolling is deliberately *not* folded into the shared helper, because
+`/case/…` is supposed to prefetch Previous and Next once they come into view,
+and the existing test for that exception still passes.
+
+**Measured effect.** Proven red before the fix and green after, on the wire:
+
+| Route | before | after |
+|---|---|---|
+| `/corrections/` (on load) | 5 requests, 74,267 B | **0** |
+| `/watch/` (scrolled through) | 33 requests, 142,487 B | **0** |
+
+Every other audited route measured zero both before and after, which is the
+evidence that the wrapper was working everywhere it was actually used.
+
+### The text-layout loader follows the engine — kept
+
+**Cause.** `loadTextLayoutEngine` fetched the pretext runtime lazily, but the
+module *containing* it — the font contract, the prepared-text cache and the
+loader itself — was reached by a static import from the search dialog, which
+put **3,586 bytes** of it in the chunk every route loads. Its only caller on
+that path is `prewarm`; the excerpt fitter reaches it again from inside the
+result list, which is already lazy.
+
+**Change.** The import is now dynamic, with its own `.catch` — it is called
+without being awaited, so the chunk fetch becoming a new failure mode had to be
+swallowed like the engine's.
+
+**Measured effect.** Median first-load JavaScript **572,901 → 569,313 bytes**,
+uniform across all 30 route groups. Predicted 3,586; measured 3,588.
+
+**Hardening shipped with it.** `lazy` throws to the nearest error boundary if
+its import rejects, and the nearest one is the route's — so a dropped result
+chunk would have replaced the page with the error document instead of the
+"search could not load" line. The result list is now awaited inside `loadIndex`
+alongside the index and the engine, so that failure lands in the same `catch`
+as the other two.
+
+**One more, found in review.** `loadSearchEngine` cached its promise, and the
+first version cached the *failure* with it — modelled on `loadTextLayoutEngine`,
+which is right to do so because an excerpt that is never fitted is still an
+excerpt. Search is not like that: it cannot run without the engine, and the pane
+tells a reader whose load failed to reopen and try again. A cached `null` made
+that promise a lie for the rest of the session, with a page reload the only way
+back. The success is still cached; the failure now clears the slot so the next
+ask starts a fresh import. `src/lib/__tests__/search-engine-client.test.ts`
+pins both halves, and was proven red against the old behaviour.
+
 ## Hypotheses tested and rejected
+
+### Splitting the `@ci/ui` barrel — rejected on the budget it would break
+
+The largest remaining application-side chunk is 28,994 bytes shipped to 119
+routes, and it is there so that `cn` — `twMerge(clsx(…))` — can be called.
+About 26,798 bytes of it is tailwind-merge's class-group table.
+
+The mechanism is real and was verified twice: only two first-load modules call
+`cn` (`NavLinkItem`, `MobileNavigation`), and running the repository's own
+tailwind-merge 3.6.0 and clsx 2.1.1 over **every live call site** shows
+`twMerge(clsx(x)) === clsx(x)` in all nine — so a non-merging joiner would
+produce byte-identical class attributes. The same probe found the two places
+that genuinely do depend on conflict resolution, `Button` at `size="sm"` and
+`size="lg"`, which is how we know the equivalence was measured and not assumed.
+
+It was rejected anyway, on three grounds:
+
+1. **It breaks the bundle budget.** `bundle-budget.ts` is deliberately
+   *relative* — 3% over the median. Removing 27 kB from the shared chunk drops
+   the median to ~545,899 and the ceiling with it, while the seven routes that
+   still legitimately use `@ci/ui` keep their copy. Seven routes then fail, and
+   shipping would mean adding six new allowance entries to a table whose own
+   comment says such edits are "indistinguishable from quietly widening the
+   budget". The optimistic variant still leaves five.
+2. **It erodes a documented contract.** `scroll-region.tsx:21-24` records that
+   the component owns className composition precisely because an earlier helper
+   let callers compose wrong. A non-merging joiner silently returns that hazard
+   for any future caller, and `NavLinkItem` takes a `className` too.
+3. **No test would catch a mistake.** `button-contract.test.ts` calls
+   `buttonVariants` directly, which has never passed through twMerge, so it
+   passes identically either way. The change would be safe because the strings
+   happen to be identical today, not because anything holds them there.
+
+The honest summary is that this is 27 kB — about 7 kB on the wire, worth
+roughly 34ms of simulated LCP — in exchange for a weakened deterministic gate
+and a re-opened composition hazard. Recorded rather than taken.
 
 ### The two preloaded faces are the LCP determinant — rejected
 
@@ -306,6 +546,45 @@ and the one page the site recommends printing.
 So it was not attempted. If it is ever revisited, the thing to build first is a
 scroll-driven layout-shift measurement, because without one there is no way to
 tell the improvement from the damage.
+
+## Why mobile 100 is out of reach, in bytes
+
+The scoring curves are not folklore and do not need to be guessed at. Feeding
+the pinned engine's own `Util.computeLogNormalScore` with its own control points
+(LCP `p10` 2500 / median 4000, and the published weights — TBT 30, LCP 25,
+CLS 25, FCP 10, SI 10) reproduces the measured category scores exactly: the home
+page's metrics return **91**, and `/full-case/`'s return **64**. The model is
+therefore trustworthy enough to invert.
+
+Holding FCP, TBT, CLS and Speed Index at their measured values, the home page
+reaches a category score of 100 when **simulated LCP ≤ 1,935ms**.
+
+Turn that back into bytes with the model above. Simulated TTFB is 474ms and is
+not a function of page weight, so the download budget is 1,461ms, which at the
+mobile preset's 204.8 kB/s is **≈306 kB for the entire page**. That figure is
+generous: it ignores connection setup, TCP slow start and the CPU tail, all of
+which Lantern also charges.
+
+The page, after the optimisation above, transfers 397 kB. Now subtract
+everything that cannot honestly be removed:
+
+| | wire bytes | why it stays |
+|---|---|---|
+| Fonts, two latin faces | 200,842 | Typography is preserved by instruction. The faces are already `unicode-range`-split four ways, already `woff2`, and the Source Serif file is byte-identical to Google's own `latin` subset — 122,360 bytes, verified. Narrowing the axes or the glyph set is a typography change. |
+| React 19 + the Next 16 app-router client | 113,389 | Framework. `unused-javascript` offers 49 KiB across exactly these two chunks and `duplicated-javascript-insight` is clean; removing them means leaving the framework, which is a rewrite. |
+| Document | 18,294 | Prose, in the initial HTML, where it belongs. |
+| Stylesheet | 9,362 | One 43 kB sheet, the only render-blocking resource on the page. |
+| **Irreducible total** | **341,887** | |
+
+**341,887 > 306,383.** With *every byte of application JavaScript deleted* —
+the search dialog, the navigation sheet, the reading progress, the whole of
+`@ci/ui`, all of it — the home page would still transfer more than the budget a
+mobile Performance score of 100 allows. The gap is not in this repository's
+code. It is the fonts and the framework, and the only ways to close it are the
+two the instructions rule out.
+
+This is offered as a measurement, not as an excuse: it is falsifiable, and the
+way to falsify it is to show the page transferring under ~306 kB.
 
 ## What Lighthouse itself says is left
 
@@ -389,13 +668,70 @@ did not ask for them is exactly the run that will need one.
 
 ### The second sweep
 
-**Not run.** The rules ask for two independent whole-site sweeps from separate
-fresh builds. The first one fails, comprehensively and for a reason that a
-second identical pass cannot change, and forty minutes of the same measurement
-would have bought no information. What was run instead: five cold runs each on
-five representative routes for the one optimisation that was kept, three cold
-runs for each rejected hypothesis, and the whole-site sweep above. A second
-sweep belongs in the run that expects to pass.
+**Run**, on a separate fresh build, a restarted server and a cold browser
+profile — it is the next section. It was not run at the time this paragraph
+first said "not run": the argument then was that a second identical pass could
+not change a failure whose cause was already understood. That was true about the
+outcome and wrong about the value. Running it on a machine in a different state
+is what produced the noise figures below, and those turn out to be the most
+useful thing in this document about how far a single-run category score can be
+trusted.
+
+## The second whole-site sweep, on the tree carrying both optimisations
+
+240 audits from a fresh production build, `--gate`, on build `B4Q3oCaecJ`.
+
+| | mobile | desktop |
+|---|---|---|
+| Audits | 120 | 120 |
+| Accessibility | **100 on all** | **100 on all** |
+| Best Practices | **100 on all** | **100 on all** |
+| SEO | **100 on all 118 indexable** (66 on the two deliberate `noindex`) | same |
+| Performance range | 50–92 | 96–100 |
+| Performance distribution | 92:23 91:11 90:12 89:11 88:2 87:7 86:6 84:7 83:6 82:10 81:4 80:6 79:1 78:1 73:2 72:2 68:1 62:1 50:1 | 100:82 99:29 96:1 |
+| Unmeasurable (`NO_NAVSTART`) | 6 | 8 |
+
+`bun run perf:audit` exits non-zero on this, and is meant to.
+
+**This sweep is noisier than the baseline one and is not directly comparable to
+it.** It ran on a laptop in a different state, and single-run category scores at
+this noise level move by ten points or more. Two things prove the noise rather
+than assert it: 14 audits returned `NO_NAVSTART` — a Lighthouse tooling failure
+with no navigation start in the trace, which the harness now reports as
+unmeasurable rather than scoring zero — and the worst number in the whole sweep,
+a Total Blocking Time of 1,087ms on `/corrections/`, did not reproduce.
+
+Re-measured immediately afterwards, three cold mobile runs each, on a quiet
+machine:
+
+| Route | P (median [min–max]) | LCP (MAD) | TBT (median [min–max]) | FCP | transfer |
+|---|---|---|---|---|---|
+| `/` | 91 [90–91] | 3,486 (8) | **107** [84–144] | 1,002 | 408 kB |
+| `/corrections/` | 89 [85–92] | 3,624 (6) | **137** [72–272] | 931 | 463 kB |
+| `/full-case/` | 71 [71–72] | 5,296 (16) | **129** [95–163] | 3,331 | 884 kB |
+
+So the 1,087ms was an artefact: the real median is 137ms, **inside** the 150ms
+ceiling. The sweep's single-run TBT numbers should be read as an upper bound
+with a wide error bar, and the sweep's single-run Performance scores with it.
+
+### What this measurement is good for
+
+The metric that does *not* move is the one that decides the score. LCP's median
+absolute deviation across those runs is 8ms, 6ms and 16ms — under half a percent
+— while TBT's spread is 60ms to 200ms. **Simulated LCP on this site is
+essentially deterministic, because it is a function of bytes rather than of
+timing**, exactly as the model above says. That is what makes the byte argument
+falsifiable, and it is confirmed on the two extremes of the site:
+
+| Route | transfer | predicted LCP | measured LCP |
+|---|---|---|---|
+| `/` | 408 kB | ~2,470ms + CPU | 3,486ms |
+| `/full-case/` | 884 kB | ~4,790ms + CPU | 5,296ms |
+
+`/full-case/` is the same site with more bytes: 367 kB of document, and 328 kB
+of fonts rather than 197 kB because the continuous edition puts italic Source
+Serif above the fold. Its script bytes are *lower* than the home page's. Nothing
+about it is slower except its size, which is the argument of the whole page.
 
 ## Interaction and INP
 
@@ -498,9 +834,23 @@ one.
 
 ## Design, motion and content: how preservation was verified
 
-The only production change in this work is which links prefetch. No stylesheet,
-token, font, colour, spacing, heading, component boundary or piece of copy was
-touched. Concretely, `git diff` over the whole branch shows:
+There are two production changes in this work: which links prefetch, and when
+the search engine is fetched. Neither renders anything. No stylesheet, token,
+font, colour, spacing, heading, or piece of copy was touched, and the only
+component boundary that moved is the one between the search dialog's shell and
+its engine — which is not a rendered boundary: the shell, its focus handling,
+its Escape key, its backdrop and `Ctrl+K` are all exactly where they were.
+
+The search change was additionally verified by re-running the suites that own
+its behaviour on the changed tree: 567 unit and component tests (including the
+31 in `quick-search-results.test.tsx`), 441 Chromium desktop and mobile e2e
+tests, 77 accessibility tests at both viewports, 15 visual regression tests
+against the committed baselines, and the 14-test interaction suite, which
+re-measured every search interaction and found them all far under the 200ms
+target. **Visual regression passing is the direct evidence that nothing about
+the design moved.**
+
+Concretely, `git diff` over the whole branch shows:
 
 - `globals.css` unchanged by this work (the `font-display` experiment was
   reverted in full and the file is byte-identical to its pre-experiment state);
@@ -557,6 +907,47 @@ Browser counts by project: chromium-desktop 218, chromium-mobile 208,
 accessibility 38, accessibility-mobile 38, geometry-chromium / -firefox /
 -webkit 23 each, firefox-smoke 23, webkit-smoke 23, visual 14, interaction 13,
 print-chromium / -firefox / -webkit 2 each, served-build 1.
+
+### Re-run for the search-engine change
+
+Run on the tree carrying the deferral, on the same instrument.
+
+| Command | Result |
+|---|---|
+| `bun install --frozen-lockfile` | exit 0 — 290 packages, no lockfile change |
+| `bun run lint` | **exit 0** — 4 warnings, the same 4 the clean tree has |
+| `bun run typecheck` | **exit 0** — 5 packages |
+| `bun run test` | **exit 0** — **567 tests across 36 files** |
+| `bun run build` | exit 0 |
+| `bun run content:bundle` | **exit 0** against the *lowered* ceiling |
+| `bun run content:docs` | exit 0 — 165 path mentions resolve |
+| `bun run test:e2e` | **exit 0** — **441 tests** |
+| `bun run test:a11y` | **exit 0** — **77 tests** |
+| `bun run test:visual` | **exit 0** — **15 tests**, no baseline rewritten |
+| `bun run test:interaction` | **exit 0** — **14 tests**, every interaction under 200ms |
+| `bun run perf:routes` | **exit 0** — four sources reconciled, 120 HTML routes |
+| `bun run seo:matrix` | **exit 0** — 120 routes, 118 distinct titles and descriptions, no finding |
+| `bun run perf:audit` (240 cold audits) | **exit 1** — mobile Performance, as recorded above |
+| 3 cold mobile runs on `/`, `/corrections/`, `/full-case/` | medians recorded above; the sweep's worst TBT did not reproduce |
+
+### Re-run again for the prefetch and text-layout changes
+
+| Command | Result |
+|---|---|
+| `bun run lint` / `typecheck` / `format:check` | **exit 0** — the same 4 warnings the clean tree has |
+| `bun run test` | **exit 0** — **1,063 tests** (567 app + 336 `@ci/search` + 87 `@ci/content` + 73 `@ci/content-schema`) |
+| `bun run test:e2e` | **exit 0** — **447 tests** (441 + the 6 new prefetch assertions) |
+| `bun run test:a11y` | **exit 0** — **77 tests** |
+| `bun run test:visual` | **exit 0** — **15 tests**, no baseline rewritten |
+| `bun run test:interaction` | **exit 0** — **14 tests**, 24–72ms against a 200ms target |
+| `bun run test:text-geometry` | **exit 0** — **70 tests** across Chromium, Firefox and WebKit |
+| `bun run test:smoke` | **exit 0** — **47 tests** across Firefox and WebKit |
+| `bun run test:print` | **exit 0** — **19 tests** across three engines |
+| `bun run content:bundle` | **exit 0** — median 556.0 kB, every route within budget |
+
+**689 browser tests, no failures and no flakes.** The prefetch budget was proven
+red first — `/corrections/` at 74,267 bytes and `/watch/` at 142,487 — and green
+after.
 
 ### One flake, root-caused rather than re-run
 

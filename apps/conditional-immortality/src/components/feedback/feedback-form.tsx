@@ -17,8 +17,8 @@ import {
 } from '@ci/content-schema/feedback'
 import { buttonVariants } from '@ci/ui'
 import { useForm } from '@tanstack/react-form'
-import Link from 'next/link'
 import { useEffect, useId, useRef, useState } from 'react'
+import { Link } from '@/components/navigation/link'
 
 /**
  * The correction and counterargument form.

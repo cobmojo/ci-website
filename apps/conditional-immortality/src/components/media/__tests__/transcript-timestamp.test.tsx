@@ -15,11 +15,18 @@ import { TranscriptTimestamp } from '@/components/media/transcript-timestamp'
  * said the seek had not happened.
  */
 
+// `prefetch` is swallowed rather than spread: the real `next/link` consumes it,
+// and this component reaches it through the repository's own `Link`, which
+// always passes it. Forwarding it would put `prefetch="false"` on an anchor.
 vi.mock('next/link', () => ({
   default: ({
     children,
+    prefetch: _prefetch,
     ...props
-  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children: React.ReactNode }) => (
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    children: React.ReactNode
+    prefetch?: boolean
+  }) => (
     // biome-ignore lint/a11y/useValidAnchor: a stand-in for next/link in a unit test
     <a {...props}>{children}</a>
   ),
