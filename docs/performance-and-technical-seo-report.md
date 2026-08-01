@@ -436,6 +436,16 @@ chunk would have replaced the page with the error document instead of the
 alongside the index and the engine, so that failure lands in the same `catch`
 as the other two.
 
+**One more, found in review.** `loadSearchEngine` cached its promise, and the
+first version cached the *failure* with it — modelled on `loadTextLayoutEngine`,
+which is right to do so because an excerpt that is never fitted is still an
+excerpt. Search is not like that: it cannot run without the engine, and the pane
+tells a reader whose load failed to reopen and try again. A cached `null` made
+that promise a lie for the rest of the session, with a page reload the only way
+back. The success is still cached; the failure now clears the slot so the next
+ask starts a fresh import. `src/lib/__tests__/search-engine-client.test.ts`
+pins both halves, and was proven red against the old behaviour.
+
 ## Hypotheses tested and rejected
 
 ### Splitting the `@ci/ui` barrel — rejected on the budget it would break
