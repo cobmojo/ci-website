@@ -24,12 +24,12 @@
   },
   "dependencies": {
     "@ci/content-schema": "workspace:*",
-    "zod": "4.4.3"
+    "zod": "4.5.1"
   },
   "devDependencies": {
     "@types/node": "^26",
     "github-slugger": "^2.0.0",
     "typescript": "6.0.3",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   }
 }
