@@ -49,15 +49,15 @@
     "test:print": "NEXT_PUBLIC_ALLOW_LOCALHOST_SITE_URL=1 turbo run test:print"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.6",
+    "@biomejs/biome": "2.5.12",
     "@ci/content": "workspace:*",
     "@ci/content-schema": "workspace:*",
     "@ci/search": "workspace:*",
-    "@types/bun": "^1.3.0",
+    "@types/bun": "^1.4.1",
     "@vitest/coverage-v8": "4.1.10",
     "chrome-launcher": "1.2.1",
     "lighthouse": "13.4.1",
-    "turbo": "2.10.7",
+    "turbo": "2.10.12",
     "typescript": "6.0.3"
   },
   "engines": {
