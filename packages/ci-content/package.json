@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@ci/content-schema": "workspace:*",
-    "zod": "4.4.3"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26",
